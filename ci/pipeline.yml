@@ -3,6 +3,7 @@ groups:
   - name: bosh-azure-cpi-release
     jobs:
       - recreate-infrastructure-primary
+      - reset-resources
       - build-candidate
       - lifecycle
       - bats-ubuntu
@@ -32,11 +33,27 @@ jobs:
         AZURE_BOSH_SUBNET_NAME:         {{azure_bosh_subnet_name}}
         AZURE_CF_SUBNET_NAME:           {{azure_cf_subnet_name}}
 
-- name: build-candidate
+- name: reset-resources
   serial: true
   plan:
   - aggregate:
     - {trigger: false, get: bosh-cpi-release, resource: bosh-cpi-release-in}
+
+  - task: reset-resources
+    file: bosh-cpi-release/ci/tasks/reset-resources.yml
+    config:
+      params:
+        AZURE_TENANT_ID:                {{azure_tenant_id}}
+        AZURE_CLIENT_ID:                {{azure_client_id}}
+        AZURE_CLIENT_SECRET:            {{azure_client_secret}}
+        AZURE_GROUP_NAME:               {{azure_group_name}}
+        AZURE_STORAGE_ACCOUNT_NAME:     {{azure_storage_account_name}}
+
+- name: build-candidate
+  serial: true
+  plan:
+  - aggregate:
+    - {trigger: true,  passed: [reset-resources], get: bosh-cpi-release, resource: bosh-cpi-release-in}
     - {trigger: false, get: version-semver, params: {bump: patch}}
 
   - put: version-semver
