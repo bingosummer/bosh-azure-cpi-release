@@ -48,6 +48,10 @@ jobs:
         AZURE_CLIENT_SECRET:            {{azure_client_secret}}
         AZURE_GROUP_NAME:               {{azure_group_name}}
         AZURE_STORAGE_ACCOUNT_NAME:     {{azure_storage_account_name}}
+        AZURE_VNET_NAME_FOR_BATS:       {{azure_vnet_name_for_bats}}
+        AZURE_VNET_NAME_FOR_LIFECYCLE:  {{azure_vnet_name_for_lifecycle}}
+        AZURE_BOSH_SUBNET_NAME:         {{azure_bosh_subnet_name}}
+        AZURE_CF_SUBNET_NAME:           {{azure_cf_subnet_name}}
 
 - name: build-candidate
   serial: true
