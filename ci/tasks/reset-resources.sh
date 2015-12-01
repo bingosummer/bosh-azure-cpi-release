@@ -26,6 +26,7 @@ azure group list | grep ${AZURE_GROUP_NAME}
 if [ $? -eq 1 ]; then
   echo "The task failed because the resource group ${AZURE_GROUP_NAME} does not exist"
   echo "You should run the task recreate-infrastructure-primary to provision resources on Azure"
+  exit 1
 fi
 
 set -e
