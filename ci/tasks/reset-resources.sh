@@ -32,7 +32,7 @@ set -e
 
 echo "Check if the needed resources exist"
 
-vnets="${AZURE_VNET_NAME_FOR_BATS} $(AZURE_VNET_NAME_FOR_LIFECYCLE)"
+vnets="${AZURE_VNET_NAME_FOR_BATS} ${AZURE_VNET_NAME_FOR_LIFECYCLE}"
 for vnet in $vnets
 do
   echo "azure network vnet show --resource-group ${AZURE_GROUP_NAME} --name $vnet --json | jq '.name' -r"
