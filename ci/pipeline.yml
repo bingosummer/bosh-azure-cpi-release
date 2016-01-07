@@ -8,6 +8,14 @@ groups:
       - lifecycle
       - bats-ubuntu
       - promote-candidate
+  - name: bosh-setup-template
+    jobs:
+      - minimum-parameters
+      - auto-deploy-bosh
+      - with-additional-storage-accounts
+      - with-azure-dns
+      - all-parameters
+
 jobs:
 - name: recreate-infrastructure-primary
   serial: true
@@ -164,6 +172,22 @@ jobs:
   - put: release-version-semver
     params: {file: release-version-semver/number}
 
+- name: minimum-parameters
+  serial: true
+  plan:
+  - aggregate:
+    - {trigger: false, get: bosh-setup-template, resource: bosh-setup-template}
+
+  - task: minimum-parameters
+    file: bosh-cpi-release/ci/tasks/minimum-parameters.yml
+    config:
+      params:
+        AZURE_CLIENT_ID:                {{azure_client_id}}
+        AZURE_CLIENT_SECRET:            {{azure_client_secret}}
+        AZURE_TENANT_ID:                {{azure_tenant_id}}
+        AZURE_REGION_NAME:              {{azure_region_name}}
+        AZURE_REGION_SHORT_NAME:        {{azure_region_short_name}}
+
 resources:
 - name: bosh-cpi-dev-artifacts
   type: s3
@@ -229,3 +253,9 @@ resources:
   source:
     bucket: bosh-azure-stemcells
     regexp: bosh-stemcell-([0-9\.]+)-azure-hyperv-ubuntu-trusty-go_agent.tgz
+
+- name: bosh-setup-template
+  type: git
+  source:
+    uri: git@github.com:bingosummer/azure-quickstart-templates.git
+    branch: develop
