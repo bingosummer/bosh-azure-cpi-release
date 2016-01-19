@@ -2,10 +2,10 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "vnetID": {
+    "subnetID": {
       "type": "string",
       "metadata": {
-        "description": "The ID of the virtual network"
+        "description": "The ID of the subnet for Application Gateway"
       }
     },
     "skuName": {
@@ -79,8 +79,6 @@
   "variables": {
     "applicationGatewayName": "ApplicationGateway",
     "publicIPAddressName": "PublicIPofApplicationGateway",
-    "subnetName": "ApplicationGateway",
-    "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
     "publicIPRef": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]",
     "applicationGatewayID": "[resourceId('Microsoft.Network/applicationGateways',variables('applicationGatewayName'))]",
     "apiVersion": "2015-06-15"
@@ -130,7 +128,7 @@
             "name": "appGatewayIpConfig",
             "properties": {
               "subnet": {
-                "id": "[variables('subnetRef')]"
+                "id": "[parameters('subnetID')]"
               }
             }
           }

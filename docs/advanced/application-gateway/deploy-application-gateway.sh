@@ -15,6 +15,11 @@ echo "Login Azure CLI"
 azure login --service-principal -u ${AZURE_CLIENT_ID} -p ${AZURE_CLIENT_SECRET} --tenant ${AZURE_TENANT_ID}
 azure config mode arm
 
-azure network vnet subnet create --resource-group ${RESOURCE_GROUP_NAME} --vnet-name ${VIRTUAL_NETWORK_NAME} --name ${SUBNET_NAME} --address-prefix ${SUBNET_PREFIX}
+subnet_actual=$(azure network vnet subnet show --resource-group ${RESOURCE_GROUP_NAME} --vnet-name ${VIRTUAL_NETWORK_NAME} --name ${SUBNET_NAME} --json | jq '.name' -r)
+if [ "${subnet_actual}" != "${SUBNET_NAME}" ]; then
+  azure network vnet subnet create --resource-group ${RESOURCE_GROUP_NAME} --vnet-name ${VIRTUAL_NETWORK_NAME} --name ${SUBNET_NAME} --address-prefix ${SUBNET_PREFIX}
+fi
 
-azure group deployment create 
+subnet_id=$(azure network vnet subnet show --resource-group ${RESOURCE_GROUP_NAME} --vnet-name ${VIRTUAL_NETWORK_NAME} --name ${SUBNET_NAME} --json | jq '.id' -r)
+
+azure group deployment create --resource-group ${RESOURCE_GROUP_NAME} --name Deploy-Application-Gateway --template-file ./deploy-application-gateway.json
