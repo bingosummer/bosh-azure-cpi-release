@@ -40,7 +40,7 @@ Azure Application Gateway provides application-level routing and load balancing 
   ```
   Example:
   ```
-  azure network vnet subnet create -g “MyResourceGroup” -e “myvnet” -n “ApplicationGateway” -a 10.0.1.0/24
+  azure network vnet subnet create -g "MyResourceGroup" -e "myvnet" -n "ApplicationGateway" -a 10.0.1.0/24
   ```
 
 3. Open the PowerShell command window and Log in.
@@ -51,9 +51,7 @@ Azure Application Gateway provides application-level routing and load balancing 
   PS C:\> Select-AzureRmSubscription -Subscriptionid <GUID of your subscription>
   ```
 
-4. Download the PowerShell script "New-AG.ps1".
-
-  http://cloudfoundry.blob.core.windows.net/misc/New-AG.ps1
+4. Download the PowerShell script [**New-AG.ps1**](./New-AG.ps1)
 
 5. Configure the parameters in "New-AG.ps1".
 
@@ -97,11 +95,9 @@ Azure Application Gateway provides application-level routing and load balancing 
 
 The following steps are for supporting multiple certificates in AG.
 
-1. Download the PowerShell script "New-AG-multi-cert.ps1".
+1. Download the PowerShell script [**New-AG-multi-certs.ps1**](./New-AG-multi-certs.ps1).
 
-  http://cloudfoundry.blob.core.windows.net/misc/New-AG-multi-cert.ps1
-
-2. Configure the parameters in “New-AG-multi-cert.ps1” and run it.
+2. Configure the parameters in `New-AG-multi-certs.ps1` and run it.
 
   You need to specify two different certs in the script.
   After the script is finished, each cert will be bound to a listener which has a different front end port (443 and 8443).
@@ -156,6 +152,6 @@ The following steps are for supporting multiple certificates in AG.
 
   >**NOTE:** Once WebSocket is supported by Application Gateway we will provide an updated guidance regarding removing HAProxy and re-create Application Gateway.
 
-2. Azure CLI is not supported for creating Application Gateway.
+2. Azure CLI is not supported for creating Application Gateway in ARM mode.
 
-  The script that creates and configures Application Gateway is currently implemented in PowerShell, once CLI is supported, we will also provide the CLI version of the script.
+  The script that creates and configures Application Gateway is currently implemented in PowerShell. Once CLI is supported, we will also provide the CLI version of the script.
