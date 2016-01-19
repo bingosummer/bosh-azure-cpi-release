@@ -121,7 +121,7 @@
               "data": "[parameters('certData2')]",
               "password": "[parameters('certPassword2')]"
             }
-          },
+          }
         ],
         "gatewayIPConfigurations": [
           {
