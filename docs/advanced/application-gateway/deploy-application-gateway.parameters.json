@@ -1,0 +1,39 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "subnetID": {
+      "value": "REPLACE_WITH_SUBNET_ID"
+    },
+    "skuName": {
+      "value": "Standard_Small"
+    },
+    "capacity": {
+      "value": 2
+    },
+    "backendIpAddress1": {
+      "value": "10.0.16.12"
+    },
+    "backendIpAddress2": {
+      "value": "10.0.16.22"
+    },
+    "hostName1": {
+      "value": "REPLACE_WITH_HOSTNAME_1"
+    },
+    "certData1": {
+      "value": "REPLACE_WITH_CERT_DATA_1"
+    },
+    "certPassword1": {
+      "value": "REPLACE_WITH_CERT_PASSWORD_1"
+    },
+    "hostName2": {
+      "value": "REPLACE_WITH_HOSTNAME_2"
+    },
+    "certData2": {
+      "value": "REPLACE_WITH_CERT_DATA_2"
+    },
+    "certPassword2": {
+      "value": "REPLACE_WITH_CERT_PASSWORD_2"
+    }
+  }
+}
