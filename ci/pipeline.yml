@@ -11,10 +11,6 @@ groups:
   - name: bosh-setup-template
     jobs:
       - minimum-parameters
-      - auto-deploy-bosh
-      - with-additional-storage-accounts
-      - with-azure-dns
-      - all-parameters
 
 jobs:
 - name: recreate-infrastructure-primary
@@ -186,7 +182,6 @@ jobs:
         AZURE_CLIENT_SECRET:            {{azure_client_secret}}
         AZURE_TENANT_ID:                {{azure_tenant_id}}
         AZURE_REGION_NAME:              {{azure_region_name}}
-        AZURE_REGION_SHORT_NAME:        {{azure_region_short_name}}
 
 resources:
 - name: bosh-cpi-dev-artifacts
