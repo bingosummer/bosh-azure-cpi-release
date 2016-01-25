@@ -175,7 +175,7 @@ jobs:
     - {trigger: false, get: bosh-setup-template, resource: bosh-setup-template}
 
   - task: minimum-parameters
-    file: bosh-cpi-release/ci/tasks/minimum-parameters.yml
+    file: bosh-setup-template/ci/tasks/minimum-parameters.yml
     config:
       params:
         AZURE_CLIENT_ID:                {{azure_client_id}}
@@ -254,3 +254,4 @@ resources:
   source:
     uri: git@github.com:bingosummer/azure-quickstart-templates.git
     branch: develop
+    private_key: {{github_deployment_key__bosh-setup-template}}
