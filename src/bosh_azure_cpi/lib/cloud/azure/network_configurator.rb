@@ -53,6 +53,10 @@ module Bosh::AzureCloud
       end
     end
 
+    def resource_group_name
+      @network.resource_group_name
+    end
+
     def virtual_network_name
       @network.virtual_network_name
     end

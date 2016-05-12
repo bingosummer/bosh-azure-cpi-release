@@ -30,8 +30,8 @@ module Bosh::AzureCloud
         end
       end
 
-      subnet = @azure_client2.get_network_subnet_by_name(network_configurator.virtual_network_name, network_configurator.subnet_name)
-      raise "Cannot find the subnet #{network_configurator.virtual_network_name}/#{network_configurator.subnet_name}" if subnet.nil?
+      subnet = @azure_client2.get_network_subnet_by_name(network_configurator.resource_group_name, network_configurator.virtual_network_name, network_configurator.subnet_name)
+      raise "Cannot find the subnet `#{network_configurator.virtual_network_name}/#{network_configurator.subnet_name}' in the resource group `#{network_configurator.resource_group_name}'" if subnet.nil?
 
       security_group_name = @azure_properties["default_security_group"]
       if resource_pool.has_key?("security_group")
@@ -39,8 +39,16 @@ module Bosh::AzureCloud
       elsif !network_configurator.security_group.nil?
         security_group_name = network_configurator.security_group
       end
-      network_security_group = @azure_client2.get_network_security_group_by_name(security_group_name)
-      raise "Cannot find the network security group #{security_group_name}" if network_security_group.nil?
+
+      resource_group_name = network_configurator.resource_group_name.nil? ? @azure_properties['resource_group_name'] : network_configurator.resource_group_name 
+      network_security_group = @azure_client2.get_network_security_group_by_name(resource_group_name, security_group_name)
+      if !network_configurator.resource_group_name.nil? and network_security_group.nil?
+        @logger.info("Cannot find the network security group `#{security_group_name}' in the resource group `#{network_configurator.resource_group_name}', trying to search it in the resource group `#{@azure_properties['resource_group_name']}'")
+        network_security_group = @azure_client2.get_network_security_group_by_name(@azure_properties['resource_group_name'], security_group_name)
+      end
+      if network_security_group.nil?
+        raise "Cannot find the network security group `#{security_group_name}' in the resource group `#{network_configurator.resource_group_name}' or `#{@azure_properties['resource_group_name']}'"
+      end
 
       caching = 'ReadWrite'
       if resource_pool.has_key?('caching')
