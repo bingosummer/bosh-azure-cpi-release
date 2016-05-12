@@ -30,7 +30,7 @@ module Bosh::AzureCloud
         end
       end
 
-      subnet = @azure_client2.get_network_subnet_by_name(network_configurator.virtual_network_name, network_configurator.subnet_name)
+      subnet = @azure_client2.get_network_subnet_by_name(network_configurator.resource_group_name, network_configurator.virtual_network_name, network_configurator.subnet_name)
       raise "Cannot find the subnet #{network_configurator.virtual_network_name}/#{network_configurator.subnet_name}" if subnet.nil?
 
       security_group_name = @azure_properties["default_security_group"]
@@ -39,7 +39,7 @@ module Bosh::AzureCloud
       elsif !network_configurator.security_group.nil?
         security_group_name = network_configurator.security_group
       end
-      network_security_group = @azure_client2.get_network_security_group_by_name(security_group_name)
+      network_security_group = @azure_client2.get_network_security_group_by_name(network_configurator.resource_group_name, security_group_name)
       raise "Cannot find the network security group #{security_group_name}" if network_security_group.nil?
 
       caching = 'ReadWrite'
