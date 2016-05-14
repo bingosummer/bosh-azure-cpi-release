@@ -28,8 +28,6 @@ jobs:
         AZURE_VNET_NAME_FOR_LIFECYCLE:  {{azure_vnet_name_for_lifecycle}}
         AZURE_REGION_SHORT_NAME:        {{azure_region_short_name}}
         AZURE_STORAGE_ACCOUNT_NAME:     {{azure_storage_account_name}}
-        AZURE_SUBSCRIPTION_ID:          {{azure_subscription_id}}
-        AZURE_TENANT_ID:                {{azure_tenant_id}}
         AZURE_BOSH_SUBNET_NAME:         {{azure_bosh_subnet_name}}
         AZURE_CF_SUBNET_NAME:           {{azure_cf_subnet_name}}
 
