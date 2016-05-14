@@ -47,6 +47,8 @@ describe Bosh::AzureCloud::VMManager do
     before do
       allow(Bosh::AzureCloud::AzureClient2).to receive(:new).
         and_return(client2)
+      allow(network_configurator).to receive(:resource_group_name).
+        and_return("fake-resource-group-name")
       allow(network_configurator).to receive(:virtual_network_name).
         and_return("fake-virtual-network-name")
       allow(network_configurator).to receive(:subnet_name).
@@ -54,7 +56,7 @@ describe Bosh::AzureCloud::VMManager do
       allow(network_configurator).to receive(:security_group).
         and_return(nil)
       allow(client2).to receive(:get_network_security_group_by_name).
-        with("fake-default-nsg-name").
+        with("fake-resource-group-name", "fake-default-nsg-name").
         and_return(network_security)
       allow(disk_manager).to receive(:delete_disk).
         and_return(nil)
@@ -342,10 +344,10 @@ describe Bosh::AzureCloud::VMManager do
 
           before do
             allow(client2).to receive(:get_network_security_group_by_name).
-              with("fake-default-nsg-name").
+              with("fake-resource-group-name", "fake-default-nsg-name").
               and_return(nil)
             allow(client2).to receive(:get_network_security_group_by_name).
-              with("fake-nsg-name").
+              with("fake-resource-group-name", "fake-nsg-name").
               and_return(network_security)
           end
 
@@ -365,10 +367,11 @@ describe Bosh::AzureCloud::VMManager do
             allow(network_configurator).to receive(:security_group).
               and_return("fake-network-nsg-name")
             allow(client2).to receive(:get_network_security_group_by_name).
+              with("fake-resource-group-name", "fake-default-nsg-name").
               with("fake-default-nsg-name").
               and_return(nil)
             allow(client2).to receive(:get_network_security_group_by_name).
-              with("fake-network-nsg-name").
+              with("fake-resource-group-name", "fake-network-nsg-name").
               and_return(network_security)
           end
 
