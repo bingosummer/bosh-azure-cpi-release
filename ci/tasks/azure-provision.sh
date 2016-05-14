@@ -6,10 +6,11 @@ source bosh-cpi-release/ci/tasks/utils.sh
 
 check_param AZURE_CLIENT_ID
 check_param AZURE_CLIENT_SECRET
+check_param AZURE_TENANT_ID
 check_param AZURE_GROUP_NAME
 check_param AZURE_REGION_NAME
 check_param AZURE_REGION_SHORT_NAME
-check_param AZURE_TENANT_ID
+check_param AZURE_STORAGE_ACCOUNT_NAME
 check_param AZURE_VNET_NAME_FOR_BATS
 check_param AZURE_VNET_NAME_FOR_LIFECYCLE
 check_param AZURE_BOSH_SUBNET_NAME
@@ -20,7 +21,7 @@ azure config mode arm
 
 set +e
 
-# check if group already exists
+# Check if the resource group already exists
 echo "azure group list | grep ${AZURE_GROUP_NAME}"
 azure group list | grep ${AZURE_GROUP_NAME}
 
@@ -29,7 +30,7 @@ then
   echo "azure group delete ${AZURE_GROUP_NAME}"
   azure group delete ${AZURE_GROUP_NAME} --quiet
   echo "waiting for delete operation to finish..."
-  # wait for resource group to delet 
+  # Wait for the completion of deleting the resource group
   azure group show ${AZURE_GROUP_NAME}
   while [ $? -eq 0 ]
   do
@@ -42,10 +43,28 @@ set -e
 
 echo azure group create ${AZURE_GROUP_NAME} ${AZURE_REGION_SHORT_NAME}
 azure group create ${AZURE_GROUP_NAME} ${AZURE_REGION_SHORT_NAME}
-echo "{ \"location\": { \"value\": \"${AZURE_REGION_NAME}\" }, \"newStorageAccountName\": { \"value\": \"${AZURE_STORAGE_ACCOUNT_NAME}\" }, \"virtualNetworkNameForBats\": { \"value\": \"${AZURE_VNET_NAME_FOR_BATS}\" }, \"virtualNetworkNameForLifecycle\": { \"value\": \"${AZURE_VNET_NAME_FOR_LIFECYCLE}\" }, \"subnetNameForBosh\": { \"value\": \"${AZURE_BOSH_SUBNET_NAME}\" }, \"subnetNameForCloudFoundry\": { \"value\": \"${AZURE_CF_SUBNET_NAME}\" } }" > provision-parameters.json
+cat > provision-parameters.json << EndOfMessage
+{
+  "newStorageAccountName": {
+    "value": "${AZURE_STORAGE_ACCOUNT_NAME}"
+  },
+  "virtualNetworkNameForBats": {
+    "value": "${AZURE_VNET_NAME_FOR_BATS}"
+  },
+  "virtualNetworkNameForLifecycle": {
+    "value": "${AZURE_VNET_NAME_FOR_LIFECYCLE}"
+  },
+  "subnetNameForBosh": {
+    "value": "${AZURE_BOSH_SUBNET_NAME}"
+  },
+  "subnetNameForCloudFoundry": {
+    "value": "${AZURE_CF_SUBNET_NAME}"
+  }
+}
+EndOfMessage
 azure group deployment create ${AZURE_GROUP_NAME} --template-file ./bosh-cpi-release/ci/assets/azure/provision.json --parameters-file ./provision-parameters.json
 
-#setup storage account containers
-AZURE_ACCOUNT_KEY=$(azure storage account keys list ${AZURE_STORAGE_ACCOUNT_NAME} -g ${AZURE_GROUP_NAME} --json | jq '.storageAccountKeys.key1' -r)
+# Setup the storage account
+AZURE_ACCOUNT_KEY=$(azure storage account keys list ${AZURE_STORAGE_ACCOUNT_NAME} --resource-group ${AZURE_GROUP_NAME} --json | jq '.storageAccountKeys.key1' -r)
 azure storage container create --account-name ${AZURE_STORAGE_ACCOUNT_NAME} --account-key ${AZURE_ACCOUNT_KEY} --container bosh
-azure storage container create --account-name ${AZURE_STORAGE_ACCOUNT_NAME} --account-key ${AZURE_ACCOUNT_KEY} -p blob --container stemcell
+azure storage container create --account-name ${AZURE_STORAGE_ACCOUNT_NAME} --account-key ${AZURE_ACCOUNT_KEY} --permission blob --container stemcell
