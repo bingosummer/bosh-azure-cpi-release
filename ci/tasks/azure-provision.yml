@@ -13,7 +13,6 @@ params:
     AZURE_REGION_NAME:             replace-me
     AZURE_REGION_SHORT_NAME:       replace-me
     AZURE_STORAGE_ACCOUNT_NAME:    replace-me
-    AZURE_SUBSCRIPTION_ID:         replace-me
     AZURE_VNET_NAME_FOR_BATS:      replace-me
     AZURE_VNET_NAME_FOR_LIFECYCLE: replace-me
     AUZRE_BOSH_SUBNET_NAME:        replace-me
