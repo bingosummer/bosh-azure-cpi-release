@@ -9,6 +9,7 @@ describe Bosh::AzureCloud::Cloud do
     @subscription_id        = ENV['BOSH_AZURE_SUBSCRIPTION_ID']         || raise("Missing BOSH_AZURE_SUBSCRIPTION_ID")
     @storage_account_name   = ENV['BOSH_AZURE_STORAGE_ACCOUNT_NAME']    || raise("Missing BOSH_AZURE_STORAGE_ACCOUNT_NAME")
     @resource_group_name    = ENV['BOSH_AZURE_RESOURCE_GROUP_NAME']     || raise("Missing BOSH_AZURE_RESOURCE_GROUP_NAME")
+    @resource_group_name_2  = ENV['BOSH_AZURE_RESOURCE_GROUP_NAME_2']   || raise("Missing BOSH_AZURE_RESOURCE_GROUP_NAME_2")
     @tenant_id              = ENV['BOSH_AZURE_TENANT_ID']               || raise("Missing BOSH_AZURE_TENANT_ID")
     @client_id              = ENV['BOSH_AZURE_CLIENT_ID']               || raise("Missing BOSH_AZURE_CLIENT_ID")
     @client_secret          = ENV['BOSH_AZURE_CLIENT_SECRET']           || raise("Missing BOSH_AZURE_CLIENT_secret")
@@ -42,17 +43,6 @@ describe Bosh::AzureCloud::Cloud do
 
   let(:vnet_name)       { ENV.fetch('BOSH_AZURE_VNET_NAME', 'boshvnet-crp') }
   let(:subnet_name)     { ENV.fetch('BOSH_AZURE_SUBNET_NAME', 'Bosh') }
-  let(:dynamic_networks) {
-    {
-      'default' => {
-        'type' => 'dynamic',
-        'cloud_properties' => {
-          "virtual_network_name" => vnet_name,
-          'subnet_name' => subnet_name
-        }
-      }
-    }
-  }
 
   let(:instance_type)   { ENV.fetch('BOSH_AZURE_INSTANCE_TYPE', 'Standard_D1') }
   let(:resource_pool)   { { 'instance_type' => instance_type } }
@@ -153,7 +143,7 @@ describe Bosh::AzureCloud::Cloud do
   context 'dynamic networking' do
     context 'without existing disks' do
       it 'should exercise the vm lifecycle' do
-        vm_lifecycle(@stemcell_id, dynamic_networks) do |instance_id|
+        vm_lifecycle(@stemcell_id, get_dynamic_networks()) do |instance_id|
           @disk_id = cpi.create_disk(2048, {}, instance_id)
           expect(@disk_id).not_to be_nil
 
@@ -182,10 +172,10 @@ describe Bosh::AzureCloud::Cloud do
 
     context 'with existing disks' do
       let!(:existing_disk_id) { cpi.create_disk(2048, {}) }
-      after  { cpi.delete_disk(existing_disk_id) if existing_disk_id }
+      after { cpi.delete_disk(existing_disk_id) if existing_disk_id }
 
       it 'can excercise the vm lifecycle and list the disks' do
-        vm_lifecycle(@stemcell_id, dynamic_networks) do |instance_id|
+        vm_lifecycle(@stemcell_id, get_dynamic_networks()) do |instance_id|
           @disk_id = cpi.create_disk(2048, {}, instance_id)
           expect(@disk_id).not_to be_nil
 
@@ -205,7 +195,7 @@ describe Bosh::AzureCloud::Cloud do
         @disk_id = cpi.create_disk(2048, {})
         expect(@disk_id).not_to be_nil
 
-        vm_lifecycle(@stemcell_id, dynamic_networks) do |instance_id|
+        vm_lifecycle(@stemcell_id, get_dynamic_networks()) do |instance_id|
           cpi.attach_disk(instance_id, @disk_id)
           expect(cpi.get_disks(instance_id)).to include(@disk_id)
         end
@@ -242,7 +232,7 @@ describe Bosh::AzureCloud::Cloud do
     }
 
     it 'should exercise the vm lifecycle' do
-      vm_lifecycle(@stemcell_id, dynamic_networks, 2) do |instance_id|
+      vm_lifecycle(@stemcell_id, get_dynamic_networks(), 2) do |instance_id|
         disk_id = cpi.create_disk(2048, {}, instance_id)
         expect(disk_id).not_to be_nil
 
@@ -282,7 +272,7 @@ describe Bosh::AzureCloud::Cloud do
     }
 
     it 'should exercise the vm lifecycle' do
-      vm_lifecycle(@stemcell_id, dynamic_networks, 1) do |instance_id|
+      vm_lifecycle(@stemcell_id, get_dynamic_networks(), 1) do |instance_id|
         disk_id = cpi.create_disk(2048, {}, instance_id)
         expect(disk_id).not_to be_nil
 
@@ -307,6 +297,66 @@ describe Bosh::AzureCloud::Cloud do
         end
 
         cpi.delete_disk(disk_id) if disk_id
+      end
+    end
+  end
+
+  context 'Separating the network in another different resource group' do
+    context 'manual networking' do
+      it 'should exercise the vm lifecycle' do
+        vm_lifecycle(@stemcell_id, get_manual_networks(@resource_group_name_2)) do |instance_id|
+          @disk_id = cpi.create_disk(2048, {}, instance_id)
+          expect(@disk_id).not_to be_nil
+
+          cpi.attach_disk(instance_id, @disk_id)
+
+          snapshot_metadata = vm_metadata.merge(
+            bosh_data: 'bosh data',
+            instance_id: 'instance',
+            agent_id: 'agent',
+            director_name: 'Director',
+            director_uuid: SecureRandom.uuid
+          )
+
+          snapshot_id = cpi.snapshot_disk(@disk_id, snapshot_metadata)
+          expect(snapshot_id).not_to be_nil
+
+          cpi.delete_snapshot(snapshot_id)
+
+          Bosh::Common.retryable(tries: 20, on: Bosh::Clouds::DiskNotAttached, sleep: lambda { |n, _| [2**(n-1), 30].min }) do
+            cpi.detach_disk(instance_id, @disk_id)
+            true
+          end
+        end
+      end
+    end
+
+    context 'dynamic networking' do
+      it 'should exercise the vm lifecycle' do
+        vm_lifecycle(@stemcell_id, get_dynamic_networks(@resource_group_name_2)) do |instance_id|
+          @disk_id = cpi.create_disk(2048, {}, instance_id)
+          expect(@disk_id).not_to be_nil
+
+          cpi.attach_disk(instance_id, @disk_id)
+
+          snapshot_metadata = vm_metadata.merge(
+            bosh_data: 'bosh data',
+            instance_id: 'instance',
+            agent_id: 'agent',
+            director_name: 'Director',
+            director_uuid: SecureRandom.uuid
+          )
+
+          snapshot_id = cpi.snapshot_disk(@disk_id, snapshot_metadata)
+          expect(snapshot_id).not_to be_nil
+
+          cpi.delete_snapshot(snapshot_id)
+
+          Bosh::Common.retryable(tries: 20, on: Bosh::Clouds::DiskNotAttached, sleep: lambda { |n, _| [2**(n-1), 30].min }) do
+            cpi.detach_disk(instance_id, @disk_id)
+            true
+          end
+        end
       end
     end
   end
@@ -339,17 +389,33 @@ describe Bosh::AzureCloud::Cloud do
     end
   end
 
-  def get_manual_networks
+  def get_manual_networks(resource_group_name = nil)
     manual_networks = {
-      "bosh" => {
-        "type"    => "manual",
-        "ip"      => "10.0.0.#{Random.rand(10..99)}",
+      "default" => {
+        "type" => "manual",
+        "ip" => "10.0.0.#{Random.rand(10..99)}",
         "cloud_properties" => {
           "virtual_network_name" => vnet_name,
           "subnet_name" => subnet_name
         }
       }
     }
+    manual_networks["default"]["cloud_properties"]["resource_group_name"] = resource_group_name unless resource_group_name.nil?
     manual_networks
   end
+
+  def get_dynamic_networks(resource_group_name = nil)
+    dynamic_networks = {
+      "default" => {
+        "type" => "dynamic",
+        "cloud_properties" => {
+          "virtual_network_name" => vnet_name,
+          "subnet_name" => subnet_name
+        }
+      }
+    }
+    dynamic_networks["default"]["cloud_properties"]["resource_group_name"] = resource_group_name unless resource_group_name.nil?
+    dynamic_networks
+  end
+
 end
