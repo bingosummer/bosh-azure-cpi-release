@@ -23,6 +23,7 @@ jobs:
         AZURE_CLIENT_SECRET:            {{azure_client_secret}}
         AZURE_TENANT_ID:                {{azure_tenant_id}}
         AZURE_GROUP_NAME:               {{azure_group_name}}
+        AZURE_GROUP_NAME_2:             {{azure_group_name_2}}
         AZURE_REGION_NAME:              {{azure_region_name}}
         AZURE_VNET_NAME_FOR_BATS:       {{azure_vnet_name_for_bats}}
         AZURE_VNET_NAME_FOR_LIFECYCLE:  {{azure_vnet_name_for_lifecycle}}
