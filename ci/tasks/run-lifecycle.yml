@@ -11,6 +11,7 @@ params:
   AZURE_CLIENT_SECRET:            replace-me
   AZURE_TENANT_ID:                replace-me
   AZURE_GROUP_NAME:               replace-me
+  AZURE_GROUP_NAME_2:             replace-me
   AZURE_STORAGE_ACCOUNT_NAME:     replace-me
   AZURE_SUBSCRIPTION_ID:          replace-me
   SSH_PUBLIC_KEY:                 replace-me
