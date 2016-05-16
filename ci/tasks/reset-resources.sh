@@ -59,7 +59,7 @@ do
   fi
 done
 
-public_ips="AzureCPICI-bosh AzureCPICI-cf"
+public_ips="AzureCPICI-bosh AzureCPICI-cf AzureCPICI-bosh-1 AzureCPICI-cf-1"
 for public_ip in ${public_ips}
 do
   echo "azure network public-ip show --resource-group ${AZURE_GROUP_NAME} --name ${public_ip} --json | jq '.name' -r"

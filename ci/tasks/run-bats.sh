@@ -23,12 +23,20 @@ check_param AZURE_VNET_NAME_FOR_BATS
 check_param AZURE_CF_SUBNET_NAME
 check_param AZURE_DEFAULT_SECURITY_GROUP
 check_param BAT_DIRECTOR_PASSWORD
+check_param SEPARATE_NETWORK
 
 azure login --service-principal -u ${AZURE_CLIENT_ID} -p ${AZURE_CLIENT_SECRET} --tenant ${AZURE_TENANT_ID}
 azure config mode arm
 
-DIRECTOR=$(azure network public-ip show ${AZURE_GROUP_NAME} AzureCPICI-bosh --json | jq '.ipAddress' -r)
-CF_IP_ADDRESS=$(azure network public-ip show ${AZURE_GROUP_NAME} AzureCPICI-cf --json | jq '.ipAddress' -r)
+if [ "$SEPARATE_NETWORK" = true ] ; then
+  DIRECTOR=$(azure network public-ip show ${AZURE_GROUP_NAME} AzureCPICI-bosh-1 --json | jq '.ipAddress' -r)
+  CF_IP_ADDRESS=$(azure network public-ip show ${AZURE_GROUP_NAME} AzureCPICI-cf-1 --json | jq '.ipAddress' -r)
+  AZURE_GROUP_NAME_FOR_NETWORK="${AZURE_GROUP_NAME}-1"
+else
+  DIRECTOR=$(azure network public-ip show ${AZURE_GROUP_NAME} AzureCPICI-bosh --json | jq '.ipAddress' -r)
+  CF_IP_ADDRESS=$(azure network public-ip show ${AZURE_GROUP_NAME} AzureCPICI-cf --json | jq '.ipAddress' -r)
+  AZURE_GROUP_NAME_FOR_NETWORK="${AZURE_GROUP_NAME}"
+fi
 
 source /etc/profile.d/chruby.sh
 chruby 2.1.2

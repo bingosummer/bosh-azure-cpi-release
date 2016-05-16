@@ -12,17 +12,24 @@ check_param AZURE_VNET_NAME_FOR_BATS
 check_param AZURE_STORAGE_ACCOUNT_NAME
 check_param AZURE_SUBSCRIPTION_ID
 check_param AZURE_BOSH_SUBNET_NAME
+check_param AZURE_DEFAULT_SECURITY_GROUP
 check_param BASE_OS
 check_param SSH_PRIVATE_KEY
 check_param SSH_PUBLIC_KEY
 check_param BAT_NETWORK_GATEWAY
-check_param AZURE_DEFAULT_SECURITY_GROUP
 check_param BAT_DIRECTOR_PASSWORD
+check_param SEPARATE_NETWORK
 
 azure login --service-principal -u ${AZURE_CLIENT_ID} -p ${AZURE_CLIENT_SECRET} --tenant ${AZURE_TENANT_ID}
 azure config mode arm
 
-DIRECTOR=$(azure network public-ip show ${AZURE_GROUP_NAME} AzureCPICI-bosh --json | jq '.ipAddress' -r)
+if [ "$SEPARATE_NETWORK" = true ] ; then
+  DIRECTOR=$(azure network public-ip show ${AZURE_GROUP_NAME} AzureCPICI-bosh-1 --json | jq '.ipAddress' -r)
+  resource_group_name_for_network="$AZURE_GROUP_NAME-1"
+else
+  DIRECTOR=$(azure network public-ip show ${AZURE_GROUP_NAME} AzureCPICI-bosh --json | jq '.ipAddress' -r)
+  resource_group_name_for_network="$AZURE_GROUP_NAME"
+fi
 
 source /etc/profile.d/chruby.sh
 chruby 2.1.2
@@ -55,6 +62,7 @@ networks:
     gateway: 10.0.0.1
     dns: [168.63.129.16]
     cloud_properties:
+      resource_group_name: $resource_group_name_for_network
       virtual_network_name: $AZURE_VNET_NAME_FOR_BATS
       subnet_name: $AZURE_BOSH_SUBNET_NAME
 

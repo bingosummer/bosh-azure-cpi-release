@@ -8,7 +8,6 @@ check_param AZURE_CLIENT_ID
 check_param AZURE_CLIENT_SECRET
 check_param AZURE_TENANT_ID
 check_param AZURE_GROUP_NAME
-check_param AZURE_GROUP_NAME_FOR_NETWORK
 check_param AZURE_REGION_NAME
 check_param AZURE_REGION_SHORT_NAME
 check_param AZURE_STORAGE_ACCOUNT_NAME
@@ -86,6 +85,7 @@ if [ $? -eq 1 ]; then
 fi
 
 # Check if the resource group already exists
+AZURE_GROUP_NAME_FOR_NETWORK="${AZURE_GROUP_NAME}-1"
 echo "azure group list | grep ${AZURE_GROUP_NAME_FOR_NETWORK}"
 azure group list | grep ${AZURE_GROUP_NAME_FOR_NETWORK}
 

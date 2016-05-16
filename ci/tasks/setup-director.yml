@@ -20,9 +20,10 @@ params:
   AZURE_STORAGE_ACCOUNT_NAME:    replace-me
   AZURE_SUBSCRIPTION_ID:         replace-me
   AZURE_BOSH_SUBNET_NAME:        replace-me
-  BAT_NETWORK_GATEWAY:           replace-me
+  AZURE_DEFAULT_SECURITY_GROUP:  replace-me
   SSH_PRIVATE_KEY:               replace-me
   SSH_PUBLIC_KEY:                replace-me
   BOSH_INIT_LOG_LEVEL:           warn
-  AZURE_DEFAULT_SECURITY_GROUP:  replace-me
+  BAT_NETWORK_GATEWAY:           replace-me
   BAT_DIRECTOR_PASSWORD:         replace-me
+  SEPARATE_NETWORK:              false

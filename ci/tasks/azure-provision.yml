@@ -11,7 +11,6 @@ params:
   AZURE_CLIENT_SECRET:           replace-me
   AZURE_TENANT_ID:               replace-me
   AZURE_GROUP_NAME:              replace-me
-  AZURE_GROUP_NAME_FOR_NETWORK:  replace-me
   AZURE_REGION_NAME:             replace-me
   AZURE_REGION_SHORT_NAME:       replace-me
   AZURE_STORAGE_ACCOUNT_NAME:    replace-me
