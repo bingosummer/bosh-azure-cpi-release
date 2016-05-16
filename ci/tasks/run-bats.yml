@@ -13,6 +13,7 @@ params:
   AZURE_CLIENT_SECRET:          replace-me
   AZURE_TENANT_ID:              replace-me
   AZURE_GROUP_NAME:             replace-me
+  AZURE_GROUP_NAME_FOR_NETWORK: replace-me
   SSH_PRIVATE_KEY:              replace-me
   BAT_VCAP_PASSWORD:            replace-me
   BAT_SECOND_STATIC_IP:         replace-me
