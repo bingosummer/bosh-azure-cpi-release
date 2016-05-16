@@ -70,7 +70,20 @@ AZURE_ACCOUNT_KEY=$(azure storage account keys list ${AZURE_STORAGE_ACCOUNT_NAME
 azure storage container create --account-name ${AZURE_STORAGE_ACCOUNT_NAME} --account-key ${AZURE_ACCOUNT_KEY} --container bosh
 azure storage container create --account-name ${AZURE_STORAGE_ACCOUNT_NAME} --account-key ${AZURE_ACCOUNT_KEY} --permission blob --container stemcell
 
+export BOSH_AZURE_STEMCELL_ID="bosh-stemcell-00000000-0000-0000-0000-0AZURECPICI0"
+export AZURE_STORAGE_ACCOUNT=${AZURE_STORAGE_ACCOUNT_NAME}
+export AZURE_STORAGE_ACCESS_KEY=${AZURE_ACCOUNT_KEY}
+
 set +e
+
+# Upload a stemcell for lifecycle test if it does not exist.
+# Lifycycle is used to test CPI but not stemcell so you can use any valid stemcell.
+azure storage blob show stemcell ${BOSH_AZURE_STEMCELL_ID}.vhd
+if [ $? -eq 1 ]; then
+  tar -xf ${PWD}/stemcell/*.tgz -C /mnt/
+  tar -xf /mnt/image -C /mnt/
+  azure storage blob upload --quiet --blobtype PAGE /mnt/root.vhd stemcell ${BOSH_AZURE_STEMCELL_ID}.vhd
+fi
 
 # Check if the resource group already exists
 echo "azure group list | grep ${AZURE_GROUP_NAME_FOR_NETWORK}"

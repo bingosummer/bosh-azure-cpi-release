@@ -16,6 +16,7 @@ jobs:
   plan:
   - aggregate:
     - {trigger: false, get: bosh-cpi-release, resource: bosh-cpi-release-in}
+    - {trigger: false, get: stemcell, resource: azure-ubuntu-stemcell}
 
   - task: azure-provision
     file: bosh-cpi-release/ci/tasks/azure-provision.yml
@@ -76,7 +77,6 @@ jobs:
   - aggregate:
     - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
     - {trigger: false, passed: [build-candidate], get: bosh-cpi-release, resource: bosh-cpi-release-in}
-    - {trigger: false,                            get: stemcell, resource: azure-ubuntu-stemcell}
 
   - task: test
     file: bosh-cpi-release/ci/tasks/run-lifecycle.yml
@@ -99,7 +99,6 @@ jobs:
   - aggregate:
     - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
     - {trigger: false, passed: [build-candidate], get: bosh-cpi-release, resource: bosh-cpi-release-in}
-    - {trigger: false,                            get: stemcell, resource: azure-ubuntu-stemcell}
 
   - task: test
     file: bosh-cpi-release/ci/tasks/run-lifecycle.yml
