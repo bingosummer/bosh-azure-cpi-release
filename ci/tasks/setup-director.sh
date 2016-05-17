@@ -25,10 +25,10 @@ azure config mode arm
 
 if [ "$SEPARATE_NETWORK" = true ] ; then
   DIRECTOR=$(azure network public-ip show ${AZURE_GROUP_NAME} AzureCPICI-bosh-1 --json | jq '.ipAddress' -r)
-  resource_group_name_for_network="$AZURE_GROUP_NAME-1"
+  resource_group_name_for_network="${AZURE_GROUP_NAME}-1"
 else
   DIRECTOR=$(azure network public-ip show ${AZURE_GROUP_NAME} AzureCPICI-bosh --json | jq '.ipAddress' -r)
-  resource_group_name_for_network="$AZURE_GROUP_NAME"
+  resource_group_name_for_network="${AZURE_GROUP_NAME}"
 fi
 
 source /etc/profile.d/chruby.sh

@@ -201,6 +201,7 @@ jobs:
         SSH_PUBLIC_KEY:                 {{ssh_public_key}}
         AZURE_DEFAULT_SECURITY_GROUP:   {{azure_default_security_group}}
         BAT_DIRECTOR_PASSWORD:          {{bat_director_password}}
+        SEPARATE_NETWORK:               true
 
   - task: run-bats
     file: bosh-cpi-release/ci/tasks/run-bats.yml
