@@ -106,7 +106,7 @@ compilation:
   network: default
   reuse_compilation_vms: true
   cloud_properties:
-    instance_type: Standard_A1
+    instance_type: Standard_D3V2
     <% if properties.key_name %>
     key_name: <%= properties.key_name %>
     <% end %>
@@ -163,7 +163,7 @@ resource_pools:
       name: <%= properties.stemcell.name %>
       version: '<%= properties.stemcell.version %>'
     cloud_properties:
-      instance_type: Standard_A1
+      instance_type: Standard_D3V2
       <% if properties.key_name %>
       key_name: <%= properties.key_name %>
       <% end %>
