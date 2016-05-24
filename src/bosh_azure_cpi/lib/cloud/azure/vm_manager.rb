@@ -24,8 +24,19 @@ module Bosh::AzureCloud
         end
       end
 
-      subnet = @azure_client2.get_network_subnet_by_name(network_configurator.virtual_network_name, network_configurator.subnet_name)
-      raise "Cannot find the subnet #{network_configurator.virtual_network_name}/#{network_configurator.subnet_name}" if subnet.nil?
+      resource_group_name = nil
+      default_resource_group_name = @azure_properties['resource_group_name']
+
+      # Get the resource group name for vnet & security group in the network spec
+      resource_group_name_in_network_spec = network_configurator.resource_group_name
+      if resource_group_name_in_network_spec.nil?
+        resource_group_name = default_resource_group_name
+      else
+        resource_group_name = resource_group_name_in_network_spec
+      end
+
+      subnet = @azure_client2.get_network_subnet_by_name(resource_group_name, network_configurator.virtual_network_name, network_configurator.subnet_name)
+      raise "Cannot find the subnet `#{network_configurator.virtual_network_name}/#{network_configurator.subnet_name}' in the resource group `#{resource_group_name}'" if subnet.nil?
 
       security_group_name = @azure_properties["default_security_group"]
       if resource_pool.has_key?("security_group")
@@ -33,8 +44,25 @@ module Bosh::AzureCloud
       elsif !network_configurator.security_group.nil?
         security_group_name = network_configurator.security_group
       end
-      network_security_group = @azure_client2.get_network_security_group_by_name(security_group_name)
-      raise "Cannot find the network security group #{security_group_name}" if network_security_group.nil?
+
+      if !resource_group_name_in_network_spec.nil?
+        resource_group_name = resource_group_name_in_network_spec
+        network_security_group = @azure_client2.get_network_security_group_by_name(resource_group_name, security_group_name)
+        if network_security_group.nil?
+          @logger.info("Cannot find the network security group `#{security_group_name}' in the resource group `#{resource_group_name_in_network_spec}', trying to search it in the resource group `#{default_resource_group_name}'")
+          resource_group_name = default_resource_group_name
+          network_security_group = @azure_client2.get_network_security_group_by_name(resource_group_name, security_group_name)
+          if network_security_group.nil?
+            raise "Cannot find the network security group `#{security_group_name}' in the resource group `#{resource_group_name_in_network_spec}' nor `#{default_resource_group_name}'"
+          end
+        end
+      else
+        resource_group_name = default_resource_group_name
+        network_security_group = @azure_client2.get_network_security_group_by_name(resource_group_name, security_group_name)
+        if network_security_group.nil?
+          raise "Cannot find the network security group `#{security_group_name}' in the resource group `#{resource_group_name}'"
+        end
+      end
 
       caching = 'ReadWrite'
       if resource_pool.has_key?('caching')
@@ -46,14 +74,21 @@ module Bosh::AzureCloud
 
       public_ip = nil
       unless network_configurator.vip_network.nil?
-        public_ip = @azure_client2.list_public_ips().find { |ip| ip[:ip_address] == network_configurator.public_ip}
-        cloud_error("Cannot find the public IP address #{network_configurator.public_ip}") if public_ip.nil?
+        # Get the resource group name for public IP in the network spec
+        resource_group_name_in_network_spec = network_configurator.resource_group_name('vip')
+        if resource_group_name_in_network_spec.nil?
+          resource_group_name = default_resource_group_name
+        else
+          resource_group_name = resource_group_name_in_network_spec
+        end
+        public_ip = @azure_client2.list_public_ips(resource_group_name).find { |ip| ip[:ip_address] == network_configurator.public_ip }
+        cloud_error("Cannot find the public IP address `#{network_configurator.public_ip}' in the resource group `#{resource_group_name}'") if public_ip.nil?
       end
 
       load_balancer = nil
       if resource_pool.has_key?('load_balancer')
         load_balancer = @azure_client2.get_load_balancer_by_name(resource_pool['load_balancer'])
-        cloud_error("Cannot find the load balancer #{resource_pool['load_balancer']}") if load_balancer.nil?
+        cloud_error("Cannot find the load balancer `#{resource_pool['load_balancer']}'") if load_balancer.nil?
       end
 
       nic_params = {
