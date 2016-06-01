@@ -14,6 +14,8 @@ A service principal contains the following credentials which will be mentioned i
 
 Install and configure Azure CLI following the documentation [**HERE**](http://azure.microsoft.com/en-us/documentation/articles/xplat-cli/).
 
+The following commands in this topic are based on Azure CLI version `0.9.18`.
+
 >**NOTE:**
   * It is suggested to run Azure CLI using Ubuntu Server 14.04 LTS or Windows 10.
   * If you are using Windows, it is suggested that you use **command line** but not PowerShell to run Azure CLI.
@@ -137,25 +139,16 @@ Sample Output:
 ```
 info:    Executing command ad app create
 + Creating application Service Principal for BOSH
-data:    Application Id:          246e4af7-75b5-494a-89b5-363addb9f0fa
-data:    Application Object Id:   a4f0d442-af80-4d98-9cba-6bf1459ad1ea
-data:    Application Permissions:
-data:                             claimValue:  user_impersonation
-data:                             description:  Allow the application to access Service Principal for BOSH on behalf of the signed-in user.
-data:                             directAccessGrantTypes:
-data:                             displayName:  Access Service Principal for BOSH
-data:                             impersonationAccessGrantTypes:  impersonated=User, impersonator=Application
-data:                             isDisabled:
-data:                             origin:  Application
-data:                             permissionId:  1a1eb6d1-26ca-47de-abdb-365f54560e55
-data:                             resourceScopeType:  Personal
-data:                             userConsentDescription:  Allow the applicationto access Service Principal for BOSH on your behalf.
-data:                             userConsentDisplayName:  Access Service Principal for BOSH
-data:                             lang:
+data:    AppId:                   246e4af7-75b5-494a-89b5-363addb9f0fa
+data:    ObjectId:                208096bb-4899-49e2-83ea-1a270154f427
+data:    DisplayName:             Service Principal for BOSH
+data:    IdentifierUris:          0=http://BOSHAzureCPI
+data:    ReplyUrls:
+data:    AvailableToOtherTenants:  False
 info:    ad app create command OK
 ```
 
-* `Application Id` is your **CLIENT_ID** you need to create the service principal. Please note it down for later use.
+* `AppId` is your **CLIENT_ID** you need to create the service principal. Please note it down for later use.
 
 ## 2.3 Create a Service Principal
 
