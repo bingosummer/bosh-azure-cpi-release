@@ -191,13 +191,15 @@ Now you have a service principal account, you need to grant this account access 
 ### 2.4.1 Assigning Roles
 
 ```
-azure role assignment create --spn <service-principal-name> --roleName "Contributor" --subscription <subscription-id>
+azure role assignment create --spn <service-principal-name> --roleName "Virtual Machine Contributor" --subscription <subscription-id>
+azure role assignment create --spn <service-principal-name> --roleName "Network Contributor" --subscription <subscription-id>
 ```
 
 Example:
 
 ```
-azure role assignment create --spn "http://BOSHAzureCPI" --roleName "Contributor" --subscription 87654321-1234-5678-1234-678912345678
+azure role assignment create --spn "http://BOSHAzureCPI" --roleName "Virtual Machine Contributor" --subscription 87654321-1234-5678-1234-678912345678
+azure role assignment create --spn "http://BOSHAzureCPI" --roleName "Network Contributor" --subscription 87654321-1234-5678-1234-678912345678
 ```
 
 You can verify the assignment with the following command:
@@ -209,17 +211,34 @@ azure role assignment list --spn <service-principal-name>
 Sample Output:
 
 ```
-data:    AD Object:
-data:      ID:              7a3029f9-1b74-443e-8987-bed5b6f00009
-data:      Type:            ServicePrincipal
-data:      Display Name:    Service Principal for BOSH
-data:      Principal Name:
-data:    Scope:             /subscriptions/87654321-1234-5678-1234-678912345678
-data:    Role:
-data:      Name:            Contributor
-data:      Permissions:
-data:        Actions:      *
-data:        NotActions:   Microsoft.Authorization/*/Write,Microsoft.Authorization/*/Delete
+info:    Executing command role assignment list
++ Searching for role assignments
+data:    RoleAssignmentId     : /subscriptions/87654321-1234-5678-1234-678912345678/providers/Microsoft.Authorization/roleAssignments/16645a17-3184-47c1-8e00-8eb1d0643d54
+data:    RoleDefinitionName   : Network Contributor
+data:    RoleDefinitionId     : 4d97b98b-1d4f-4787-a291-c67834d212e7
+data:    Scope                : /subscriptions/87654321-1234-5678-1234-678912345678
+data:    Display Name         : CloudFoundry
+data:    SignInName           :
+data:    ObjectId             : 039ccb8a-5b34-4020-bff9-ba38bef98f61
+data:    ObjectType           : ServicePrincipal
+data:
+data:    RoleAssignmentId     : /subscriptions/87654321-1234-5678-1234-678912345678/providers/Microsoft.Authorization/roleAssignments/8af758ad-1377-4aa4-ae12-3c084ab2271f
+data:    RoleDefinitionName   : Virtual Machine Contributor
+data:    RoleDefinitionId     : 9980e02c-c2be-4d73-94e8-173b1dc7cf3c
+data:    Scope                : /subscriptions/87654321-1234-5678-1234-678912345678
+data:    Display Name         : CloudFoundry
+data:    SignInName           :
+data:    ObjectId             : 039ccb8a-5b34-4020-bff9-ba38bef98f61
+data:    ObjectType           : ServicePrincipal
+data:
+info:    role assignment list command OK
+```
+
+By default, the scope of the role is set to the subscription. And it can also be assigned to a specific resource group if you want.
+
+```
+azure role assignment create --spn <service-principal-name> --roleName "Virtual Machine Contributor" --resource-group <resource-group-name>
+azure role assignment create --spn <service-principal-name> --roleName "Network Contributor" --resource-group <resource-group-name>
 ```
 
 <a name="verify-your-service-principal"></a>
