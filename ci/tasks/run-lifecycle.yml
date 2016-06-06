@@ -3,14 +3,16 @@ platform: linux
 image: docker:///boshcpi/azure-cpi-release
 inputs:
 - name: bosh-cpi-release
-- name: stemcell
 run:
   path: bosh-cpi-release/ci/tasks/run-lifecycle.sh
 params:
   AZURE_CLIENT_ID:                replace-me
   AZURE_CLIENT_SECRET:            replace-me
   AZURE_TENANT_ID:                replace-me
-  AZURE_GROUP_NAME:               replace-me
+  AZURE_GROUP_NAME_1:             replace-me
+  AZURE_GROUP_NAME_2:             replace-me
+  AZURE_PUBLIC_IP_1:              replace-me
+  AZURE_PUBLIC_IP_2:              replace-me
   AZURE_STORAGE_ACCOUNT_NAME:     replace-me
   AZURE_SUBSCRIPTION_ID:          replace-me
   SSH_PUBLIC_KEY:                 replace-me

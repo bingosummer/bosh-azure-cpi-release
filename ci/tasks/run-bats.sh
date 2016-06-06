@@ -72,6 +72,7 @@ properties:
     type: manual
     static_ip: $BAT_NETWORK_STATIC_IP
     cloud_properties:
+      resource_group_name: $AZURE_GROUP_NAME
       virtual_network_name: $AZURE_VNET_NAME_FOR_BATS
       subnet_name: $AZURE_CF_SUBNET_NAME
       security_group: $AZURE_DEFAULT_SECURITY_GROUP
@@ -81,6 +82,8 @@ properties:
     gateway: $BAT_NETWORK_GATEWAY
   - name: static
     type: vip
+    cloud_properties:
+      resource_group_name: $AZURE_GROUP_NAME
   key_name: bosh
 EOF
 cat > azure.yml.erb <<EOF
@@ -126,6 +129,9 @@ networks:
     gateway: <%= network.gateway %>
     dns: <%= p('dns').inspect %>
     cloud_properties:
+      <% if network.cloud_properties.resource_group_name %>
+      resource_group_name: <%= network.cloud_properties.resource_group_name %>
+      <% end %>
       virtual_network_name: <%= network.cloud_properties.virtual_network_name %>
       subnet_name: <%= network.cloud_properties.subnet_name %>
       <% if network.cloud_properties.security_group %>
@@ -135,12 +141,15 @@ networks:
   subnets:
   - range: <%= network.cidr %>
     dns: <%= p('dns').inspect %>
-  cloud_properties:
-    virtual_network_name: <%= network.cloud_properties.virtual_network_name %>
-    subnet_name: <%= network.cloud_properties.subnet_name %>
-    <% if network.cloud_properties.security_group %>
-    security_group: <%= network.cloud_properties.security_group %>
-    <% end %>
+    cloud_properties:
+      <% if network.cloud_properties.resource_group_name %>
+      resource_group_name: <%= network.cloud_properties.resource_group_name %>
+      <% end %>
+      virtual_network_name: <%= network.cloud_properties.virtual_network_name %>
+      subnet_name: <%= network.cloud_properties.subnet_name %>
+      <% if network.cloud_properties.security_group %>
+      security_group: <%= network.cloud_properties.security_group %>
+      <% end %>
   <% end %>
 <% end %>
 

@@ -14,6 +14,7 @@ jobs:
   plan:
   - aggregate:
     - {trigger: false, get: bosh-cpi-release, resource: bosh-cpi-release-in}
+    - {trigger: false, get: stemcell, resource: azure-ubuntu-stemcell}
 
   - task: azure-provision
     file: bosh-cpi-release/ci/tasks/azure-provision.yml
@@ -22,14 +23,13 @@ jobs:
         AZURE_CLIENT_ID:                {{azure_client_id}}
         AZURE_CLIENT_SECRET:            {{azure_client_secret}}
         AZURE_TENANT_ID:                {{azure_tenant_id}}
-        AZURE_GROUP_NAME:               {{azure_group_name}}
+        AZURE_GROUP_NAME_1:             {{azure_group_name_1}}
+        AZURE_GROUP_NAME_2:             {{azure_group_name_2}}
         AZURE_REGION_NAME:              {{azure_region_name}}
         AZURE_VNET_NAME_FOR_BATS:       {{azure_vnet_name_for_bats}}
         AZURE_VNET_NAME_FOR_LIFECYCLE:  {{azure_vnet_name_for_lifecycle}}
         AZURE_REGION_SHORT_NAME:        {{azure_region_short_name}}
         AZURE_STORAGE_ACCOUNT_NAME:     {{azure_storage_account_name}}
-        AZURE_SUBSCRIPTION_ID:          {{azure_subscription_id}}
-        AZURE_TENANT_ID:                {{azure_tenant_id}}
         AZURE_BOSH_SUBNET_NAME:         {{azure_bosh_subnet_name}}
         AZURE_CF_SUBNET_NAME:           {{azure_cf_subnet_name}}
 
@@ -46,7 +46,7 @@ jobs:
         AZURE_TENANT_ID:                {{azure_tenant_id}}
         AZURE_CLIENT_ID:                {{azure_client_id}}
         AZURE_CLIENT_SECRET:            {{azure_client_secret}}
-        AZURE_GROUP_NAME:               {{azure_group_name}}
+        AZURE_GROUP_NAME:               {{azure_group_name_1}}
         AZURE_STORAGE_ACCOUNT_NAME:     {{azure_storage_account_name}}
         AZURE_VNET_NAME_FOR_BATS:       {{azure_vnet_name_for_bats}}
         AZURE_VNET_NAME_FOR_LIFECYCLE:  {{azure_vnet_name_for_lifecycle}}
@@ -75,7 +75,6 @@ jobs:
   - aggregate:
     - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
     - {trigger: false, passed: [build-candidate], get: bosh-cpi-release, resource: bosh-cpi-release-in}
-    - {trigger: false,                            get: stemcell, resource: azure-ubuntu-stemcell}
 
   - task: test
     file: bosh-cpi-release/ci/tasks/run-lifecycle.yml
@@ -85,7 +84,10 @@ jobs:
         AZURE_CLIENT_ID:                {{azure_client_id}}
         AZURE_CLIENT_SECRET:            {{azure_client_secret}}
         AZURE_TENANT_ID:                {{azure_tenant_id}}
-        AZURE_GROUP_NAME:               {{azure_group_name}}
+        AZURE_GROUP_NAME_1:             {{azure_group_name_1}}
+        AZURE_GROUP_NAME_2:             {{azure_group_name_2}}
+        AZURE_PUBLIC_IP_1:              {{azure_public_ip_1}}
+        AZURE_PUBLIC_IP_2:              {{azure_public_ip_2}}
         AZURE_STORAGE_ACCOUNT_NAME:     {{azure_storage_account_name}}
         AZURE_SUBSCRIPTION_ID:          {{azure_subscription_id}}
         AZURE_VNET_NAME_FOR_LIFECYCLE:  {{azure_vnet_name_for_lifecycle}}
@@ -108,11 +110,12 @@ jobs:
     file: bosh-cpi-release/ci/tasks/setup-director.yml
     config:
       params:
-        BASE_OS:                    ubuntu
+        BASE_OS:                        ubuntu
         AZURE_CLIENT_ID:                {{azure_client_id}}
         AZURE_CLIENT_SECRET:            {{azure_client_secret}}
         AZURE_TENANT_ID:                {{azure_tenant_id}}
-        AZURE_GROUP_NAME:               {{azure_group_name}}
+        AZURE_GROUP_NAME_1:             {{azure_group_name_1}}
+        AZURE_GROUP_NAME_2:             {{azure_group_name_2}}
         AZURE_VNET_NAME_FOR_BATS:       {{azure_vnet_name_for_bats}}
         AZURE_STORAGE_ACCOUNT_NAME:     {{azure_storage_account_name}}
         AZURE_SUBSCRIPTION_ID:          {{azure_subscription_id}}
@@ -131,7 +134,7 @@ jobs:
         AZURE_CLIENT_ID:                {{azure_client_id}}
         AZURE_CLIENT_SECRET:            {{azure_client_secret}}
         AZURE_TENANT_ID:                {{azure_tenant_id}}
-        AZURE_GROUP_NAME:               {{azure_group_name}}
+        AZURE_GROUP_NAME:               {{azure_group_name_2}}
         BAT_VCAP_PASSWORD:              {{bat_vcap_password}}
         SSH_PRIVATE_KEY:                {{ssh_private_key}}
         AZURE_VNET_NAME_FOR_BATS:       {{azure_vnet_name_for_bats}}
