@@ -37,7 +37,7 @@ module Bosh::AzureCloud
 
       instance_id  = generate_instance_id(storage_account[:name], uuid)
 
-      network_interface = get_network_interface(instance_id, storage_account, resource_pool, network_configurator, public_ip, network_security_group)
+      network_interface = get_network_interface(instance_id, storage_account, resource_pool, network_configurator, public_ip, network_security_group, subnet, load_balancer)
       availability_set = create_availability_set(storage_account, resource_pool)
 
       os_disk_name = @disk_manager.generate_os_disk_name(instance_id)
@@ -147,6 +147,7 @@ module Bosh::AzureCloud
     end
 
     def get_network_subnet(network_configurator)
+      subnet = nil
       resource_group_name = @azure_properties['resource_group_name']
       resource_group_name = network_configurator.resource_group_name unless network_configurator.resource_group_name.nil?
       virtual_network_name = network_configurator.virtual_network_name
@@ -203,7 +204,7 @@ module Bosh::AzureCloud
       load_balancer
     end
 
-    def get_network_interface(instance_id, storage_account, resource_pool, network_configurator, public_ip, network_security_group)
+    def get_network_interface(instance_id, storage_account, resource_pool, network_configurator, public_ip, network_security_group, subnet, load_balancer)
       network_interface = nil
       nic_params = {
         :name                => instance_id,
