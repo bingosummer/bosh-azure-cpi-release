@@ -93,7 +93,7 @@ describe Bosh::AzureCloud::VMManager do
         it "should raise an error" do
           expect {
             vm_manager.create(uuid, storage_account, stemcell_uri, resource_pool, network_configurator)
-          }.to raise_error /Cannot find the network security group `fake-default-nsg-name' in the resource group `#{MOCK_RESOURCE_GROUP_NAME}'/
+          }.to raise_error /Cannot find the network security group `fake-default-nsg-name'/
         end
       end
     end
@@ -131,7 +131,7 @@ describe Bosh::AzureCloud::VMManager do
         it "should raise an error" do
           expect {
             vm_manager.create(uuid, storage_account, stemcell_uri, resource_pool, network_configurator)
-          }.to raise_error /Cannot find the network security group `fake-default-nsg-name' in the resource group `fake-resource-group-name' nor `#{MOCK_RESOURCE_GROUP_NAME}'/
+          }.to raise_error /Cannot find the network security group `fake-default-nsg-name'/
         end
       end
     end
