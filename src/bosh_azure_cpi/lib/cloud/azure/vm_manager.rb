@@ -31,7 +31,7 @@ module Bosh::AzureCloud
       end
 
       subnet = get_network_subnet(network_configurator)
-      network_security_group = get_network_security_group(network_configurator)
+      network_security_group = get_network_security_group(resource_pool, network_configurator)
       public_ip = get_public_ip(network_configurator)
       load_balancer = get_load_balancer(resource_pool)
 
@@ -157,7 +157,7 @@ module Bosh::AzureCloud
       subnet
     end
 
-    def get_network_security_group(network_configurator)
+    def get_network_security_group(resource_pool, network_configurator)
       network_security_group = nil
       resource_group_name = @azure_properties['resource_group_name']
       resource_group_name = network_configurator.resource_group_name unless network_configurator.resource_group_name.nil?
