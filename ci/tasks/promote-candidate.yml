@@ -1,6 +1,6 @@
 ---
 platform: linux
-image: docker:///boshcpi/azure-cpi-release
+image: docker:///abelhu/azure-cpi-release-test
 inputs:
   - name: bosh-cpi-release
   - name: bosh-cpi-dev-artifacts

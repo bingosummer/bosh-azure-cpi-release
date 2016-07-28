@@ -184,8 +184,8 @@ resources:
 - name: bosh-cpi-release-in
   type: git
   source:
-    uri: git@github.com:cloudfoundry-incubator/bosh-azure-cpi-release.git
-    branch: master
+    uri: git@github.com:bingosummer/bosh-azure-cpi-release.git
+    branch: test-docker-image
     private_key: {{github_deployment_key__bosh-azure-cpi-release}}
     ignore_paths:
         - .final_builds/**/*.yml
@@ -194,8 +194,8 @@ resources:
 - name: bosh-cpi-release-out
   type: git
   source:
-    uri: git@github.com:cloudfoundry-incubator/bosh-azure-cpi-release.git
-    branch: master
+    uri: git@github.com:bingosummer/bosh-azure-cpi-release.git
+    branch: test-docker-image
     private_key: {{github_deployment_key__bosh-azure-cpi-release}}
 
 - name: version-semver
