@@ -81,6 +81,10 @@ module Bosh::AzureCloud
 
       @azure_client2.create_virtual_machine(vm_params, network_interfaces, availability_set)
 
+      unless resource_pool['application_gateway'].nil?
+        @azure_client2.add_backend_address_of_application_gateway(resource_pool['application_gateway'], network_interfaces[0][:private_ip])
+      end
+
       vm_params
     rescue => e
       if vm_params # There are no other functions between defining vm_params and create_virtual_machine
@@ -99,6 +103,9 @@ module Bosh::AzureCloud
       if network_interfaces
         network_interfaces.each do |network_interface|
           @azure_client2.delete_network_interface(network_interface[:name])
+          unless network_interface[:tags]['application_gateway'].nil?
+            @azure_client2.delete_backend_address_of_application_gateway(network_interface[:tags]['application_gateway'], network_interface[:private_ip])
+          end
         end
       else
         delete_possible_network_interfaces(instance_id)
@@ -125,6 +132,9 @@ module Bosh::AzureCloud
         @azure_client2.delete_virtual_machine(instance_id)
         vm[:network_interfaces].each do |network_interface|
           @azure_client2.delete_network_interface(network_interface[:name])
+          unless network_interface[:tags]['application_gateway'].nil?
+            @azure_client2.delete_backend_address_of_application_gateway(network_interface[:tags]['application_gateway'], network_interface[:private_ip])
+          end
         end
       else
         delete_possible_network_interfaces(instance_id)
@@ -265,8 +275,14 @@ module Bosh::AzureCloud
           :ipconfig_name       => "ipconfig#{index}"
         }
 
+        network_tags = AZURE_TAGS
+        if index == 0
+          unless resource_pool['application_gateway'].nil?
+            network_tags = network_tags.merge({'application_gateway' => resource_pool['application_gateway']})
+          end
+        end
         subnet = get_network_subnet(network)
-        @azure_client2.create_network_interface(nic_params, subnet, AZURE_TAGS, load_balancer)
+        @azure_client2.create_network_interface(nic_params, subnet, network_tags, load_balancer)
         network_interfaces.push(@azure_client2.get_network_interface_by_name(nic_name))
       end
       network_interfaces
