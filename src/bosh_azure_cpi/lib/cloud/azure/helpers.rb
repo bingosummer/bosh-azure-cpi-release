@@ -12,7 +12,7 @@ module Bosh::AzureCloud
         'resourceManagerEndpointUrl' => 'https://management.azure.com/',
         'activeDirectoryEndpointUrl' => 'https://login.microsoftonline.com',
         'apiVersion' => {
-          AZURE_RESOUCE_PROVIDER_COMPUTER         => '2015-06-15',
+          AZURE_RESOUCE_PROVIDER_COMPUTER         => '2016-04-30-preview',
           AZURE_RESOUCE_PROVIDER_NETWORK          => '2015-06-15',
           AZURE_RESOUCE_PROVIDER_STORAGE          => '2015-06-15',
           AZURE_RESOUCE_PROVIDER_GROUP            => '2016-06-01',
@@ -84,13 +84,15 @@ module Bosh::AzureCloud
       ret
     end
 
-    def generate_instance_id(storage_account_name, uuid)
-      "#{storage_account_name}-#{uuid}"
-    end
-
     def get_storage_account_name_from_instance_id(instance_id)
       ret = instance_id.match('^([^-]*)-(.*)$')
       cloud_error("Invalid instance id #{instance_id}") if ret.nil?
+      return ret[1]
+    end
+
+    def get_storage_account_name_from_disk_id(disk_id)
+      ret = disk_id.match('^bosh-data-([^-]*)-(.*)$')
+      cloud_error("Invalid disk id #{disk_id}") if ret.nil?
       return ret[1]
     end
 
@@ -303,6 +305,79 @@ module Bosh::AzureCloud
         @size = size
         @count = count
       end
+    end
+
+    class FileMutex
+      def initialize(file_path, expired = 60)
+        @file_path = file_path
+        @expired = expired
+      end
+
+      def lock()
+        if File.exists?(@file_path)
+          if Time.new() - File.mtime(@file_path) > @expired
+            File.delete(@file_path)
+            raise "The lock `#{@file_path}' timeouts"
+          else
+            return false
+          end
+        else
+          begin
+            File.open(@file_path, 'wb') { |f|
+              f.write("InProgress")
+            }
+          rescue => e
+            return false
+          end
+          return true
+        end
+      end
+
+      def wait()
+        loop do
+          return true unless File.exists?(@file_path)
+          break if Time.new() - File.mtime(@file_path) > @expired
+          sleep(1)
+        end
+        File.delete(@file_path)
+        return false
+      end
+
+      def unlock()
+        File.delete(@file_path)
+      end
+
+      def update()
+        File.open(@file_path, 'wb') { |f|
+          f.write("InProgress")
+        }
+      end
+
+      def synchronize
+        if self.lock
+          begin
+            yield
+          ensure
+            self.unlock
+          end
+        else
+          if self.wait
+            yield
+          else
+            raise "The lock `#{@file_path}' timeouts"
+          end
+        end
+      end
+
+    end
+
+    def get_storage_account_type_by_instance_type(instance_type)
+      storage_account_type = 'Standard_LRS'
+      instance_type = instance_type.downcase
+      if instance_type.start_with("standard_ds") || instance_type.start_with("standard_gs") || ((instance_type =~ /^standard_f(\d)+s/) == 0)
+        storage_account_type = 'Premium_LRS'
+      end
+      storage_account_type
     end
 
     private

@@ -15,6 +15,11 @@ module Bosh::AzureCloud
 
       @logger = Bosh::Clouds::Config.logger
 
+      @logger.info("binxitest: initialize: #{options}")
+      @azure_properties = options.fetch('azure')
+      @agent_properties = options.fetch('agent', {})
+      @logger.info("binxitest: initialize: #{@azure_properties}")
+
       init_registry
       init_azure
     end
@@ -28,7 +33,12 @@ module Bosh::AzureCloud
     # @return [String] opaque id later used by {#create_vm} and {#delete_stemcell}
     def create_stemcell(image_path, cloud_properties)
       with_thread_name("create_stemcell(#{image_path}...)") do
-        @stemcell_manager.create_stemcell(image_path, cloud_properties)
+        use_managed_disks = @azure_properties['use_managed_disks']
+        if use_managed_disks
+          @stemcell_manager2.create_stemcell(image_path, cloud_properties)
+        else
+          @stemcell_manager.create_stemcell(image_path, cloud_properties)
+        end
       end
     end
 
@@ -39,7 +49,12 @@ module Bosh::AzureCloud
     # @return [void]
     def delete_stemcell(stemcell_id)
       with_thread_name("delete_stemcell(#{stemcell_id})") do
-        @stemcell_manager.delete_stemcell(stemcell_id)
+        use_managed_disks = @azure_properties['use_managed_disks']
+        if use_managed_disks
+          @stemcell_manager2.delete_stemcell(stemcell_id)
+        else
+          @stemcell_manager.delete_stemcell(stemcell_id)
+        end
       end
     end
 
@@ -104,20 +119,32 @@ module Bosh::AzureCloud
     #                  {#detach_disk}, and {#delete_vm}
     def create_vm(agent_id, stemcell_id, resource_pool, networks, disk_locality = nil, env = nil)
       with_thread_name("create_vm(#{agent_id}, ...)") do
-        storage_account = get_storage_account(resource_pool)
-
-        unless @stemcell_manager.has_stemcell?(storage_account[:name], stemcell_id)
-          raise Bosh::Clouds::VMCreationFailed.new(false), "Given stemcell '#{stemcell_id}' does not exist"
+        use_managed_disks = @azure_properties['use_managed_disks']
+        if use_managed_disks
+          instance_id = agent_id
+          storage_account_type = get_storage_account_type_by_instance_type(resource_pool['instance_type'])
+          resource_group = @azure_client2.get_resource_group()
+          location = resource_group[:location]
+          image = @stemcell_manager2.get_user_image(stemcell_id, storage_account_type, location)[:id]
+        else
+          storage_account = get_storage_account(resource_pool)
+          unless @stemcell_manager.has_stemcell?(storage_account[:name], stemcell_id)
+            raise Bosh::Clouds::VMCreationFailed.new(false), "Given stemcell '#{stemcell_id}' does not exist"
+          end
+          instance_id = "#{storage_account[:name]}-#{agent_id}"
+          location = storage_account[:location]
+          image = @stemcell_manager.get_stemcell_uri(storage_account[:name], stemcell_id)
         end
-
+        
         vm_params = @vm_manager.create(
-          agent_id,
-          storage_account,
-          @stemcell_manager.get_stemcell_uri(storage_account[:name], stemcell_id),
+          instance_id,
+          location,
+          image,
           resource_pool,
           NetworkConfigurator.new(@azure_properties, networks),
-          env)
-        instance_id = vm_params[:name]
+          env,
+          use_managed_disks)
+
         @logger.info("Created new vm '#{instance_id}'")
 
         begin
@@ -169,7 +196,12 @@ module Bosh::AzureCloud
     # @return [Boolean] True if the disk exists
     def has_disk?(disk_id)
       with_thread_name("has_disk?(#{disk_id})") do
-        @disk_manager.has_disk?(disk_id)
+        use_managed_disks = @azure_properties['use_managed_disks']
+        if use_managed_disks
+          @disk_manager2.has_disk?(disk_id)
+        else
+          @disk_manager.has_disk?(disk_id)
+        end
       end
     end
 
@@ -225,15 +257,34 @@ module Bosh::AzureCloud
     # @return [String] opaque id later used by {#attach_disk}, {#detach_disk}, and {#delete_disk}
     def create_disk(size, cloud_properties, instance_id = nil)
       with_thread_name("create_disk(#{size}, #{cloud_properties})") do
-        storage_account_name = @azure_properties['storage_account_name']
-        unless instance_id.nil?
-          @logger.info("Create disk for vm #{instance_id}")
-          storage_account_name = get_storage_account_name_from_instance_id(instance_id)
-        end
-
         validate_disk_size(size)
+        use_managed_disks = @azure_properties['use_managed_disks']
+        disk_id = nil
+        if use_managed_disks
+          if instance_id.nil?
+            storage_account_name = @azure_properties['storage_account_name']
+            location = @azure_client2.get_storage_account_by_name(storage_account_name)[:location]
+          else
+            if instance_id.length == 36
+              location = @azure_client2.get_virtual_machine_by_name(instance_id)[:location]
+            else
+              @logger.info("Create disk for vm #{instance_id}")
+              storage_account_name = get_storage_account_name_from_instance_id(instance_id)
+              disk_id = @disk_manager.create_disk(storage_account_name, size/1024, cloud_properties)
+              return disk_id
+            end
+          end
+          disk_id = @disk_manager2.create_disk(size/1024, location, cloud_properties)
+        else
+          storage_account_name = @azure_properties['storage_account_name']
+          unless instance_id.nil?
+            @logger.info("Create disk for vm #{instance_id}")
+            storage_account_name = get_storage_account_name_from_instance_id(instance_id)
+          end
 
-        @disk_manager.create_disk(storage_account_name, size/1024, cloud_properties)
+          disk_id = @disk_manager.create_disk(storage_account_name, size/1024, cloud_properties)
+        end
+        return disk_id
       end
     end
 
@@ -245,7 +296,18 @@ module Bosh::AzureCloud
     # @return [void]
     def delete_disk(disk_id)
       with_thread_name("delete_disk(#{disk_id})") do
-        @disk_manager.delete_disk(disk_id)
+        use_managed_disks = @azure_properties['use_managed_disks']
+        if use_managed_disks
+          if disk_id.start_with?('bosh-disk')
+            @disk_manager2.delete_disk(disk_id)
+          else
+            disk = @disk_manager2.get_disk(disk_id)
+            cloud_error("Disk `#{disk_id}' cannot be found") if disk.nil?
+            @disk_manager.delete_disk(disk_id)
+          end
+        else
+          @disk_manager.delete_disk(disk_id)
+        end
       end
     end
 
@@ -255,6 +317,30 @@ module Bosh::AzureCloud
     # @return [void]
     def attach_disk(instance_id, disk_id)
       with_thread_name("attach_disk(#{instance_id},#{disk_id})") do
+        use_managed_disks = @azure_properties['use_managed_disks']
+        if use_managed_disks && instance_id.length == 36
+          disk = @disk_manager2.get_disk(disk_id)
+          if disk.nil?
+            blob_uri = @disk_manager.get_disk_uri(disk_id)
+            storage_account_name = get_storage_account_name_from_disk_id(disk_id)
+            storage_account = @azure_client2.get_storage_account_by_name(storage_account_name)
+            location = storage_account[:location]
+            # Can not use the type of the default storage account because only Standard_LRS and Premium_LRS is supported for managed disk.
+            account_type = 'Standard_LRS'
+            account_type = 'Premium_LRS' if storage_account[:account_type].start_with?('Premium')
+            @disk_manager2.create_disk_from_blob(disk_id, blob_uri, location, account_type)
+            # TODO: Set below tags but not delete it. Waiting for Guoxun's PR.
+            # Users can delete all blobs in container `bosh` whose names start with `bosh-data` after migration is finished.
+            # But users can't get tags from Azure Portal. We need to figure out a way to delete the disks with the specific tags. Maybe a script.
+            # {
+            #   `user-agent`=>`bosh`,
+            #   `migrated`=>`true`
+            # }
+          end
+        end
+        # TODO: In current design, we can only set the caching as a tag of the disk.
+        # When attaching the disk, we get the caching type from the tags.
+        # If users want to change the caching option when attaching, CPI can't do that.
         lun = @vm_manager.attach_disk(instance_id, disk_id)
 
         update_agent_settings(instance_id) do |settings|
@@ -270,28 +356,6 @@ module Bosh::AzureCloud
         end
 
         @logger.info("Attached `#{disk_id}' to `#{instance_id}', lun `#{lun}'")
-      end
-    end
-
-    # Take snapshot of disk
-    # @param [String] disk_id disk id of the disk to take the snapshot of
-    # @param [Hash] metadata metadata key/value pairs
-    # @return [String] snapshot id
-    def snapshot_disk(disk_id, metadata = {})
-      with_thread_name("snapshot_disk(#{disk_id},#{metadata})") do
-        snapshot_id = @disk_manager.snapshot_disk(disk_id, encode_metadata(metadata))
-
-        @logger.info("Take a snapshot disk '#{snapshot_id}' for '#{disk_id}'")
-        snapshot_id
-      end
-    end
-
-    # Delete a disk snapshot
-    # @param [String] snapshot_id snapshot id to delete
-    # @return [void]
-    def delete_snapshot(snapshot_id)
-      with_thread_name("delete_snapshot(#{snapshot_id})") do
-        @disk_manager.delete_snapshot(snapshot_id)
       end
     end
 
@@ -330,15 +394,29 @@ module Bosh::AzureCloud
       end
     end
 
+    # Take snapshot of disk
+    # @param [String] disk_id disk id of the disk to take the snapshot of
+    # @param [Hash] metadata metadata key/value pairs
+    # @return [String] snapshot id
+    def snapshot_disk(disk_id, metadata = {})
+      with_thread_name("snapshot_disk(#{disk_id},#{metadata})") do
+        snapshot_id = @disk_manager.snapshot_disk(disk_id, encode_metadata(metadata))
+
+        @logger.info("Take a snapshot disk '#{snapshot_id}' for '#{disk_id}'")
+        snapshot_id
+      end
+    end
+
+    # Delete a disk snapshot
+    # @param [String] snapshot_id snapshot id to delete
+    # @return [void]
+    def delete_snapshot(snapshot_id)
+      with_thread_name("delete_snapshot(#{snapshot_id})") do
+        @disk_manager.delete_snapshot(snapshot_id)
+      end
+    end
+
     private
-
-    def agent_properties
-      @agent_properties ||= options.fetch('agent', {})
-    end
-
-    def azure_properties
-      @azure_properties ||= options.fetch('azure')
-    end
 
     ##
     # Checks if options passed to CPI are valid and can actually
@@ -380,18 +458,19 @@ module Bosh::AzureCloud
 
       # Registry updates are not really atomic in relation to
       # Azure API calls, so they might get out of sync.
-      @registry = Bosh::Cpi::RegistryClient.new(registry_endpoint,
-                                             registry_user,
-                                             registry_password)
+      @registry = Bosh::Cpi::RegistryClient.new(registry_endpoint, registry_user, registry_password)
     end
 
     def init_azure
-      @azure_client2    = Bosh::AzureCloud::AzureClient2.new(azure_properties, @logger)
-      @blob_manager     = Bosh::AzureCloud::BlobManager.new(azure_properties, @azure_client2)
-      @table_manager    = Bosh::AzureCloud::TableManager.new(azure_properties, @azure_client2)
-      @stemcell_manager = Bosh::AzureCloud::StemcellManager.new(azure_properties, @blob_manager, @table_manager)
-      @disk_manager     = Bosh::AzureCloud::DiskManager.new(azure_properties, @blob_manager)
-      @vm_manager       = Bosh::AzureCloud::VMManager.new(azure_properties, @registry.endpoint, @disk_manager, @azure_client2)
+      @azure_client2           = Bosh::AzureCloud::AzureClient2.new(@azure_properties, @logger)
+      @blob_manager            = Bosh::AzureCloud::BlobManager.new(@azure_properties, @azure_client2)
+      @storage_account_manager = Bosh::AzureCloud::StorageAccountManager.new(@azure_properties, @blob_manager, @azure_client2)
+      @table_manager           = Bosh::AzureCloud::TableManager.new(@azure_properties, @azure_client2)
+      @stemcell_manager        = Bosh::AzureCloud::StemcellManager.new(@azure_properties, @blob_manager, @table_manager)
+      @stemcell_manager2       = Bosh::AzureCloud::StemcellManager2.new(@azure_properties, @blob_manager, @table_manager, @storage_account_manager, @azure_client2)
+      @disk_manager            = Bosh::AzureCloud::DiskManager.new(@azure_properties, @blob_manager)
+      @disk_manager2           = Bosh::AzureCloud::DiskManager2.new(@azure_properties, @blob_manager, @azure_client2)
+      @vm_manager              = Bosh::AzureCloud::VMManager.new(@azure_properties, @registry.endpoint, @disk_manager, @disk_manager2, @azure_client2)
     rescue Net::OpenTimeout => e
       cloud_error("Please make sure the CPI has proper network access to Azure. #{e.inspect}")
     end
@@ -433,7 +512,7 @@ module Bosh::AzureCloud
       end
 
       settings["env"] = environment if environment
-      settings.merge(agent_properties)
+      settings.merge(@agent_properties)
     end
 
     def update_agent_settings(instance_id)
@@ -502,64 +581,13 @@ module Bosh::AzureCloud
           storage_account = @azure_client2.get_storage_account_by_name(storage_account_name)
           # Create the storage account automatically if the storage account in resource_pool does not exist
           if storage_account.nil?
-            create_storage_account(storage_account_name, resource_pool)
+            @storage_account_manager.create_storage_account(storage_account_name, resource_pool['storage_account_location'], resource_pool['storage_account_type'])
           end
         end
       end
 
       storage_account = @azure_client2.get_storage_account_by_name(storage_account_name) if storage_account.nil?
       storage_account
-    end
-
-    def create_storage_account(storage_account_name, resource_pool)
-      @logger.debug("create_storage_account(#{storage_account_name})")
-
-      if resource_pool['storage_account_type'].nil?
-        raise Bosh::Clouds::VMCreationFailed.new(false),
-          "missing required cloud property `storage_account_type' to create the storage account `#{storage_account_name}'."
-      end
-
-      created = false
-      result = @azure_client2.check_storage_account_name_availability(storage_account_name)
-      @logger.debug("create_storage_account - The result of check_storage_account_name_availability is #{result}")
-      unless result[:available]
-        if result[:reason] == 'AccountNameInvalid'
-          cloud_error("The storage account name `#{storage_account_name}' is invalid. Storage account names must be between 3 and 24 characters in length and use numbers and lower-case letters only. #{result[:message]}")
-        else
-          # AlreadyExists
-          storage_account = @azure_client2.get_storage_account_by_name(storage_account_name)
-          if storage_account.nil?
-            cloud_error("The storage account with the name `#{storage_account_name}' does not belong to the resource group `#{@azure_properties['resource_group_name']}'. #{result[:message]}")
-          end
-          # If the storage account has been created by other process, skip create.
-          # If the storage account is being created by other process, continue to create.
-          #    Azure can handle the scenario when multiple processes are creating a same storage account in parallel
-          created = storage_account[:provisioning_state] == 'Succeeded'
-        end
-      end
-
-      begin
-        unless created
-          unless resource_pool['storage_account_location'].nil?
-            location = resource_pool['storage_account_location']
-          else
-            resource_group = @azure_client2.get_resource_group()
-            location = resource_group[:location]
-          end
-          created = @azure_client2.create_storage_account(storage_account_name, location, resource_pool['storage_account_type'], {})
-        end
-        @blob_manager.prepare(storage_account_name)
-        true
-      rescue => e
-        error_msg = "create_storage_account - "
-        if created
-          error_msg += "The storage account `#{storage_account_name}' is created successfully.\n"
-          error_msg += "But it failed to create the containers bosh and stemcell.\n"
-          error_msg += "You need to manually create them.\n"
-        end
-        error_msg += "Error: #{e.inspect}\n#{e.backtrace.join("\n")}"
-        cloud_error(error_msg)
-      end
     end
 
     def get_disk_path_name(lun)

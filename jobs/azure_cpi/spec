@@ -42,6 +42,9 @@ properties:
   azure.debug_mode:
     description: Enable debug mode to log all raw HTTP requests/responses
     default: false
+  azure.use_managed_disks:
+    description: Enable managed disks
+    default: false
 
   registry.username:
     description: User to access the Registry
