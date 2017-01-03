@@ -275,8 +275,8 @@ describe Bosh::AzureCloud::AzureClient2 do
     stub_request(:post, token_uri).to_return(
       :status => 200,
       :body => {
-        "access_token"=>valid_access_token,
-        "expires_on"=>expires_on
+        "access_token" => valid_access_token,
+        "expires_on" => expires_on
       }.to_json,
       :headers => {})
   end
@@ -432,8 +432,8 @@ describe Bosh::AzureCloud::AzureClient2 do
         stub_request(:post, token_uri).to_return(
           :status => 200,
           :body => {
-            "access_token"=>valid_access_token,
-            "expires_on"=>expires_on
+            "access_token" => valid_access_token,
+            "expires_on" => expires_on
           }.to_json,
           :headers => {})
         stub_request(:get, storage_account_uri).to_return(
@@ -453,8 +453,8 @@ describe Bosh::AzureCloud::AzureClient2 do
         stub_request(:post, token_uri).to_return(
           :status => 200,
           :body => {
-            "access_token"=>valid_access_token,
-            "expires_on"=>expires_on
+            "access_token" => valid_access_token,
+            "expires_on" => expires_on
           }.to_json,
           :headers => {})
         stub_request(:get, storage_account_uri).to_return(
@@ -479,8 +479,8 @@ describe Bosh::AzureCloud::AzureClient2 do
         stub_request(:post, token_uri).to_return(
           :status => 200,
           :body => {
-            "access_token"=>valid_access_token,
-            "expires_on"=>expires_on
+            "access_token" => valid_access_token,
+            "expires_on" => expires_on
           }.to_json,
           :headers => {})
         stub_request(:get, storage_account_uri).
@@ -502,8 +502,8 @@ describe Bosh::AzureCloud::AzureClient2 do
         stub_request(:post, token_uri).to_return(
           :status => 200,
           :body => {
-            "access_token"=>valid_access_token,
-            "expires_on"=>expires_on
+            "access_token" => valid_access_token,
+            "expires_on" => expires_on
           }.to_json,
           :headers => {})
         stub_request(:get, storage_account_uri).
@@ -525,8 +525,8 @@ describe Bosh::AzureCloud::AzureClient2 do
         stub_request(:post, token_uri).to_return(
           :status => 200,
           :body => {
-            "access_token"=>valid_access_token,
-            "expires_on"=>expires_on
+            "access_token" => valid_access_token,
+            "expires_on" => expires_on
           }.to_json,
           :headers => {})
         stub_request(:get, storage_account_uri).
@@ -548,8 +548,8 @@ describe Bosh::AzureCloud::AzureClient2 do
         stub_request(:post, token_uri).to_return(
           :status => 200,
           :body => {
-            "access_token"=>valid_access_token,
-            "expires_on"=>expires_on
+            "access_token" => valid_access_token,
+            "expires_on" => expires_on
           }.to_json,
           :headers => {})
         stub_request(:get, storage_account_uri).
@@ -574,8 +574,8 @@ describe Bosh::AzureCloud::AzureClient2 do
           stub_request(:post, token_uri).to_return(
             :status => 200,
             :body => {
-              "access_token"=>valid_access_token,
-              "expires_on"=>expires_on
+              "access_token" => valid_access_token,
+              "expires_on" => expires_on
             }.to_json,
             :headers => {})
           stub_request(:get, storage_account_uri).to_return(
@@ -621,8 +621,8 @@ describe Bosh::AzureCloud::AzureClient2 do
             stub_request(:post, token_uri).to_return(
               :status => 200,
               :body => {
-                "access_token"=>valid_access_token,
-                "expires_on"=>expires_on
+                "access_token" => valid_access_token,
+                "expires_on" => expires_on
               }.to_json,
               :headers => {})
             stub_request(:get, storage_account_uri).to_return(
@@ -665,8 +665,8 @@ describe Bosh::AzureCloud::AzureClient2 do
             stub_request(:post, token_uri).to_return(
               :status => 200,
               :body => {
-                "access_token"=>valid_access_token,
-                "expires_on"=>expires_on
+                "access_token" => valid_access_token,
+                "expires_on" => expires_on
               }.to_json,
               :headers => {})
             stub_request(:get, storage_account_uri).to_return(
@@ -713,6 +713,9 @@ describe Bosh::AzureCloud::AzureClient2 do
                 "id" => "fake-id1",
                 "name" => "fake-name1",
                 "location" => "fake-location",
+                "tags" => {
+                  "foo" => "bar1",
+                },
                 "properties" => {
                   "provisioningState" => "fake-state",
                   "accountType" => "fake-type",
@@ -725,6 +728,9 @@ describe Bosh::AzureCloud::AzureClient2 do
                 "id" => "fake-id2",
                 "name" => "fake-name2",
                 "location" => "fake-location",
+                "tags" => {
+                  "foo" => "bar2"
+                },
                 "properties" => {
                   "provisioningState" => "fake-state",
                   "accountType" => "fake-type",
@@ -742,6 +748,9 @@ describe Bosh::AzureCloud::AzureClient2 do
               :id => "fake-id1",
               :name => "fake-name1",
               :location => "fake-location",
+              :tags => {
+                "foo" => "bar1",
+              },
               :provisioning_state => "fake-state",
               :account_type => "fake-type",
               :storage_blob_host => "fake-blob-endpoint",
@@ -750,6 +759,9 @@ describe Bosh::AzureCloud::AzureClient2 do
               :id => "fake-id2",
               :name => "fake-name2",
               :location => "fake-location",
+              :tags => {
+                "foo" => "bar2",
+              },
               :provisioning_state => "fake-state",
               :account_type => "fake-type",
               :storage_blob_host => "fake-blob-endpoint"
@@ -778,68 +790,13 @@ describe Bosh::AzureCloud::AzureClient2 do
   end
 
   describe "#get_virtual_machine_by_name" do
+    let(:api_version) { AZURE_API_VERSION }
+    let(:api_version_compute) { AZURE_RESOURCE_PROVIDER_COMPUTE }
     let(:vm_name) { "fake-vm-name" }
-    let(:vm_uri) { "https://management.azure.com//subscriptions/#{subscription_id}/resourceGroups/#{resource_group_name}/providers/Microsoft.Compute/virtualMachines/#{vm_name}?api-version=#{api_version}" }
+    let(:vm_uri) { "https://management.azure.com//subscriptions/#{subscription_id}/resourceGroups/#{resource_group_name}/providers/Microsoft.Compute/virtualMachines/#{vm_name}?api-version=#{api_version_compute}" }
 
-    let(:response_body) {
-      {
-        "id"          => "fake-id",
-        "name"        => "fake-name",
-        "location"    => "fake-location",
-        "tags"        => {},
-        "properties"  => {
-          "provisioningState"  => "foo",
-          "hardwareProfile" => { "vmSize" => "bar" },
-          "storageProfile" => {
-            "osDisk"  => {
-              "name" => "foo",
-              "vhd" => { "uri" => "foo" },
-              "caching" => "bar"
-            },
-            "dataDisks" => [
-              {
-                "name" => "foo",
-                "lun"  => 0,
-                "vhd" => { "uri" => "foo" },
-                "caching" => "bar"
-              }
-            ]
-          },
-          "networkProfile" => {
-            "networkInterfaces" => [
-              {
-                "id" => nic_id
-              }
-            ]
-          }
-        }
-      }.to_json
-    }
-    let(:fake_vm) {
-      {
-        :id          => "fake-id",
-        :name        => "fake-name",
-        :location    => "fake-location",
-        :tags        => {},
-        :provisioning_state  => "foo",
-        :vm_size => "bar",
-        :os_disk  => {
-           :name => "foo",
-           :uri => "foo",
-           :caching => "bar"
-        },
-        :data_disks => [{
-           :name => "foo",
-           :lun  => 0,
-           :uri  => "foo",
-           :caching => "bar"
-        }],
-        :network_interfaces => [fake_nic]
-      }
-    }
-
-    context "when token is valid, getting response succeeds" do
-      it "should return null if response body is null" do
+    context "when the response body is null" do
+      it "should return null" do
         stub_request(:get, vm_uri).to_return(
           :status => 200,
           :body => '',
@@ -848,27 +805,191 @@ describe Bosh::AzureCloud::AzureClient2 do
           azure_client2.get_virtual_machine_by_name(vm_name)
         ).to be_nil
       end
+    end
 
-      it "should return the resource if response body is not null" do
-        stub_request(:get, public_ip_uri).to_return(
-          :status => 200,
-          :body => public_ip_response_body.to_json,
-          :headers => {})
-        stub_request(:get, load_balancer_uri).to_return(
-          :status => 200,
-          :body => load_balancer_response_body,
-          :headers => {})
-        stub_request(:get, nic_uri).to_return(
-          :status => 200,
-          :body => nic_response_body,
-          :headers => {})
-        stub_request(:get, vm_uri).to_return(
-          :status => 200,
-          :body => response_body,
-          :headers => {})
-        expect(
-          azure_client2.get_virtual_machine_by_name(vm_name)
-        ).to eq(fake_vm)
+    context "when the response body is not null" do
+      context "when the vm is using the unmanaged disks" do
+        let(:response_body) {
+          {
+            "id"          => "fake-id",
+            "name"        => "fake-name",
+            "location"    => "fake-location",
+            "tags"        => {},
+            "properties"  => {
+              "provisioningState"  => "foo",
+              "hardwareProfile" => { "vmSize" => "bar" },
+              "storageProfile" => {
+                "osDisk"  => {
+                  "name" => "foo",
+                  "vhd" => { "uri" => "foo" },
+                  "caching" => "bar",
+                  "diskSizeGb" => 1024
+                },
+                "dataDisks" => [
+                  {
+                    "name" => "foo",
+                    "lun"  => 0,
+                    "vhd" => { "uri" => "foo" },
+                    "caching" => "bar",
+                    "diskSizeGb" => 1024
+                  }
+                ]
+              },
+              "networkProfile" => {
+                "networkInterfaces" => [
+                  {
+                    "id" => nic_id
+                  }
+                ]
+              }
+            }
+          }.to_json
+        }
+
+        let(:fake_vm) {
+          {
+            :id          => "fake-id",
+            :name        => "fake-name",
+            :location    => "fake-location",
+            :tags        => {},
+            :provisioning_state  => "foo",
+            :vm_size => "bar",
+            :os_disk  => {
+               :name => "foo",
+               :uri => "foo",
+               :caching => "bar",
+               :size => 1024
+            },
+            :data_disks => [{
+               :name => "foo",
+               :lun  => 0,
+               :uri  => "foo",
+               :caching => "bar",
+               :size => 1024
+            }],
+            :network_interfaces => [fake_nic]
+          }
+        }
+
+        it "should return the resource with the unmanaged disk" do
+          stub_request(:get, public_ip_uri).to_return(
+            :status => 200,
+            :body => public_ip_response_body.to_json,
+            :headers => {})
+          stub_request(:get, load_balancer_uri).to_return(
+            :status => 200,
+            :body => load_balancer_response_body,
+            :headers => {})
+          stub_request(:get, nic_uri).to_return(
+            :status => 200,
+            :body => nic_response_body,
+            :headers => {})
+          stub_request(:get, vm_uri).to_return(
+            :status => 200,
+            :body => response_body,
+            :headers => {})
+          expect(
+            azure_client2.get_virtual_machine_by_name(vm_name)
+          ).to eq(fake_vm)
+        end
+      end
+
+      context "when the vm is using the managed disks" do
+        let(:response_body) {
+          {
+            "id"          => "fake-id",
+            "name"        => "fake-name",
+            "location"    => "fake-location",
+            "tags"        => {},
+            "properties"  => {
+              "provisioningState"  => "foo",
+              "hardwareProfile" => { "vmSize" => "bar" },
+              "storageProfile" => {
+                "osDisk"  => {
+                  "name" => "foo",
+                  "caching" => "bar",
+                  "diskSizeGb" => 1024,
+                  "managedDisk" => {
+                    "id" => "fake-disk-id",
+                    "storageAccountType" => "fake-storage-account-type"
+                  }
+                },
+                "dataDisks" => [
+                  {
+                    "name" => "foo",
+                    "lun"  => 0,
+                    "caching" => "bar",
+                    "diskSizeGb" => 1024,
+                    "managedDisk" => {
+                      "id" => "fake-disk-id",
+                      "storageAccountType" => "fake-storage-account-type"
+                    }
+                  }
+                ]
+              },
+              "networkProfile" => {
+                "networkInterfaces" => [
+                  {
+                    "id" => nic_id
+                  }
+                ]
+              }
+            }
+          }.to_json
+        }
+
+        let(:fake_vm) {
+          {
+            :id          => "fake-id",
+            :name        => "fake-name",
+            :location    => "fake-location",
+            :tags        => {},
+            :provisioning_state  => "foo",
+            :vm_size => "bar",
+            :os_disk  => {
+               :name => "foo",
+               :caching => "bar",
+               :size => 1024,
+               :managed_disk => {
+                 :id => "fake-disk-id",
+                 :storage_account_type => "fake-storage-account-type"
+               }
+            },
+            :data_disks => [{
+               :name => "foo",
+               :lun  => 0,
+               :caching => "bar",
+               :size => 1024,
+               :managed_disk => {
+                 :id => "fake-disk-id",
+                 :storage_account_type => "fake-storage-account-type"
+               }
+            }],
+            :network_interfaces => [fake_nic]
+          }
+        }
+
+        it "should return the resource with the unmanaged disk" do
+          stub_request(:get, public_ip_uri).to_return(
+            :status => 200,
+            :body => public_ip_response_body.to_json,
+            :headers => {})
+          stub_request(:get, load_balancer_uri).to_return(
+            :status => 200,
+            :body => load_balancer_response_body,
+            :headers => {})
+          stub_request(:get, nic_uri).to_return(
+            :status => 200,
+            :body => nic_response_body,
+            :headers => {})
+          stub_request(:get, vm_uri).to_return(
+            :status => 200,
+            :body => response_body,
+            :headers => {})
+          expect(
+            azure_client2.get_virtual_machine_by_name(vm_name)
+          ).to eq(fake_vm)
+        end
       end
     end
   end

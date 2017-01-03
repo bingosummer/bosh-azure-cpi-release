@@ -1,54 +1,54 @@
 module Bosh::AzureCloud
   module Helpers
 
-    AZURE_RESOUCE_PROVIDER_COMPUTER         = 'crp'
-    AZURE_RESOUCE_PROVIDER_NETWORK          = 'nrp'
-    AZURE_RESOUCE_PROVIDER_STORAGE          = 'srp'
-    AZURE_RESOUCE_PROVIDER_GROUP            = 'rp'
-    AZURE_RESOUCE_PROVIDER_ACTIVEDIRECTORY  = 'ad'
+    AZURE_RESOURCE_PROVIDER_COMPUTE          = 'crp'
+    AZURE_RESOURCE_PROVIDER_NETWORK          = 'nrp'
+    AZURE_RESOURCE_PROVIDER_STORAGE          = 'srp'
+    AZURE_RESOURCE_PROVIDER_GROUP            = 'rp'
+    AZURE_RESOURCE_PROVIDER_ACTIVEDIRECTORY  = 'ad'
 
     AZURE_ENVIRONMENTS = {
       'AzureCloud' => {
         'resourceManagerEndpointUrl' => 'https://management.azure.com/',
         'activeDirectoryEndpointUrl' => 'https://login.microsoftonline.com',
         'apiVersion' => {
-          AZURE_RESOUCE_PROVIDER_COMPUTER         => '2016-04-30-preview',
-          AZURE_RESOUCE_PROVIDER_NETWORK          => '2015-06-15',
-          AZURE_RESOUCE_PROVIDER_STORAGE          => '2015-06-15',
-          AZURE_RESOUCE_PROVIDER_GROUP            => '2016-06-01',
-          AZURE_RESOUCE_PROVIDER_ACTIVEDIRECTORY  => '2015-06-15'
+          AZURE_RESOURCE_PROVIDER_COMPUTE          => '2016-04-30-preview',
+          AZURE_RESOURCE_PROVIDER_NETWORK          => '2015-06-15',
+          AZURE_RESOURCE_PROVIDER_STORAGE          => '2015-06-15',
+          AZURE_RESOURCE_PROVIDER_GROUP            => '2016-06-01',
+          AZURE_RESOURCE_PROVIDER_ACTIVEDIRECTORY  => '2015-06-15'
         }
       },
       'AzureChinaCloud' => {
         'resourceManagerEndpointUrl' => 'https://management.chinacloudapi.cn/',
         'activeDirectoryEndpointUrl' => 'https://login.chinacloudapi.cn',
         'apiVersion' => {
-          AZURE_RESOUCE_PROVIDER_COMPUTER         => '2015-06-15',
-          AZURE_RESOUCE_PROVIDER_NETWORK          => '2015-06-15',
-          AZURE_RESOUCE_PROVIDER_STORAGE          => '2015-06-15',
-          AZURE_RESOUCE_PROVIDER_GROUP            => '2016-06-01',
-          AZURE_RESOUCE_PROVIDER_ACTIVEDIRECTORY  => '2015-06-15'
+          AZURE_RESOURCE_PROVIDER_COMPUTE          => '2015-06-15',
+          AZURE_RESOURCE_PROVIDER_NETWORK          => '2015-06-15',
+          AZURE_RESOURCE_PROVIDER_STORAGE          => '2015-06-15',
+          AZURE_RESOURCE_PROVIDER_GROUP            => '2016-06-01',
+          AZURE_RESOURCE_PROVIDER_ACTIVEDIRECTORY  => '2015-06-15'
         }
       },
       'AzureUSGovernment' => {
         'resourceManagerEndpointUrl' => 'https://management.usgovcloudapi.net/',
         'activeDirectoryEndpointUrl' => 'https://login.microsoftonline.com',
         'apiVersion' => {
-          AZURE_RESOUCE_PROVIDER_COMPUTER         => '2015-06-15',
-          AZURE_RESOUCE_PROVIDER_NETWORK          => '2015-06-15',
-          AZURE_RESOUCE_PROVIDER_STORAGE          => '2015-06-15',
-          AZURE_RESOUCE_PROVIDER_GROUP            => '2016-06-01',
-          AZURE_RESOUCE_PROVIDER_ACTIVEDIRECTORY  => '2015-06-15'
+          AZURE_RESOURCE_PROVIDER_COMPUTE          => '2015-06-15',
+          AZURE_RESOURCE_PROVIDER_NETWORK          => '2015-06-15',
+          AZURE_RESOURCE_PROVIDER_STORAGE          => '2015-06-15',
+          AZURE_RESOURCE_PROVIDER_GROUP            => '2016-06-01',
+          AZURE_RESOURCE_PROVIDER_ACTIVEDIRECTORY  => '2015-06-15'
         }
       },
       'AzureStack' => {
         'resourceManagerEndpointUrl' => 'https://azurestack.local-api/',
         'apiVersion' => {
-          AZURE_RESOUCE_PROVIDER_COMPUTER         => '2015-06-15',
-          AZURE_RESOUCE_PROVIDER_NETWORK          => '2015-05-01-preview',
-          AZURE_RESOUCE_PROVIDER_STORAGE          => '2015-05-01-preview',
-          AZURE_RESOUCE_PROVIDER_GROUP            => '2015-05-01-preview',
-          AZURE_RESOUCE_PROVIDER_ACTIVEDIRECTORY  => '2015-05-01-preview'
+          AZURE_RESOURCE_PROVIDER_COMPUTE          => '2015-06-15',
+          AZURE_RESOURCE_PROVIDER_NETWORK          => '2015-05-01-preview',
+          AZURE_RESOURCE_PROVIDER_STORAGE          => '2015-05-01-preview',
+          AZURE_RESOURCE_PROVIDER_GROUP            => '2015-05-01-preview',
+          AZURE_RESOURCE_PROVIDER_ACTIVEDIRECTORY  => '2015-05-01-preview'
         }
       }
     }
@@ -123,7 +123,7 @@ module Bosh::AzureCloud
 
     def get_azure_authentication_endpoint_and_api_version(azure_properties)
       url = nil
-      api_version = get_api_version(azure_properties, AZURE_RESOUCE_PROVIDER_ACTIVEDIRECTORY)
+      api_version = get_api_version(azure_properties, AZURE_RESOURCE_PROVIDER_ACTIVEDIRECTORY)
       if azure_properties['environment'] == 'AzureStack'
         validate_azure_stack_options(azure_properties)
         domain = azure_properties['azure_stack_domain']
@@ -134,7 +134,7 @@ module Bosh::AzureCloud
           url = "https://#{domain}/#{azure_properties['tenant_id']}/oauth2/token"
         else
           url = "#{AZURE_ENVIRONMENTS['AzureCloud']['activeDirectoryEndpointUrl']}/#{azure_properties['tenant_id']}/oauth2/token"
-          api_version = AZURE_ENVIRONMENTS['AzureCloud']['apiVersion'][AZURE_RESOUCE_PROVIDER_ACTIVEDIRECTORY]
+          api_version = AZURE_ENVIRONMENTS['AzureCloud']['apiVersion'][AZURE_RESOURCE_PROVIDER_ACTIVEDIRECTORY]
         end
       else
         url = "#{AZURE_ENVIRONMENTS[azure_properties['environment']]['activeDirectoryEndpointUrl']}/#{azure_properties['tenant_id']}/oauth2/token"
@@ -334,3 +334,4 @@ module Bosh::AzureCloud
     end
   end
 end
+
