@@ -64,7 +64,7 @@ describe Bosh::AzureCloud::AzureClient2 do
 
     let(:request_body) {
       {
-        :location => "a",
+        :location => "c",
         :tags     => {
           "snapshot" => snapshot_name,
           "disk" => disk_name
