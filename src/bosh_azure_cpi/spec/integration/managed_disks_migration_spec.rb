@@ -1,0 +1,148 @@
+require 'spec_helper'
+require 'securerandom'
+require 'tempfile'
+require 'logger'
+require 'cloud'
+
+describe Bosh::AzureCloud::Cloud do
+  before(:all) do
+    @subscription_id                 = ENV['BOSH_AZURE_SUBSCRIPTION_ID']                 || raise("Missing BOSH_AZURE_SUBSCRIPTION_ID")
+    @tenant_id                       = ENV['BOSH_AZURE_TENANT_ID']                       || raise("Missing BOSH_AZURE_TENANT_ID")
+    @client_id                       = ENV['BOSH_AZURE_CLIENT_ID']                       || raise("Missing BOSH_AZURE_CLIENT_ID")
+    @client_secret                   = ENV['BOSH_AZURE_CLIENT_SECRET']                   || raise("Missing BOSH_AZURE_CLIENT_secret")
+    @stemcell_id                     = ENV['BOSH_AZURE_STEMCELL_ID']                     || raise("Missing BOSH_AZURE_STEMCELL_ID")
+    @ssh_public_key                  = ENV['BOSH_AZURE_SSH_PUBLIC_KEY']                  || raise("Missing BOSH_AZURE_SSH_PUBLIC_KEY")
+    @default_security_group          = ENV['BOSH_AZURE_DEFAULT_SECURITY_GROUP']          || raise("Missing BOSH_AZURE_DEFAULT_SECURITY_GROUP")
+    @resource_group_name_for_vms     = ENV['BOSH_AZURE_RESOURCE_GROUP_NAME_FOR_VMS']     || raise("Missing BOSH_AZURE_RESOURCE_GROUP_NAME_FOR_VMS")
+  end
+
+  let(:azure_environment)    { ENV.fetch('BOSH_AZURE_ENVIRONMENT', 'AzureCloud') }
+  let(:storage_account_name) { ENV.fetch('BOSH_AZURE_STORAGE_ACCOUNT_NAME', nil) }
+  let(:vnet_name)            { ENV.fetch('BOSH_AZURE_VNET_NAME', 'boshvnet-crp') }
+  let(:subnet_name)          { ENV.fetch('BOSH_AZURE_SUBNET_NAME', 'BOSH1') }
+  let(:instance_type)        { ENV.fetch('BOSH_AZURE_INSTANCE_TYPE', 'Standard_D1') }
+  let(:vm_metadata)          { { deployment: 'deployment', job: 'cpi_spec', index: '0', delete_me: 'please' } }
+  let(:network_spec)         { {} }
+  let(:resource_pool)        { { 'instance_type' => instance_type } }
+
+  let(:cloud_options) {
+    {
+      'azure' => {
+        'environment' => azure_environment,
+        'subscription_id' => @subscription_id,
+        'resource_group_name' => @resource_group_name_for_vms,
+        'storage_account_name' => storage_account_name,
+        'tenant_id' => @tenant_id,
+        'client_id' => @client_id,
+        'client_secret' => @client_secret,
+        'ssh_user' => 'vcap',
+        'ssh_public_key' => @ssh_public_key,
+        'default_security_group' => @default_security_group,
+        'parallel_upload_thread_num' => 16,
+      },
+      'registry' => {
+        'endpoint' => 'fake',
+        'user' => 'fake',
+        'password' => 'fake'
+      }
+    }
+  }
+
+  subject(:cpi) do
+    cloud_options['azure']['use_managed_disks'] = true
+    described_class.new(cloud_options)
+  end
+
+  before {
+    Bosh::Clouds::Config.configure(double('delegate', task_checkpoint: nil))
+  }
+
+  before { allow(Bosh::Clouds::Config).to receive_messages(logger: logger) }
+  #let(:logger) { Logger.new(STDERR) }
+  let(:logger) { Logger.new("managed-disks-migration.log") }
+
+  before { allow(Bosh::Cpi::RegistryClient).to receive_messages(new: double('registry').as_null_object) }
+
+  before { @disk_id_pool = Array.new }
+  after {
+    @disk_id_pool.each do |disk_id|
+      logger.info("Cleanup: Deleting the disk `#{disk_id}'")
+      cpi.delete_disk(disk_id) if disk_id
+    end
+  }
+
+  context 'Migrate from unmanaged disks deployment to managed disks deployment' do
+    subject(:cpi_unmanaged) do
+      cloud_options['azure']['use_managed_disks'] = false
+      described_class.new(cloud_options)
+    end
+
+    let(:network_spec) {
+      {
+        'network_a' => {
+          'type' => 'manual',
+          'ip' => "10.0.0.#{Random.rand(10..99)}",
+          'cloud_properties' => {
+            'virtual_network_name' => vnet_name,
+            'subnet_name' => subnet_name
+          }
+        }
+      }
+    }
+
+    it 'should exercise the vm lifecycle' do
+      begin
+        logger.info("Creating unmanaged VM with stemcell_id=`#{@stemcell_id}'")
+        unmanaged_instance_id = cpi_unmanaged.create_vm(SecureRandom.uuid, @stemcell_id, resource_pool, network_spec)
+
+        logger.info("Checking unmanaged VM existence instance_id=`#{unmanaged_instance_id}'")
+        expect(cpi_unmanaged.has_vm?(unmanaged_instance_id)).to be(true)
+
+        disk_id = cpi_unmanaged.create_disk(2048, {}, unmanaged_instance_id)
+        expect(disk_id).not_to be_nil
+        @disk_id_pool.push(disk_id)
+
+        cpi_unmanaged.attach_disk(unmanaged_instance_id, disk_id)
+
+        # Assume that use_managed_disks is enabled at this moment
+
+        cpi.delete_vm(unmanaged_instance_id)
+
+        logger.info("Creating managed VM with stemcell_id=`#{@stemcell_id}'")
+        managed_instance_id = cpi.create_vm(
+          SecureRandom.uuid,
+          @stemcell_id,
+          resource_pool,
+          network_spec)
+        logger.info("Checking managed VM existence instance_id=`#{managed_instance_id}'")
+        expect(cpi.has_vm?(managed_instance_id)).to be(true)
+
+        cpi.attach_disk(managed_instance_id, disk_id)
+
+        snapshot_metadata = vm_metadata.merge(
+          bosh_data: 'bosh data',
+          instance_id: 'instance',
+          agent_id: 'agent',
+          director_name: 'Director',
+          director_uuid: SecureRandom.uuid
+        )
+        managed_snapshot_id = cpi.snapshot_disk(disk_id, snapshot_metadata)
+        expect(managed_snapshot_id).not_to be_nil
+        cpi.delete_snapshot(managed_snapshot_id)
+
+        Bosh::Common.retryable(tries: 20, on: Bosh::Clouds::DiskNotAttached, sleep: lambda { |n, _| [2**(n-1), 30].min }) do
+          cpi.detach_disk(managed_instance_id, disk_id)
+          true
+        end
+
+        cpi.delete_disk(disk_id) # Delete the managed disk
+        cpi_unmanaged.delete_disk(disk_id) # Migration: delete the migrated unmanaged disk
+        @disk_id_pool.delete(disk_id)
+      ensure
+        cpi_unmanaged.delete_vm(unmanaged_instance_id) unless unmanaged_instance_id.nil?
+        cpi.delete_vm(managed_instance_id) unless managed_instance_id.nil?
+      end
+    end
+  end
+
+end
