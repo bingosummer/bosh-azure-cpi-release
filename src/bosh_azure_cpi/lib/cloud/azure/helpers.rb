@@ -61,6 +61,13 @@ module Bosh::AzureCloud
     DISK_CONTAINER            = 'bosh'
     STEMCELL_CONTAINER        = 'stemcell'
 
+    STEMCELL_PREFIX    = 'bosh-stemcell'
+    STEMCELL_TABLE     = 'stemcells'
+    STEMCELL_STORAGE_ACCOUNT_TAGS = {
+      "user-agent" => "bosh",
+      "type" => "stemcell"
+    }
+
     ##
     # Raises CloudError exception
     #
@@ -84,13 +91,15 @@ module Bosh::AzureCloud
       ret
     end
 
-    def generate_instance_id(storage_account_name, uuid)
-      "#{storage_account_name}-#{uuid}"
-    end
-
     def get_storage_account_name_from_instance_id(instance_id)
       ret = instance_id.match('^([^-]*)-(.*)$')
       cloud_error("Invalid instance id #{instance_id}") if ret.nil?
+      return ret[1]
+    end
+
+    def get_storage_account_name_from_disk_id(disk_id)
+      ret = disk_id.match('^bosh-data-([^-]*)-(.*)$')
+      cloud_error("Invalid disk id #{disk_id}") if ret.nil?
       return ret[1]
     end
 
@@ -305,14 +314,15 @@ module Bosh::AzureCloud
       end
     end
 
-    # Stemcell information, got from the stemcell blob file on Azure
-    # * +:uri+      - String. uri of the stemcell, e.g. "https://<storageaccount>.blob.core.windows.net/stemcell/bosh-stemcell-82817f34-ae10-4cfe-8ca8-b18d18ee5cdd.vhd"
+    # Stemcell information
+    # * +:uri+      - String. uri of the blob stemcell, e.g. "https://<storage-account-name>.blob.core.windows.net/stemcell/bosh-stemcell-82817f34-ae10-4cfe-8ca8-b18d18ee5cdd.vhd"
+    #                         id of the image stemcell, e.g. "/subscriptions/<subscription-id>/resourceGroups/<resource-group-name>/providers/Microsoft.Compute/images/bosh-stemcell-d42a792c-db7a-45a6-8132-e03c863c9f01-Standard_LRS-southeastasia"
     # * +:os_type+  - String. os type of the stemcell, e.g. "linux"
     # * +:name+     - String. name of the stemcell, e.g. "bosh-azure-hyperv-ubuntu-trusty-go_agent"
     # * +:version   - String. version of the stemcell, e.g. "2972"
     # * +:disk_size - Integer. disk size in MiB, e.g. 3072
     class StemcellInfo
-      attr_reader :uri, :os_type, :name, :version, :disk_size
+      attr_reader :uri, :metadata, :os_type, :name, :version, :disk_size
 
       def initialize(uri, metadata)
         @uri = uri
@@ -322,6 +332,81 @@ module Bosh::AzureCloud
         @version = @metadata['version']
         @disk_size = @metadata['disk'].nil? ? 3072 : @metadata['disk'].to_i
       end
+    end
+
+    class FileMutex
+      def initialize(file_path, expired = 60)
+        @file_path = file_path
+        @expired = expired
+      end
+
+      def lock()
+        if File.exists?(@file_path)
+          if Time.new() - File.mtime(@file_path) > @expired
+            File.delete(@file_path)
+            raise "The lock `#{@file_path}' timeouts"
+          else
+            return false
+          end
+        else
+          begin
+            fd = IO::sysopen(@file_path, Fcntl::O_WRONLY | Fcntl::O_EXCL | Fcntl::O_CREAT) # Using O_EXCL, creation fails if the file exists
+            f = IO.open(fd)
+            f.syswrite("InProgress")
+          rescue => e
+            return false
+          ensure
+            f.close
+          end
+          return true
+        end
+      end
+
+      def wait()
+        loop do
+          return true unless File.exists?(@file_path)
+          break if Time.new() - File.mtime(@file_path) > @expired
+          sleep(1)
+        end
+        File.delete(@file_path)
+        return false
+      end
+
+      def unlock()
+        File.delete(@file_path)
+      end
+
+      def update()
+        File.open(@file_path, 'wb') { |f|
+          f.write("InProgress")
+        }
+      end
+
+      def synchronize
+        if self.lock
+          begin
+            yield
+          ensure
+            self.unlock
+          end
+        else
+          if self.wait
+            yield
+          else
+            raise "The lock `#{@file_path}' timeouts"
+          end
+        end
+      end
+
+    end
+
+    def get_storage_account_type_by_instance_type(instance_type)
+      storage_account_type = 'Standard_LRS'
+      instance_type = instance_type.downcase
+      if instance_type.start_with?("standard_ds") || instance_type.start_with?("standard_gs") || ((instance_type =~ /^standard_f(\d)+s/) == 0)
+        storage_account_type = 'Premium_LRS'
+      end
+      storage_account_type
     end
 
     private
@@ -334,4 +419,3 @@ module Bosh::AzureCloud
     end
   end
 end
-

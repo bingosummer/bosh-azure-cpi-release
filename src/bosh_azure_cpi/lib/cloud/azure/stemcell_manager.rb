@@ -1,8 +1,5 @@
 module Bosh::AzureCloud
   class StemcellManager
-    STEMCELL_PREFIX    = 'bosh-stemcell'
-    STEMCELL_TABLE     = 'stemcells'
-
     STEMCELL_STATUS_PENDING       = 'pending'
     STEMCELL_STATUS_SUCCESS       = 'success'
     DEFAULT_COPY_STEMCELL_TIMEOUT = 20 * 60 #seconds
