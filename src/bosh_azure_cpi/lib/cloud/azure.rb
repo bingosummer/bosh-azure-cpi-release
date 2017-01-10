@@ -44,10 +44,11 @@ require 'cloud/azure/network_configurator'
 require 'cloud/azure/vm_manager'
 require 'cloud/azure/blob_manager'
 require 'cloud/azure/disk_manager'
-require 'cloud/azure/disk_manager2'
 require 'cloud/azure/stemcell_manager'
-require 'cloud/azure/stemcell_manager2'
 require 'cloud/azure/table_manager'
+
+require 'cloud/azure/disk_manager2'
+require 'cloud/azure/stemcell_manager2'
 require 'cloud/azure/storage_account_manager'
 
 require 'azure/storage'

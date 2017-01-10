@@ -33,6 +33,10 @@
     }
   }
 
+  if_p('azure.storage_account_name') do |storage_account_name|
+    params['cloud']['properties']['azure']['storage_account_name'] = storage_account_name
+  end
+
   if_p('registry.endpoint') do |endpoint|
     params['cloud']['properties']['registry']['endpoint'] = endpoint
   end.else do

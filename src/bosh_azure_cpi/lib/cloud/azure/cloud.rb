@@ -14,10 +14,7 @@ module Bosh::AzureCloud
 
       @logger = Bosh::Clouds::Config.logger
 
-      @azure_properties = options.fetch('azure')
-      @agent_properties = options.fetch('agent', {})
-      @use_managed_disks = @azure_properties['use_managed_disks']
-      @logger.info("binxitest: `#{@azure_properties}'")
+      @use_managed_disks = azure_properties['use_managed_disks']
 
       init_registry
       init_azure
@@ -133,13 +130,13 @@ module Bosh::AzureCloud
           location = storage_account[:location]
           stemcell_info = @stemcell_manager.get_stemcell_info(storage_account[:name], stemcell_id)
         end
-        
+
         vm_params = @vm_manager.create(
           instance_id,
           location,
           stemcell_info,
           resource_pool,
-          NetworkConfigurator.new(@azure_properties, networks),
+          NetworkConfigurator.new(azure_properties, networks),
           env)
 
         @logger.info("Created new vm `#{instance_id}'")
@@ -260,6 +257,7 @@ module Bosh::AzureCloud
             resource_group = @azure_client2.get_resource_group()
             location = resource_group[:location]
           else
+            # The length of GUID is 36
             if instance_id.length == 36
               location = @azure_client2.get_virtual_machine_by_name(instance_id)[:location]
             else
@@ -271,7 +269,7 @@ module Bosh::AzureCloud
           end
           disk_id = @disk_manager2.create_disk(size/1024, location, cloud_properties)
         else
-          storage_account_name = @azure_properties['storage_account_name']
+          storage_account_name = azure_properties['storage_account_name']
           unless instance_id.nil?
             @logger.info("Create disk for vm #{instance_id}")
             storage_account_name = get_storage_account_name_from_instance_id(instance_id)
@@ -279,7 +277,7 @@ module Bosh::AzureCloud
 
           disk_id = @disk_manager.create_disk(storage_account_name, size/1024, cloud_properties)
         end
-        return disk_id
+        disk_id
       end
     end
 
@@ -344,7 +342,7 @@ module Bosh::AzureCloud
           }
         end
 
-        @logger.info("Attached `#{disk_id}' to `#{instance_id}', lun `#{lun}'")
+        @logger.info("Attached the disk `#{disk_id}' to the instance `#{instance_id}', lun `#{lun}'")
       end
     end
 
@@ -416,6 +414,14 @@ module Bosh::AzureCloud
 
     private
 
+    def agent_properties
+      @agent_properties ||= options.fetch('agent', {})
+    end
+
+    def azure_properties
+      @azure_properties ||= options.fetch('azure')
+    end
+
     def init_registry
       registry_properties = options.fetch('registry')
       registry_endpoint   = registry_properties.fetch('endpoint')
@@ -428,15 +434,15 @@ module Bosh::AzureCloud
     end
 
     def init_azure
-      @azure_client2           = Bosh::AzureCloud::AzureClient2.new(@azure_properties, @logger)
-      @blob_manager            = Bosh::AzureCloud::BlobManager.new(@azure_properties, @azure_client2)
-      @storage_account_manager = Bosh::AzureCloud::StorageAccountManager.new(@azure_properties, @blob_manager, @azure_client2)
-      @table_manager           = Bosh::AzureCloud::TableManager.new(@azure_properties, @storage_account_manager, @azure_client2)
-      @stemcell_manager        = Bosh::AzureCloud::StemcellManager.new(@azure_properties, @blob_manager, @table_manager)
-      @stemcell_manager2       = Bosh::AzureCloud::StemcellManager2.new(@azure_properties, @blob_manager, @table_manager, @stemcell_manager, @storage_account_manager, @azure_client2)
-      @disk_manager            = Bosh::AzureCloud::DiskManager.new(@azure_properties, @blob_manager)
-      @disk_manager2           = Bosh::AzureCloud::DiskManager2.new(@azure_properties, @blob_manager, @azure_client2)
-      @vm_manager              = Bosh::AzureCloud::VMManager.new(@azure_properties, @registry.endpoint, @disk_manager, @disk_manager2, @azure_client2)
+      @azure_client2           = Bosh::AzureCloud::AzureClient2.new(azure_properties, @logger)
+      @blob_manager            = Bosh::AzureCloud::BlobManager.new(azure_properties, @azure_client2)
+      @storage_account_manager = Bosh::AzureCloud::StorageAccountManager.new(azure_properties, @blob_manager, @azure_client2)
+      @table_manager           = Bosh::AzureCloud::TableManager.new(azure_properties, @storage_account_manager, @azure_client2)
+      @stemcell_manager        = Bosh::AzureCloud::StemcellManager.new(azure_properties, @blob_manager, @table_manager)
+      @stemcell_manager2       = Bosh::AzureCloud::StemcellManager2.new(azure_properties, @blob_manager, @table_manager, @stemcell_manager, @storage_account_manager, @azure_client2)
+      @disk_manager            = Bosh::AzureCloud::DiskManager.new(azure_properties, @blob_manager)
+      @disk_manager2           = Bosh::AzureCloud::DiskManager2.new(azure_properties, @blob_manager, @azure_client2)
+      @vm_manager              = Bosh::AzureCloud::VMManager.new(azure_properties, @registry.endpoint, @disk_manager, @disk_manager2, @azure_client2)
     rescue Net::OpenTimeout => e
       cloud_error("Please make sure the CPI has proper network access to Azure. #{e.inspect}") # TODO: Will it throw the error when initializing the client and manager
     end
@@ -478,7 +484,7 @@ module Bosh::AzureCloud
       end
 
       settings["env"] = environment if environment
-      settings.merge(@agent_properties)
+      settings.merge(agent_properties)
     end
 
     def update_agent_settings(instance_id)

@@ -4,6 +4,7 @@ module Bosh::AzureCloud
 
     MAX_CHUNK_SIZE = 2 * 1024 * 1024  # 2MB
     HASH_OF_2MB_EMPTY_CONTENT = 'b2d1236c286a3c0704224fe4105eca49' # The hash value of 2MB empty content
+    PUBLIC_ACCESS_LEVEL_BLOB = "blob"
 
     def initialize(azure_properties, azure_client2)
       @parallel_upload_thread_num = 16
@@ -285,15 +286,17 @@ module Bosh::AzureCloud
     def set_stemcell_container_acl_to_public(storage_account_name)
       @logger.info("set_stemcell_container_acl_to_public(#{storage_account_name})")
       if has_container?(storage_account_name, STEMCELL_CONTAINER)
-        @logger.debug("Set the acl to public for the container `#{STEMCELL_CONTAINER}' in the storage account `#{storage_account_name}'")
+        @logger.debug("Set the public access level to `#{PUBLIC_ACCESS_LEVEL_BLOB}' for the container `#{STEMCELL_CONTAINER}' in the storage account `#{storage_account_name}'")
         initialize_blob_client(storage_account_name) do
           begin
             options = merge_storage_common_options()
-            @blob_service_client.set_container_acl(STEMCELL_CONTAINER, "blob", options)
+            @blob_service_client.set_container_acl(STEMCELL_CONTAINER, PUBLIC_ACCESS_LEVEL_BLOB, options)
           rescue => e
-            cloud_error("set_stemcell_container_acl_to_public: Failed to set the acl to public: #{e.inspect}\n#{e.backtrace.join("\n")}")
+            cloud_error("set_stemcell_container_acl_to_public: Failed to set the public access level to `#{PUBLIC_ACCESS_LEVEL_BLOB}': #{e.inspect}\n#{e.backtrace.join("\n")}")
           end
         end
+      else
+        cloud_error("set_stemcell_container_acl_to_public: The container `#{STEMCELL_CONTAINER}' doesn't exist in the storage account `#{storage_account_name}'")
       end
     end
 

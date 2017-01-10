@@ -53,16 +53,16 @@ module Bosh::AzureCloud
       }
     }
 
-    EPHEMERAL_DISK_NAME       = 'ephemeral-disk'
-    AZURE_SCSI_HOST_DEVICE_ID = '{f8b3781b-1e82-4818-a1c3-63d806ec15bb}'
+    EPHEMERAL_DISK_NAME           = 'ephemeral-disk'
+    AZURE_SCSI_HOST_DEVICE_ID     = '{f8b3781b-1e82-4818-a1c3-63d806ec15bb}'
 
-    AZURE_MAX_RETRY_COUNT     = 10
+    AZURE_MAX_RETRY_COUNT         = 10
 
-    DISK_CONTAINER            = 'bosh'
-    STEMCELL_CONTAINER        = 'stemcell'
+    DISK_CONTAINER                = 'bosh'
+    STEMCELL_CONTAINER            = 'stemcell'
 
-    STEMCELL_PREFIX    = 'bosh-stemcell'
-    STEMCELL_TABLE     = 'stemcells'
+    STEMCELL_PREFIX               = 'bosh-stemcell'
+    STEMCELL_TABLE                = 'stemcells'
     STEMCELL_STORAGE_ACCOUNT_TAGS = {
       "user-agent" => "bosh",
       "type" => "stemcell"
