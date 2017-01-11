@@ -116,7 +116,7 @@ module Bosh::AzureCloud
       # The default OS disk size depends on the size of the VHD in the stemcell which is 3 GiB for now.
       # When using OS disk to store the ephemeral data and root_disk.size is not set, resize it to 30 GiB.
       if disk_size.nil? && ephemeral_disk(instance_id).nil?
-        disk_size = 30
+        disk_size = (minimum_disk_size/1024.0).ceil < 30 ? 30 : (minimum_disk_size/1024.0).ceil
       end
 
       return {

@@ -254,13 +254,15 @@ module Bosh::AzureCloud
         disk_id = nil
         if @use_managed_disks
           if instance_id.nil?
+            # If instance_id is nil, the managed disk will be created in the location of the resource group.
             resource_group = @azure_client2.get_resource_group()
             location = resource_group[:location]
           else
-            # The length of GUID is 36
-            if instance_id.length == 36
+            if isManagedVM(instance_id)
+              # If the instance is a managed VM, the managed disk will be created in the location of the VM.
               location = @azure_client2.get_virtual_machine_by_name(instance_id)[:location]
             else
+              # If the instance is not a managed VM, the blob disk will be created
               @logger.info("Create disk for vm #{instance_id}")
               storage_account_name = get_storage_account_name_from_instance_id(instance_id)
               disk_id = @disk_manager.create_disk(storage_account_name, size/1024, cloud_properties)
@@ -307,7 +309,7 @@ module Bosh::AzureCloud
     # @return [void]
     def attach_disk(instance_id, disk_id)
       with_thread_name("attach_disk(#{instance_id},#{disk_id})") do
-        if @use_managed_disks && instance_id.length == 36
+        if @use_managed_disks && isManagedVM(instance_id)
           disk = @disk_manager2.get_disk(disk_id)
           if disk.nil?
             blob_uri = @disk_manager.get_disk_uri(disk_id)

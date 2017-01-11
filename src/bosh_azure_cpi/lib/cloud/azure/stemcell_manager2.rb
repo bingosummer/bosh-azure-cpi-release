@@ -113,7 +113,7 @@ module Bosh::AzureCloud
           s[:location] == location && s[:tags] == STEMCELL_STORAGE_ACCOUNT_TAGS
         }
         if storage_accounts.empty?
-          storage_account_name = "#{SecureRandom.hex(12)}"
+          storage_account_name = "cpi#{SecureRandom.hex(10)}"
           @logger.debug("get_user_image: Create a storage account `#{storage_account_name}' with the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' in the location `#{location}'")
           mutex = FileMutex.new('/tmp/bosh-lock-create-default-storage-account')
           mutex.synchronize do

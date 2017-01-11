@@ -201,7 +201,7 @@ module Bosh::AzureCloud
 
           copy_status_description = ""
           while copy_status == "pending" do
-            yield
+            yield if block_given?
             options = merge_storage_common_options()
             @logger.info("copy_blob: Calling get_blob_properties(#{container_name}, #{blob_name}, #{options})")
             blob = @blob_service_client.get_blob_properties(container_name, blob_name, options)
@@ -237,22 +237,6 @@ module Bosh::AzureCloud
             @logger.info("copy_blob: Delete the blob #{container_name}/#{blob_name}")
           }
           raise e
-        end
-      end
-    end
-
-    def create_container(storage_account_name, container_name, options = {})
-      @logger.info("create_container(#{storage_account_name}, #{container_name}, #{options})")
-      initialize_blob_client(storage_account_name) do
-        begin
-          options = merge_storage_common_options(options)
-          @logger.info("create_container: Calling create_container(#{container_name}, #{options})")
-          @blob_service_client.create_container(container_name, options)
-          true
-        rescue => e
-          # Still return true if the container is created by others.
-          return true if e.message.include?("(409)")
-          cloud_error("create_container: Failed to create container: #{e.inspect}\n#{e.backtrace.join("\n")}")
         end
       end
     end
@@ -301,6 +285,22 @@ module Bosh::AzureCloud
     end
 
     private
+
+    def create_container(storage_account_name, container_name, options = {})
+      @logger.info("create_container(#{storage_account_name}, #{container_name}, #{options})")
+      initialize_blob_client(storage_account_name) do
+        begin
+          options = merge_storage_common_options(options)
+          @logger.info("create_container: Calling create_container(#{container_name}, #{options})")
+          @blob_service_client.create_container(container_name, options)
+          true
+        rescue => e
+          # Still return true if the container is created by others.
+          return true if e.message.include?("ContainerAlreadyExists")
+          cloud_error("create_container: Failed to create container: #{e.inspect}\n#{e.backtrace.join("\n")}")
+        end
+      end
+    end
 
     def compute_chunks(file_size, max_chunk_size)
       chunks = ChunkList.new

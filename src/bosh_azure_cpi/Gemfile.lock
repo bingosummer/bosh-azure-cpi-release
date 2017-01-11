@@ -6,16 +6,11 @@ GEM
       faraday (~> 0.9)
       faraday_middleware (~> 0.10)
       nokogiri (~> 1.6)
-    azure-storage (0.11.3.preview)
-      addressable (~> 2.3)
+    azure-storage (0.11.5.preview)
       azure-core (~> 0.1)
       faraday (~> 0.9)
       faraday_middleware (~> 0.10)
-      json (~> 1.8)
-      mime-types (~> 2.0)
-      nokogiri (~> 1.6)
-      systemu (~> 2.6)
-      thor (~> 0.19)
+      nokogiri (~> 1.6.0)
     bit-struct (0.15.0)
     bosh_common (1.3262.4.0)
       logging (~> 1.8.2)
@@ -40,7 +35,6 @@ GEM
       little-plugger (>= 1.1.3)
       multi_json (>= 1.8.4)
     membrane (1.1.0)
-    mime-types (2.99.3)
     mini_portile2 (2.1.0)
     multi_json (1.12.1)
     multipart-post (2.0.0)
@@ -66,8 +60,6 @@ GEM
       json (>= 1.8, < 3)
       simplecov-html (~> 0.10.0)
     simplecov-html (0.10.0)
-    systemu (2.6.5)
-    thor (0.19.1)
     vhd (0.0.4)
       bit-struct
     webmock (2.1.0)
@@ -79,7 +71,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  azure-storage (= 0.11.3.preview)
+  azure-storage (= 0.11.5.preview)
   bosh_common
   bosh_cpi
   httpclient (= 2.4.0)

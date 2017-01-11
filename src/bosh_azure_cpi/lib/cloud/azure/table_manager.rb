@@ -17,21 +17,6 @@ module Bosh::AzureCloud
       @table_service_client = azure_storage_client.table_client
       @table_service_client.with_filter(Azure::Storage::Core::Filter::ExponentialRetryPolicyFilter.new)
       @table_service_client.with_filter(Azure::Core::Http::DebugFilter.new) if is_debug_mode(@azure_properties)
-      prepare()
-    end
-
-    def create_table(table_name, options = {})
-      @logger.info("create_table(#{table_name}, #{options})")
-      begin
-        options = merge_storage_common_options(options)
-        @logger.info("create_table: Calling create_table(#{table_name}, #{options})")
-        @table_service_client.create_table(table_name, options)
-        true
-      rescue => e
-        # Still return true if the table is created by others.
-        return true if e.message.include?("(409)")
-        cloud_error("create_table: Failed to create table: #{e.inspect}\n#{e.backtrace.join("\n")}")
-      end
     end
 
     def has_table?(table_name)
@@ -98,18 +83,5 @@ module Bosh::AzureCloud
       @logger.info("update_entity: Calling update_entity(#{table_name}, #{entity}, #{options})")
       @table_service_client.update_entity(table_name, entity, options)
     end
-
-    private
-
-    def prepare(tables: [STEMCELL_TABLE])
-      @logger.info("prepare(#{tables})")
-      tables.each do |table|
-        unless has_table?(table)
-          @logger.debug("Creating the table `#{table}' in the storage account")
-          create_table(table)
-        end
-      end
-    end
-
   end
 end

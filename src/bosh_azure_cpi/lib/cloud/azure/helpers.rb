@@ -153,7 +153,7 @@ module Bosh::AzureCloud
     end
 
     def initialize_azure_storage_client(storage_account, service = 'blob')
-      azure_client = Azure::Storage::Client.create(storage_account_name: storage_account[:name], storage_access_key: storage_account[:key])
+      azure_client = Azure::Storage::Client.create(storage_account_name: storage_account[:name], storage_access_key: storage_account[:key], user_agent_prefix: 'bosh')
 
       case service
         when 'blob'
@@ -407,6 +407,11 @@ module Bosh::AzureCloud
         storage_account_type = 'Premium_LRS'
       end
       storage_account_type
+    end
+
+    def isManagedVM(instance_id)
+      # The instance id of a Managed VM is GUID whose length is 36
+      instance_id.length == 36
     end
 
     private
