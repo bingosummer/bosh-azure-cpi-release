@@ -53,6 +53,11 @@ module Bosh::AzureCloud
       }
     }
 
+    # About user-agent:
+    # For REST APIs, the value is "BOSH-AZURE-CPI".
+    # For Azure resource tags, the value is "bosh".
+    USER_AGENT                    = 'BOSH-AZURE-CPI'
+
     EPHEMERAL_DISK_NAME           = 'ephemeral-disk'
     AZURE_SCSI_HOST_DEVICE_ID     = '{f8b3781b-1e82-4818-a1c3-63d806ec15bb}'
 
@@ -153,7 +158,7 @@ module Bosh::AzureCloud
     end
 
     def initialize_azure_storage_client(storage_account, service = 'blob')
-      azure_client = Azure::Storage::Client.create(storage_account_name: storage_account[:name], storage_access_key: storage_account[:key], user_agent_prefix: 'bosh')
+      azure_client = Azure::Storage::Client.create(storage_account_name: storage_account[:name], storage_access_key: storage_account[:key], user_agent_prefix: USER_AGENT)
 
       case service
         when 'blob'

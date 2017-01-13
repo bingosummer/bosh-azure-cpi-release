@@ -7,7 +7,7 @@ module Bosh::AzureCloud
     include Bosh::Exec
     include Helpers
 
-    attr_writer :resource_pool
+    attr_accessor :resource_pool
 
     def initialize(azure_properties, blob_manager, azure_client2)
       @azure_properties = azure_properties

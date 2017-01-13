@@ -63,19 +63,8 @@ module Bosh::AzureCloud
     def get_storage_account_from_resource_pool(resource_pool)
       @logger.debug("get_storage_account_from_resource_pool(#{resource_pool})")
 
-      # If storage_account_name is not specified in resource_pool, use the default one.
-      default_storage_account_name = nil
-      if @azure_properties.has_key?('storage_account_name')
-        default_storage_account_name = @azure_properties['storage_account_name']
-      else
-        storage_accounts = @azure_client2.list_storage_accounts().select{ |s|
-          s[:location] == @azure_client2.get_resource_group()[:location] && s[:tags] == STEMCELL_STORAGE_ACCOUNT_TAGS
-        }
-        cloud_error("No default storage account is found in the resource group") if storage_accounts.empty?
-        default_storage_account_name = storage_accounts[0][:name]
-      end
-      storage_account_name = default_storage_account_name
-
+      # If storage_account_name is not specified in resource_pool, use the default storage account in global configurations
+      storage_account_name = @default_storage_account_name
       unless resource_pool['storage_account_name'].nil?
         if resource_pool['storage_account_name'].include?('*')
           ret = resource_pool['storage_account_name'].match('^\*{1}[a-z0-9]+\*{1}$')
@@ -133,42 +122,43 @@ module Bosh::AzureCloud
       storage_account_name = nil
       if @azure_properties.has_key?('storage_account_name')
         storage_account_name = @azure_properties['storage_account_name']
-        @logger.debug("Use `#{storage_account_name}' in global settings as the default storage account")
+        @logger.debug("The default storage account is `#{storage_account_name}'")
         return storage_account_name
       end
 
-      @logger.debug("The default storage account is not specified in global settings")
-      resource_group = @azure_client2.get_resource_group()
-      location = resource_group[:location]
-      storage_accounts = @azure_client2.list_storage_accounts().select{ |s|
-        s[:location] == location && s[:tags] == STEMCELL_STORAGE_ACCOUNT_TAGS
+      @logger.debug("The default storage account is not specified in global settings. Will look for an existing storage account.")
+      storage_accounts = @azure_client2.list_storage_accounts()
+      location = @azure_client2.get_resource_group()[:location]
+      storage_account = storage_accounts.find{ |s|
+        s[:location] == location && s[:tags]['type'] == STEMCELL_STORAGE_ACCOUNT_TAGS['type']
       }
-      unless storage_accounts.empty?
-        storage_account_name = storage_accounts[0][:name]
-        @logger.debug("Use an exisiting storage account `#{storage_account_name}' as the default storage account")
+      unless storage_account.nil?
+        storage_account_name = storage_account[:name]
+        @logger.debug("The default storage account is `#{storage_account_name}'")
         return storage_account_name
       end
 
-      @logger.debug("No storage account with the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' are found in the location `#{location}'")
-      storage_accounts = @azure_client2.list_storage_accounts().select{ |s|
+      @logger.debug("Cannot find a storage account with the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' in the location `#{location}'")
+      @logger.debug("Will look for a storage account without the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' in the location `#{location}'")
+      storage_account = storage_accounts.find{ |s|
         s[:location] == location
       }
-      if storage_accounts.empty?
-        storage_account_name = "cpi#{SecureRandom.hex(10)}"
-        @logger.debug("Create a storage account `#{storage_account_name}' with the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' in the location `#{location}'")
-        @logger.debug("Use the new created `#{storage_account_name}' as the default storage account")
-        create_storage_account(storage_account_name, location, 'Standard_LRS', STEMCELL_STORAGE_ACCOUNT_TAGS)
-        @blob_manager.set_stemcell_container_acl_to_public(storage_account_name)
-      else
-        storage_accounts.shuffle!
-        storage_account = storage_accounts[0]
+      unless storage_account.nil?
         storage_account_name = storage_account[:name]
         @logger.debug("Use an exisiting storage account `#{storage_account_name}' as the default storage account")
         if storage_account[:tags] != STEMCELL_STORAGE_ACCOUNT_TAGS
           @logger.debug("Set the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' for the storage account `#{storage_account_name}'")
           @azure_client2.update_tags_of_storage_account(storage_account_name, STEMCELL_STORAGE_ACCOUNT_TAGS)
         end
+        return storage_account_name
       end
+
+      @logger.debug("Cannot find any existing storage account in the location `#{location}'")
+      storage_account_name = "cpi#{SecureRandom.hex(10)}"
+      @logger.debug("Creating a storage account `#{storage_account_name}' with the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' in the location `#{location}'")
+      create_storage_account(storage_account_name, location, 'Standard_LRS', STEMCELL_STORAGE_ACCOUNT_TAGS)
+      @logger.debug("The default storage account is `#{storage_account_name}'")
+      @blob_manager.set_stemcell_container_acl_to_public(storage_account_name)
       storage_account_name
     end
   end

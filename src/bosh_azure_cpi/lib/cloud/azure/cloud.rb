@@ -117,10 +117,10 @@ module Bosh::AzureCloud
         if @use_managed_disks
           instance_id = agent_id
           storage_account_type = get_storage_account_type_by_instance_type(resource_pool['instance_type'])
-          resource_group = @azure_client2.get_resource_group()
-          location = resource_group[:location]
+          location = @azure_client2.get_resource_group()[:location]
           location = resource_pool['storage_account_location'] unless resource_pool['storage_account_location'].nil?
-          stemcell_info = @stemcell_manager2.get_stemcell_info(stemcell_id, storage_account_type, location)
+          # Treat user_image_info as stemcell_info
+          stemcell_info = @stemcell_manager2.get_user_image_info(stemcell_id, storage_account_type, location)
         else
           storage_account = @storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
           unless @stemcell_manager.has_stemcell?(storage_account[:name], stemcell_id)
@@ -257,6 +257,10 @@ module Bosh::AzureCloud
             # If instance_id is nil, the managed disk will be created in the location of the resource group.
             resource_group = @azure_client2.get_resource_group()
             location = resource_group[:location]
+            resource_pool = @disk_manager2.resource_pool
+            unless resource_pool.nil? || resource_pool['storage_account_location'].nil?
+              location = resource_pool['storage_account_location']
+            end
           else
             if isManagedVM(instance_id)
               # If the instance is a managed VM, the managed disk will be created in the location of the VM.
@@ -440,8 +444,8 @@ module Bosh::AzureCloud
       @blob_manager            = Bosh::AzureCloud::BlobManager.new(azure_properties, @azure_client2)
       @storage_account_manager = Bosh::AzureCloud::StorageAccountManager.new(azure_properties, @blob_manager, @azure_client2)
       @table_manager           = Bosh::AzureCloud::TableManager.new(azure_properties, @storage_account_manager, @azure_client2)
-      @stemcell_manager        = Bosh::AzureCloud::StemcellManager.new(azure_properties, @blob_manager, @table_manager)
-      @stemcell_manager2       = Bosh::AzureCloud::StemcellManager2.new(azure_properties, @blob_manager, @table_manager, @stemcell_manager, @storage_account_manager, @azure_client2)
+      @stemcell_manager        = Bosh::AzureCloud::StemcellManager.new(azure_properties, @blob_manager, @table_manager, @storage_account_manager)
+      @stemcell_manager2       = Bosh::AzureCloud::StemcellManager2.new(azure_properties, @blob_manager, @table_manager, @storage_account_manager, @azure_client2)
       @disk_manager            = Bosh::AzureCloud::DiskManager.new(azure_properties, @blob_manager)
       @disk_manager2           = Bosh::AzureCloud::DiskManager2.new(azure_properties, @blob_manager, @azure_client2)
       @vm_manager              = Bosh::AzureCloud::VMManager.new(azure_properties, @registry.endpoint, @disk_manager, @disk_manager2, @azure_client2)

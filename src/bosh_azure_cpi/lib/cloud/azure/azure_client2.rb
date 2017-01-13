@@ -13,8 +13,6 @@ module Bosh::AzureCloud
   class AzureClient2
     include Helpers
 
-    USER_AGENT                    = 'BOSH-AZURE-CPI'
-
     HTTP_CODE_OK                  = 200
     HTTP_CODE_CREATED             = 201
     HTTP_CODE_ACCEPTED            = 202

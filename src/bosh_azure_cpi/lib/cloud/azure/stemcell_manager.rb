@@ -7,11 +7,11 @@ module Bosh::AzureCloud
     include Bosh::Exec
     include Helpers
 
-    def initialize(azure_properties, blob_manager, table_manager)
+    def initialize(azure_properties, blob_manager, table_manager, storage_account_manager)
       @blob_manager  = blob_manager
       @table_manager = table_manager
+      @storage_account_manager = storage_account_manager
       @logger = Bosh::Clouds::Config.logger
-      @default_storage_account_name = azure_properties['storage_account_name']
     end
 
     def delete_stemcell(name)
@@ -43,6 +43,8 @@ module Bosh::AzureCloud
         run_command("tar -zxf #{image_path} -C #{tmp_dir}")
         @logger.info("Start to upload VHD")
         stemcell_name = "#{STEMCELL_PREFIX}-#{SecureRandom.uuid}"
+        @default_storage_account_name = @storage_account_manager.default_storage_account_name
+        @logger.info("Upload the stemcell #{stemcell_name} to the storage account #{@default_storage_account_name}")
         @blob_manager.create_page_blob(@default_storage_account_name, STEMCELL_CONTAINER, "#{tmp_dir}/root.vhd", "#{stemcell_name}.vhd", cloud_properties)
       end
       stemcell_name
