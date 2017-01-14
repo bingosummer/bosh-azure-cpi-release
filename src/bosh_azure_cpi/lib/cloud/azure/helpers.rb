@@ -57,21 +57,31 @@ module Bosh::AzureCloud
     # For REST APIs, the value is "BOSH-AZURE-CPI".
     # For Azure resource tags, the value is "bosh".
     USER_AGENT                    = 'BOSH-AZURE-CPI'
+    AZURE_TAGS                    = {
+      'user-agent' => 'bosh'
+
+    }
+    AZURE_MAX_RETRY_COUNT         = 10
+
+    # Storage Account
+    DISK_CONTAINER                = 'bosh'
+    STEMCELL_CONTAINER            = 'stemcell'
+    STEMCELL_TABLE                = 'stemcells'
+    STEMCELL_STORAGE_ACCOUNT_TAGS = {
+      'user-agent' => 'bosh',
+      'type' => 'stemcell'
+    }
+
+    # Disk
+    OS_DISK_PREFIX                = 'bosh-os'
+    DATA_DISK_PREFIX              = 'bosh-data'
+    MANAGED_OS_DISK_PREFIX        = 'bosh-disk-os'
+    MANAGED_DATA_DISK_PREFIX      = 'bosh-disk-data'
+    EPHEMERAL_DISK_POSTFIX        = 'ephemeral'
+    STEMCELL_PREFIX               = 'bosh-stemcell'
 
     EPHEMERAL_DISK_NAME           = 'ephemeral-disk'
     AZURE_SCSI_HOST_DEVICE_ID     = '{f8b3781b-1e82-4818-a1c3-63d806ec15bb}'
-
-    AZURE_MAX_RETRY_COUNT         = 10
-
-    DISK_CONTAINER                = 'bosh'
-    STEMCELL_CONTAINER            = 'stemcell'
-
-    STEMCELL_PREFIX               = 'bosh-stemcell'
-    STEMCELL_TABLE                = 'stemcells'
-    STEMCELL_STORAGE_ACCOUNT_TAGS = {
-      "user-agent" => "bosh",
-      "type" => "stemcell"
-    }
 
     ##
     # Raises CloudError exception
@@ -340,16 +350,37 @@ module Bosh::AzureCloud
     end
 
     class FileMutex
-      def initialize(file_path, expired = 60)
+      def initialize(file_path, logger, expired = 60)
         @file_path = file_path
+        @logger = logger
         @expired = expired
       end
+
+      def synchronize
+        if self.lock
+          begin
+            yield
+          ensure
+            self.unlock
+          end
+        else
+          raise "timeout" unless self.wait
+        end
+      end
+
+      def update()
+        File.open(@file_path, 'wb') { |f|
+          f.write("InProgress")
+        }
+      end
+
+      private
 
       def lock()
         if File.exists?(@file_path)
           if Time.new() - File.mtime(@file_path) > @expired
             File.delete(@file_path)
-            raise "The lock `#{@file_path}' timeouts"
+            raise "timeout"
           else
             return false
           end
@@ -359,6 +390,7 @@ module Bosh::AzureCloud
             f = IO.open(fd)
             f.syswrite("InProgress")
           rescue => e
+            @logger.debug("Failed to create the lock file `#{@file_path}'. Error: #{e.inspect}\n#{e.backtrace.join("\n")}")
             return false
           ensure
             f.close
@@ -380,29 +412,6 @@ module Bosh::AzureCloud
       def unlock()
         File.delete(@file_path)
       end
-
-      def update()
-        File.open(@file_path, 'wb') { |f|
-          f.write("InProgress")
-        }
-      end
-
-      def synchronize
-        if self.lock
-          begin
-            yield
-          ensure
-            self.unlock
-          end
-        else
-          if self.wait
-            yield
-          else
-            raise "The lock `#{@file_path}' timeouts"
-          end
-        end
-      end
-
     end
 
     def get_storage_account_type_by_instance_type(instance_type)
@@ -414,9 +423,13 @@ module Bosh::AzureCloud
       storage_account_type
     end
 
-    def isManagedVM(instance_id)
+    def is_managed_vm?(instance_id)
       # The instance id of a Managed VM is GUID whose length is 36
       instance_id.length == 36
+    end
+
+    def is_stemcell_storage_account?(tags)
+      (STEMCELL_STORAGE_ACCOUNT_TAGS.to_a - tags.to_a).empty?
     end
 
     private

@@ -7,13 +7,9 @@ module Bosh::AzureCloud
     BOSH_LOCK_COPY_STEMCELL = '/tmp/bosh-lock-copy-stemcell'
     BOSH_LOCK_COPY_STEMCELL_TIMEOUT = 180
 
-    def initialize(azure_properties, blob_manager, table_manager, storage_account_manager, azure_client2)
-      @azure_properties = azure_properties
-      @blob_manager  = blob_manager
-      @table_manager = table_manager
-      @storage_account_manager = storage_account_manager
+    def initialize(blob_manager, table_manager, storage_account_manager, azure_client2)
+      super(blob_manager, table_manager, storage_account_manager)
       @azure_client2 = azure_client2
-      @logger = Bosh::Clouds::Config.logger
     end
 
     def delete_stemcell(name)
@@ -57,7 +53,7 @@ module Bosh::AzureCloud
     def get_user_image_info(stemcell_name, storage_account_type, location)
       @logger.info("get_user_image_info(#{stemcell_name}, #{storage_account_type}, #{location})")
       user_image = get_user_image(stemcell_name, storage_account_type, location)
-      cloud_error("get_stemcell_info: Failed to get user image for the stemcell `#{stemcell_name}''") if user_image.nil?
+      cloud_error("get_user_image_info: Failed to get user image for the stemcell `#{stemcell_name}'") if user_image.nil?
       StemcellInfo.new(user_image[:id], user_image[:tags])
     end
 
@@ -69,38 +65,49 @@ module Bosh::AzureCloud
       user_image = @azure_client2.get_user_image_by_name(user_image_name)
       return user_image unless user_image.nil?
 
-      default_storage_account_name = @storage_account_manager.default_storage_account_name
+      default_storage_account = @storage_account_manager.default_storage_account
+      default_storage_account_name = default_storage_account[:name]
       return nil unless has_stemcell?(default_storage_account_name, stemcell_name)
 
       storage_account_name = nil
-      default_storage_account_location = @azure_client2.get_storage_account_by_name(default_storage_account_name)[:location]
+      default_storage_account_location = default_storage_account[:location]
       if default_storage_account_location == location
         storage_account_name = default_storage_account_name
       else
         storage_account = @azure_client2.list_storage_accounts().find{ |s|
-          s[:location] == location && s[:tags]['type'] == STEMCELL_STORAGE_ACCOUNT_TAGS['type']
+          s[:location] == location && is_stemcell_storage_account?(s[:tags])
         }
         if storage_account.nil?
           storage_account_name = "cpi#{SecureRandom.hex(10)}"
           @logger.debug("get_user_image: Creating a storage account `#{storage_account_name}' with the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' in the location `#{location}'")
-          mutex = FileMutex.new(BOSH_LOCK_CREATE_STORAGE_ACCOUNT)
-          mutex.synchronize do
-            @storage_account_manager.create_storage_account(storage_account_name, location, storage_account_type, STEMCELL_STORAGE_ACCOUNT_TAGS)
+          mutex = FileMutex.new(BOSH_LOCK_CREATE_STORAGE_ACCOUNT, @logger)
+          begin
+            mutex.synchronize do
+              @storage_account_manager.create_storage_account(storage_account_name, location, storage_account_type, STEMCELL_STORAGE_ACCOUNT_TAGS)
+            end
+          rescue => e
+            raise 'Failed to create a storage account because of timeout' if e.message == 'timeout'
+            raise e.inspect
           end
           @blob_manager.prepare(storage_account_name)
         else
           storage_account_name = storage_account[:name]
         end
 
-        mutex = FileMutex.new(BOSH_LOCK_COPY_STEMCELL, BOSH_LOCK_COPY_STEMCELL_TIMEOUT)
-        mutex.synchronize do
-          unless has_stemcell?(storage_account_name, stemcell_name)
-            @logger.info("get_user_image: Copying the stemcell from the default storage account `#{default_storage_account_name}' to the storage acccount `#{storage_account_name}'")
-            stemcell_source_blob_uri = @blob_manager.get_blob_uri(default_storage_account_name, STEMCELL_CONTAINER, "#{stemcell_name}.vhd")
-            @blob_manager.copy_blob(storage_account_name, STEMCELL_CONTAINER, "#{stemcell_name}.vhd", stemcell_source_blob_uri) do
-              mutex.update()
+        mutex = FileMutex.new(BOSH_LOCK_COPY_STEMCELL, @logger, BOSH_LOCK_COPY_STEMCELL_TIMEOUT)
+        begin
+          mutex.synchronize do
+            unless has_stemcell?(storage_account_name, stemcell_name)
+              @logger.info("get_user_image: Copying the stemcell from the default storage account `#{default_storage_account_name}' to the storage acccount `#{storage_account_name}'")
+              stemcell_source_blob_uri = @blob_manager.get_blob_uri(default_storage_account_name, STEMCELL_CONTAINER, "#{stemcell_name}.vhd")
+              @blob_manager.copy_blob(storage_account_name, STEMCELL_CONTAINER, "#{stemcell_name}.vhd", stemcell_source_blob_uri) do
+                mutex.update()
+              end
             end
           end
+        rescue => e
+          raise 'Failed to create a storage account because of timeout' if e.message == 'timeout'
+          raise e.inspect
         end
       end
 

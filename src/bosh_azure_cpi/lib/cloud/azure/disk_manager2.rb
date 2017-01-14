@@ -1,17 +1,11 @@
 module Bosh::AzureCloud
   class DiskManager2
-    OS_DISK_PREFIX         = 'bosh-disk-os'
-    DATA_DISK_PREFIX       = 'bosh-disk-data'
-    EPHEMERAL_DISK_POSTFIX = 'ephemeral'
-
     include Bosh::Exec
     include Helpers
 
     attr_accessor :resource_pool
 
-    def initialize(azure_properties, blob_manager, azure_client2)
-      @azure_properties = azure_properties
-      @blob_manager = blob_manager
+    def initialize(azure_client2)
       @azure_client2 = azure_client2
       @logger = Bosh::Clouds::Config.logger
     end
@@ -20,12 +14,18 @@ module Bosh::AzureCloud
     # Creates a disk (possibly lazily) that will be attached later to a VM.
     #
     # @param [Integer] size disk size in GiB
-    # @param [string] location
+    # @param [string] location location of the disk
     # @param [Hash] cloud_properties cloud properties to create the disk
+    #
+    # ==== cloud_properties
+    # [optional, String] caching the disk caching type. It can be either None, ReadOnly or ReadWrite.
+    #                            Default is None. Only None and ReadOnly are supported for premium disks.
+    # [optional, String] storage_account_type the storage account type.
+    #                    For managed disks, it can only be Standard_LRS or Premium_LRS.
+    #
     # @return [String] disk name
     def create_disk(size, location, cloud_properties)
       @logger.info("create_disk(#{size}, #{location}, #{cloud_properties})")
-      storage_account_type = 'Standard_LRS'
       caching = 'None'
       if !cloud_properties.nil?
         if !cloud_properties['caching'].nil?
@@ -34,6 +34,8 @@ module Bosh::AzureCloud
         end
         if !cloud_properties['storage_account_type'].nil?
           storage_account_type = cloud_properties['storage_account_type']
+        else
+          storage_account_type = get_storage_account_type_by_instance_type(@resource_pool['instance_type'])
         end
       end
       disk_name = generate_data_disk_name(caching)
@@ -88,19 +90,24 @@ module Bosh::AzureCloud
       disk = @azure_client2.get_managed_disk_by_name(disk_name)
     end
 
-    def list_disks()
+    def list_disks(prefix=nil)
       @logger.info("list_disks()")
       disks = @azure_client2.list_managed_disks()
+      unless prefix.nil?
+        disks = disks.select{ |disk| disk[:name] =~ /^#{prefix}/ }
+      end
+      disks
     end
 
     def snapshot_disk(disk_name, metadata)
       @logger.info("snapshot_disk(#{disk_name}, #{metadata})")
-      snapshot_name = generate_snapshot_name()
+      caching = get_data_disk_caching(disk_name)
+      snapshot_name = generate_data_disk_name(caching)
       snapshot_params = {
         :name => snapshot_name,
-        :tags => {
+        :tags => metadata.merge({
           "original" => disk_name
-        },
+        }),
         :disk_name => disk_name
       }
       @logger.info("Start to create a snapshot `#{snapshot_name}' from a managed disk `#{disk_name}'")
@@ -115,12 +122,12 @@ module Bosh::AzureCloud
 
     # bosh-disk-os-INSTANCEID
     def generate_os_disk_name(instance_id)
-      "#{OS_DISK_PREFIX}-#{instance_id}"
+      "#{MANAGED_OS_DISK_PREFIX}-#{instance_id}"
     end
 
     # bosh-disk-os-INSTANCEID-ephemeral
     def generate_ephemeral_disk_name(instance_id)
-      "#{OS_DISK_PREFIX}-#{instance_id}-#{EPHEMERAL_DISK_POSTFIX}"
+      "#{MANAGED_OS_DISK_PREFIX}-#{instance_id}-#{EPHEMERAL_DISK_POSTFIX}"
     end
 
     def os_disk(instance_id, minimum_disk_size)
@@ -137,7 +144,9 @@ module Bosh::AzureCloud
       validate_disk_caching(disk_caching)
 
       # The default OS disk size depends on the size of the VHD in the stemcell which is 3 GiB for now.
-      # When using OS disk to store the ephemeral data and root_disk.size is not set, resize it to 30 GiB.
+      # When using OS disk to store the ephemeral data and root_disk.size is not set,
+      # resize it to the minimum disk size if the minimum disk size is larger than 30 GiB;
+      # resize it to 30 GiB if the minimum disk size is smaller than 30 GiB.
       if disk_size.nil? && ephemeral_disk(instance_id).nil?
         disk_size = (minimum_disk_size/1024.0).ceil < 30 ? 30 : (minimum_disk_size/1024.0).ceil
       end
@@ -181,12 +190,7 @@ module Bosh::AzureCloud
 
     # bosh-disk-data-INSTANCEID-caching
     def generate_data_disk_name(caching)
-      "#{DATA_DISK_PREFIX}-#{SecureRandom.uuid}-#{caching}"
-    end
-
-    # bosh-disk-data-INSTANCEID
-    def generate_snapshot_name()
-      "#{DATA_DISK_PREFIX}-#{SecureRandom.uuid}"
+      "#{MANAGED_DATA_DISK_PREFIX}-#{SecureRandom.uuid}-#{caching}"
     end
   end
 end

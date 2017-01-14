@@ -117,8 +117,11 @@ module Bosh::AzureCloud
         if @use_managed_disks
           instance_id = agent_id
           storage_account_type = get_storage_account_type_by_instance_type(resource_pool['instance_type'])
-          location = @azure_client2.get_resource_group()[:location]
-          location = resource_pool['storage_account_location'] unless resource_pool['storage_account_location'].nil?
+          if !resource_pool['storage_account_location'].nil?
+            location = resource_pool['storage_account_location'] 
+          else
+            location = @azure_client2.get_resource_group()[:location]
+          end
           # Treat user_image_info as stemcell_info
           stemcell_info = @stemcell_manager2.get_user_image_info(stemcell_id, storage_account_type, location)
         else
@@ -247,6 +250,14 @@ module Bosh::AzureCloud
     #               specific to a CPI
     # @param [optional, String] instance_id vm id if known of the VM that this disk will
     #                           be attached to
+    #
+    # ==== cloud_properties
+    # [optional, String] caching the disk caching type. It can be either None, ReadOnly or ReadWrite.
+    #                            Default is None. Only None and ReadOnly are supported for premium disks.
+    # [optional, String] storage_account_type the storage account type. For blob disks, it can be either
+    #                    Standard_LRS, Standard_ZRS, Standard_GRS, Standard_RAGRS or Premium_LRS.
+    #                    For managed disks, it can only be Standard_LRS or Premium_LRS.
+    #
     # @return [String] opaque id later used by {#attach_disk}, {#detach_disk}, and {#delete_disk}
     def create_disk(size, cloud_properties, instance_id = nil)
       with_thread_name("create_disk(#{size}, #{cloud_properties})") do
@@ -254,15 +265,17 @@ module Bosh::AzureCloud
         disk_id = nil
         if @use_managed_disks
           if instance_id.nil?
-            # If instance_id is nil, the managed disk will be created in the location of the resource group.
-            resource_group = @azure_client2.get_resource_group()
-            location = resource_group[:location]
+            # If instance_id is nil, the managed disk will be created.
+            # If resource_pool has storage_account_location, use it as the disk location. If not, use the resource group location.
             resource_pool = @disk_manager2.resource_pool
             unless resource_pool.nil? || resource_pool['storage_account_location'].nil?
               location = resource_pool['storage_account_location']
+            else
+              resource_group = @azure_client2.get_resource_group()
+              location = resource_group[:location]
             end
           else
-            if isManagedVM(instance_id)
+            if is_managed_vm?(instance_id)
               # If the instance is a managed VM, the managed disk will be created in the location of the VM.
               location = @azure_client2.get_virtual_machine_by_name(instance_id)[:location]
             else
@@ -296,6 +309,8 @@ module Bosh::AzureCloud
     def delete_disk(disk_id)
       with_thread_name("delete_disk(#{disk_id})") do
         if @use_managed_disks
+          # A managed disk may be created from an old blob disk, so its name still starts with 'bosh-data' instead of 'bosh-disk'
+          # CPI checks whether the managed disk with the name exists. If not, delete the old blob disk.
           unless disk_id.start_with?('bosh-disk')
             disk = @disk_manager2.get_disk(disk_id)
             return @disk_manager.delete_disk(disk_id) if disk.nil?
@@ -313,7 +328,8 @@ module Bosh::AzureCloud
     # @return [void]
     def attach_disk(instance_id, disk_id)
       with_thread_name("attach_disk(#{instance_id},#{disk_id})") do
-        if @use_managed_disks && isManagedVM(instance_id)
+        if @use_managed_disks
+          cloud_error("Cannot attach a managed disk to a VM with unmanaged disks") unless is_managed_vm?(instance_id)
           disk = @disk_manager2.get_disk(disk_id)
           if disk.nil?
             blob_uri = @disk_manager.get_disk_uri(disk_id)
@@ -442,12 +458,12 @@ module Bosh::AzureCloud
     def init_azure
       @azure_client2           = Bosh::AzureCloud::AzureClient2.new(azure_properties, @logger)
       @blob_manager            = Bosh::AzureCloud::BlobManager.new(azure_properties, @azure_client2)
-      @storage_account_manager = Bosh::AzureCloud::StorageAccountManager.new(azure_properties, @blob_manager, @azure_client2)
-      @table_manager           = Bosh::AzureCloud::TableManager.new(azure_properties, @storage_account_manager, @azure_client2)
-      @stemcell_manager        = Bosh::AzureCloud::StemcellManager.new(azure_properties, @blob_manager, @table_manager, @storage_account_manager)
-      @stemcell_manager2       = Bosh::AzureCloud::StemcellManager2.new(azure_properties, @blob_manager, @table_manager, @storage_account_manager, @azure_client2)
       @disk_manager            = Bosh::AzureCloud::DiskManager.new(azure_properties, @blob_manager)
-      @disk_manager2           = Bosh::AzureCloud::DiskManager2.new(azure_properties, @blob_manager, @azure_client2)
+      @storage_account_manager = Bosh::AzureCloud::StorageAccountManager.new(azure_properties, @blob_manager, @disk_manager, @azure_client2)
+      @table_manager           = Bosh::AzureCloud::TableManager.new(azure_properties, @storage_account_manager, @azure_client2)
+      @stemcell_manager        = Bosh::AzureCloud::StemcellManager.new(@blob_manager, @table_manager, @storage_account_manager)
+      @disk_manager2           = Bosh::AzureCloud::DiskManager2.new(@azure_client2)
+      @stemcell_manager2       = Bosh::AzureCloud::StemcellManager2.new(@blob_manager, @table_manager, @storage_account_manager, @azure_client2)
       @vm_manager              = Bosh::AzureCloud::VMManager.new(azure_properties, @registry.endpoint, @disk_manager, @disk_manager2, @azure_client2)
     rescue Net::OpenTimeout => e
       cloud_error("Please make sure the CPI has proper network access to Azure. #{e.inspect}") # TODO: Will it throw the error when initializing the client and manager

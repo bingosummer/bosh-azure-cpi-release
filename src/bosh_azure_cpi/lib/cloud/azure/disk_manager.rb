@@ -1,9 +1,5 @@
 module Bosh::AzureCloud
   class DiskManager
-    OS_DISK_PREFIX         = 'bosh-os'
-    DATA_DISK_PREFIX       = 'bosh-data'
-    EPHEMERAL_DISK_POSTFIX = 'ephemeral'
-
     include Bosh::Exec
     include Helpers
 
@@ -54,6 +50,13 @@ module Bosh::AzureCloud
     # @param [string] storage_account_name the storage account where the disk is created
     # @param [Integer] size disk size in GiB
     # @param [Hash] cloud_properties cloud properties to create the disk
+    #
+    # ==== cloud_properties
+    # [optional, String] caching the disk caching type. It can be either None, ReadOnly or ReadWrite.
+    #                            Default is None. Only None and ReadOnly are supported for premium disks.
+    # [optional, String] storage_account_type the storage account type. For blob disks, it can be either
+    #                    Standard_LRS, Standard_ZRS, Standard_GRS, Standard_RAGRS or Premium_LRS.
+    #
     # @return [String] disk name
     def create_disk(storage_account_name, size, cloud_properties)
       @logger.info("create_disk(#{storage_account_name}, #{size}, #{cloud_properties})")
@@ -114,7 +117,9 @@ module Bosh::AzureCloud
       validate_disk_caching(disk_caching)
 
       # The default OS disk size depends on the size of the VHD in the stemcell which is 3 GiB for now.
-      # When using OS disk to store the ephemeral data and root_disk.size is not set, resize it to 30 GiB.
+      # When using OS disk to store the ephemeral data and root_disk.size is not set,
+      # resize it to the minimum disk size if the minimum disk size is larger than 30 GiB;
+      # resize it to 30 GiB if the minimum disk size is smaller than 30 GiB.
       if disk_size.nil? && ephemeral_disk(instance_id).nil?
         disk_size = (minimum_disk_size/1024.0).ceil < 30 ? 30 : (minimum_disk_size/1024.0).ceil
       end

@@ -2,8 +2,6 @@ module Bosh::AzureCloud
   class VMManager
     include Helpers
 
-    AZURE_TAGS = {'user-agent' => 'bosh'}
-
     def initialize(azure_properties, registry_endpoint, disk_manager, disk_manager2, azure_client2)
       @azure_properties = azure_properties
       @registry_endpoint = registry_endpoint
@@ -20,8 +18,6 @@ module Bosh::AzureCloud
       vm_size = resource_pool.fetch('instance_type', nil)
       cloud_error("missing required cloud property `instance_type'.") if vm_size.nil?
 
-      # create_network_interfaces and create_availability_set must be called before defining vm_params,
-      # because @azure_client2.delete_virtual_machine won't be called if they throw any errors.
       network_interfaces = create_network_interfaces(instance_id, location, resource_pool, network_configurator)
       availability_set = create_availability_set(location, resource_pool, env)
 
@@ -55,12 +51,11 @@ module Bosh::AzureCloud
       else
         vm_params[:image_uri] = stemcell_info.uri
       end
-
       @azure_client2.create_virtual_machine(vm_params, network_interfaces, availability_set)
 
       vm_params
     rescue => e
-      if vm_params
+      if vm_params # There are no other functions between defining vm_params and create_virtual_machine
         @azure_client2.delete_virtual_machine(instance_id)
         unless vm_params[:ephemeral_disk].nil?
           if @use_managed_disks
@@ -284,7 +279,7 @@ module Bosh::AzureCloud
             :location                     => location,
             :tags                         => AZURE_TAGS,
             :platform_update_domain_count => resource_pool['platform_update_domain_count'] || 5,
-            :platform_fault_domain_count  => resource_pool['platform_fault_domain_count'] || (@use_managed_disks ? 2: 3), # For managed disks, the max count is 2
+            :platform_fault_domain_count  => resource_pool['platform_fault_domain_count'] || (@use_managed_disks ? 2 : 3), # For managed disks, the max count is 2
             :managed                      => @use_managed_disks
           }
           begin
