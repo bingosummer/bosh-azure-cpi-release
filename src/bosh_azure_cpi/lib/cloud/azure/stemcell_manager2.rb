@@ -131,7 +131,14 @@ module Bosh::AzureCloud
       end
       loop do
         user_image = @azure_client2.get_user_image_by_name(user_image_name)
-        break if user_image && user_image[:provisioning_state] == 'Succeeded'
+        if user_image 
+          provisioning_state = user_image[:provisioning_state]
+          if provisioning_state == PROVISIONING_STATE_SUCCEEDED
+            break
+          elsif provisioning_state == PROVISIONING_STATE_FAILED
+            cloud_error("get_user_image: Failed to create a user image `#{user_image_name}'")
+          end
+        end
         sleep(5)
       end
       user_image

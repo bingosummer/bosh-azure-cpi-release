@@ -33,7 +33,7 @@ module Bosh::AzureCloud
           # If the storage account has been created by other process, skip create.
           # If the storage account is being created by other process, continue to create.
           #    Azure can handle the scenario when multiple processes are creating a same storage account in parallel
-          created = storage_account[:provisioning_state] == 'Succeeded'
+          created = storage_account[:provisioning_state] == PROVISIONING_STATE_SUCCEEDED
         end
       end
       begin
@@ -52,8 +52,9 @@ module Bosh::AzureCloud
         error_msg = "create_storage_account - "
         if created
           error_msg += "The storage account `#{storage_account_name}' is created successfully.\n"
-          error_msg += "But it failed to create the containers bosh and stemcell.\n"
-          error_msg += "You need to manually create them.\n"
+          error_msg += "But it failed to prepare the containers `#{DISK_CONTAINER}' and `#{STEMCELL_CONTAINER}'.\n"
+          error_msg += "You need to manually create them if they don't exist,\n"
+          error_msg += "and set the public access level of the container `#{STEMCELL_CONTAINER}' to `#{PUBLIC_ACCESS_LEVEL_BLOB}'.\n"
         end
         error_msg += "Error: #{e.inspect}\n#{e.backtrace.join("\n")}"
         cloud_error(error_msg)
@@ -118,6 +119,12 @@ module Bosh::AzureCloud
 
     def default_storage_account_name()
       return @default_storage_account_name unless @default_storage_account_name.nil?
+
+      if @azure_properties.has_key?('storage_account_name')
+        @default_storage_account_name = @azure_properties['storage_account_name']
+        return @default_storage_account_name
+      end
+
       @default_storage_account_name = default_storage_account[:name]
     end
 
@@ -162,11 +169,6 @@ module Bosh::AzureCloud
       @logger.debug("Creating a storage account `#{storage_account_name}' with the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' in the location `#{location}'")
       create_storage_account(storage_account_name, location, 'Standard_LRS', STEMCELL_STORAGE_ACCOUNT_TAGS)
       @logger.debug("The default storage account is `#{storage_account_name}'")
-      if @blob_manager.has_container?(storage_account_name, STEMCELL_CONTAINER)
-        @blob_manager.set_stemcell_container_acl_to_public(storage_account_name)
-      else
-        cloud_error("The container `#{STEMCELL_CONTAINER}' doesn't exist in the storage account `#{storage_account_name}'")
-      end
       @azure_client2.get_storage_account_by_name(storage_account_name)
     end
   end

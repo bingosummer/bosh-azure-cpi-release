@@ -53,24 +53,31 @@ module Bosh::AzureCloud
       }
     }
 
+    PROVISIONING_STATE_SUCCEEDED  = 'Succeeded'
+    PROVISIONING_STATE_FAILED     = 'Failed'
+    PROVISIONING_STATE_INPROGRESS = 'InProgress'
+
     # About user-agent:
     # For REST APIs, the value is "BOSH-AZURE-CPI".
     # For Azure resource tags, the value is "bosh".
-    USER_AGENT                    = 'BOSH-AZURE-CPI'
+    USER_AGENT_FOR_REST           = 'BOSH-AZURE-CPI'
+    USER_AGENT_FOR_AZURE_RESOURCE = 'bosh'
     AZURE_TAGS                    = {
-      'user-agent' => 'bosh'
-
+      'user-agent' => USER_AGENT_FOR_AZURE_RESOURCE
     }
+
     AZURE_MAX_RETRY_COUNT         = 10
 
     # Storage Account
+    ACCOUNT_TYPE_STANDARD_LRS     = 'Standard_LRS'
+    ACCOUNT_TYPE_PREMIUM_LRS      = 'Premium_LRS'
     DISK_CONTAINER                = 'bosh'
     STEMCELL_CONTAINER            = 'stemcell'
     STEMCELL_TABLE                = 'stemcells'
-    STEMCELL_STORAGE_ACCOUNT_TAGS = {
-      'user-agent' => 'bosh',
+    PUBLIC_ACCESS_LEVEL_BLOB      = "blob"
+    STEMCELL_STORAGE_ACCOUNT_TAGS = AZURE_TAGS.merge({
       'type' => 'stemcell'
-    }
+    })
 
     # Disk
     OS_DISK_PREFIX                = 'bosh-os'
@@ -119,7 +126,8 @@ module Bosh::AzureCloud
     end
 
     def validate_disk_caching(caching)
-      if caching != 'None' && caching != 'ReadOnly' && caching != 'ReadWrite'
+      valid_caching = ['None', 'ReadOnly', 'ReadWrite']
+      unless valid_caching.include?(caching)
         cloud_error("Unknown disk caching #{caching}")
       end
     end
@@ -168,7 +176,7 @@ module Bosh::AzureCloud
     end
 
     def initialize_azure_storage_client(storage_account, service = 'blob')
-      azure_client = Azure::Storage::Client.create(storage_account_name: storage_account[:name], storage_access_key: storage_account[:key], user_agent_prefix: USER_AGENT)
+      azure_client = Azure::Storage::Client.create(storage_account_name: storage_account[:name], storage_access_key: storage_account[:key], user_agent_prefix: USER_AGENT_FOR_REST)
 
       case service
         when 'blob'
@@ -349,6 +357,17 @@ module Bosh::AzureCloud
       end
     end
 
+    # The file mutex
+    # Example codes:
+    # mutex = FileMutex('/tmp/bosh-lock-example', logger, 120)
+    # begin
+    #   mutex.synchronize do
+    #     Your work
+    #   end
+    # rescue => e
+    #   raise 'what action fails because of timeout' if e.message == 'timeout'
+    #   raise e.inspect
+    # end 
     class FileMutex
       def initialize(file_path, logger, expired = 60)
         @file_path = file_path
@@ -415,7 +434,7 @@ module Bosh::AzureCloud
     end
 
     def get_storage_account_type_by_instance_type(instance_type)
-      storage_account_type = 'Standard_LRS'
+      storage_account_type = ACCOUNT_TYPE_STANDARD_LRS
       instance_type = instance_type.downcase
       if instance_type.start_with?("standard_ds") || instance_type.start_with?("standard_gs") || ((instance_type =~ /^standard_f(\d)+s/) == 0)
         storage_account_type = 'Premium_LRS'

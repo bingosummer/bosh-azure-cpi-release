@@ -15,6 +15,8 @@ module Bosh::AzureCloud
     #
     # @param [Integer] size disk size in GiB
     # @param [string] location location of the disk
+    # @param [string] default_storage_account_type The default storage account type,
+    #                 which will be used if storage_account_type is not provided in cloud_properties.
     # @param [Hash] cloud_properties cloud properties to create the disk
     #
     # ==== cloud_properties
@@ -24,7 +26,7 @@ module Bosh::AzureCloud
     #                    For managed disks, it can only be Standard_LRS or Premium_LRS.
     #
     # @return [String] disk name
-    def create_disk(size, location, cloud_properties)
+    def create_disk(size, location, default_storage_account_type, cloud_properties)
       @logger.info("create_disk(#{size}, #{location}, #{cloud_properties})")
       caching = 'None'
       if !cloud_properties.nil?
@@ -35,14 +37,13 @@ module Bosh::AzureCloud
         if !cloud_properties['storage_account_type'].nil?
           storage_account_type = cloud_properties['storage_account_type']
         else
-          storage_account_type = get_storage_account_type_by_instance_type(@resource_pool['instance_type'])
+          storage_account_type = default_storage_account_type
         end
       end
       disk_name = generate_data_disk_name(caching)
-      tags = {
-        "user-agent" => "bosh",
+      tags = AZURE_TAGS.merge({
         "caching" => caching
-      }
+      })
       disk_params = {
         :name => disk_name,
         :location => location,
@@ -57,11 +58,10 @@ module Bosh::AzureCloud
 
     def create_disk_from_blob(disk_name, blob_uri, location, storage_account_type)
       caching = get_data_disk_caching(disk_name)
-      tags = {
-        "user-agent" => "bosh",
+      tags = AZURE_TAGS.merge({
         "caching" => caching,
         "original_blob" => blob_uri
-      }
+      })
       disk_params = {
         :name => disk_name,
         :location => location,
@@ -76,7 +76,7 @@ module Bosh::AzureCloud
 
     def delete_disk(disk_name)
       @logger.info("delete_disk(#{disk_name})")
-      @azure_client2.delete_managed_disk(disk_name)
+      @azure_client2.delete_managed_disk(disk_name) if has_disk?(disk_name)
     end
 
     def has_disk?(disk_name)
@@ -181,8 +181,8 @@ module Bosh::AzureCloud
     def get_data_disk_caching(disk_name)
       @logger.info("get_data_disk_caching(#{disk_name})")
       caching = "None"
-      ret = disk_name.match("(.*)-([^-]*)$")
-      caching = ret[2] unless ret.nil?
+      caching = disk_name.split('-')[-1]
+      validate_disk_caching(caching)
       caching
     end
 

@@ -193,6 +193,7 @@ module Bosh::AzureCloud
     # @return [Boolean] True if the disk exists
     def has_disk?(disk_id)
       with_thread_name("has_disk?(#{disk_id})") do
+        # TODO
         if @use_managed_disks
           @disk_manager2.has_disk?(disk_id)
         else
@@ -265,28 +266,19 @@ module Bosh::AzureCloud
         disk_id = nil
         if @use_managed_disks
           if instance_id.nil?
-            # If instance_id is nil, the managed disk will be created.
-            # If resource_pool has storage_account_location, use it as the disk location. If not, use the resource group location.
-            resource_pool = @disk_manager2.resource_pool
-            unless resource_pool.nil? || resource_pool['storage_account_location'].nil?
-              location = resource_pool['storage_account_location']
-            else
-              resource_group = @azure_client2.get_resource_group()
-              location = resource_group[:location]
-            end
+            # If instance_id is nil, the managed disk will be created in the resource group location.
+            resource_group = @azure_client2.get_resource_group()
+            location = resource_group[:location]
+            default_storage_account_type = ACCOUNT_TYPE_STANDARD_LRS
           else
-            if is_managed_vm?(instance_id)
-              # If the instance is a managed VM, the managed disk will be created in the location of the VM.
-              location = @azure_client2.get_virtual_machine_by_name(instance_id)[:location]
-            else
-              # If the instance is not a managed VM, the blob disk will be created
-              @logger.info("Create disk for vm #{instance_id}")
-              storage_account_name = get_storage_account_name_from_instance_id(instance_id)
-              disk_id = @disk_manager.create_disk(storage_account_name, size/1024, cloud_properties)
-              return disk_id
-            end
+            cloud_error("Cannot create a managed disk for a VM with blob based disks") unless is_managed_vm?(instance_id)
+            # If the instance is a managed VM, the managed disk will be created in the location of the VM.
+            vm = @azure_client2.get_virtual_machine_by_name(instance_id)
+            location = vm[:location]
+            instance_type = vm[:vm_size]
+            default_storage_account_type = get_storage_account_type_by_instance_type(instance_type)
           end
-          disk_id = @disk_manager2.create_disk(size/1024, location, cloud_properties)
+          disk_id = @disk_manager2.create_disk(size/1024, location, default_storage_account_type, cloud_properties)
         else
           storage_account_name = azure_properties['storage_account_name']
           unless instance_id.nil?
@@ -309,9 +301,9 @@ module Bosh::AzureCloud
     def delete_disk(disk_id)
       with_thread_name("delete_disk(#{disk_id})") do
         if @use_managed_disks
-          # A managed disk may be created from an old blob disk, so its name still starts with 'bosh-data' instead of 'bosh-disk'
+          # A managed disk may be created from an old blob disk, so its name still starts with 'bosh-data' instead of 'bosh-disk-data'
           # CPI checks whether the managed disk with the name exists. If not, delete the old blob disk.
-          unless disk_id.start_with?('bosh-disk')
+          unless disk_id.start_with?(MANAGED_DATA_DISK_PREFIX)
             disk = @disk_manager2.get_disk(disk_id)
             return @disk_manager.delete_disk(disk_id) if disk.nil?
           end
@@ -329,25 +321,31 @@ module Bosh::AzureCloud
     def attach_disk(instance_id, disk_id)
       with_thread_name("attach_disk(#{instance_id},#{disk_id})") do
         if @use_managed_disks
-          cloud_error("Cannot attach a managed disk to a VM with unmanaged disks") unless is_managed_vm?(instance_id)
+          cloud_error("Cannot attach a managed disk to a VM with blob based disks") unless is_managed_vm?(instance_id)
           disk = @disk_manager2.get_disk(disk_id)
           if disk.nil?
-            blob_uri = @disk_manager.get_disk_uri(disk_id)
-            storage_account_name = get_storage_account_name_from_disk_id(disk_id)
-            storage_account = @azure_client2.get_storage_account_by_name(storage_account_name)
-            location = storage_account[:location]
-            # Can not use the type of the default storage account because only Standard_LRS and Premium_LRS is supported for managed disk.
-            account_type = 'Standard_LRS'
-            account_type = 'Premium_LRS' if storage_account[:account_type].start_with?('Premium')
-            @disk_manager2.create_disk_from_blob(disk_id, blob_uri, location, account_type)
+            begin
+              blob_uri = @disk_manager.get_disk_uri(disk_id)
+              storage_account_name = get_storage_account_name_from_disk_id(disk_id)
+              storage_account = @azure_client2.get_storage_account_by_name(storage_account_name)
+              location = storage_account[:location]
+              # Can not use the type of the default storage account because only Standard_LRS and Premium_LRS are supported for managed disk.
+              account_type = (storage_account[:account_type] == ACCOUNT_TYPE_PREMIUM_LRS) ? ACCOUNT_TYPE_PREMIUM_LRS : ACCOUNT_TYPE_STANDARD_LRS
+              @disk_manager2.create_disk_from_blob(disk_id, blob_uri, location, account_type)
 
-            # Set below tags but not delete it.
-            # Users can manually delete all blobs in container `bosh` whose names start with `bosh-data` after migration is finished.
-            metadata = {
-              "user_agent" => "bosh",
-              "migrated" => "true"
-            }
-            @blob_manager.set_blob_metadata(storage_account_name, DISK_CONTAINER, "#{disk_id}.vhd", metadata)
+              # Set below tags but not delete it.
+              # Users can manually delete all blobs in container `bosh` whose names start with `bosh-data` after migration is finished.
+              metadata = {
+                "user_agent" => USER_AGENT_FOR_AZURE_RESOURCE,
+                "migrated" => "true"
+              }
+              @blob_manager.set_blob_metadata(storage_account_name, DISK_CONTAINER, "#{disk_id}.vhd", metadata)
+            rescue => e
+              if account_type # There are no other functions between defining account_type and @disk_manager2.create_disk_from_blob
+                @disk_manager2.delete_disk(disk_id)
+              end
+              cloud_error("#{e.inspect}\n#{e.backtrace.join("\n")}")
+            end
           end
         end
         lun = @vm_manager.attach_disk(instance_id, disk_id)

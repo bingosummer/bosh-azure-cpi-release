@@ -1885,8 +1885,8 @@ module Bosh::AzureCloud
         unless response.body.nil?
           ret = JSON(response.body)
           unless ret['status'].nil?
-            if ret['status'] != 'InProgress'
-              if ret['status'] == 'Succeeded'
+            if ret['status'] != PROVISIONING_STATE_INPROGRESS
+              if ret['status'] == PROVISIONING_STATE_SUCCEEDED
                 return true
               else
                 error = "status: #{ret['status']}\n"
@@ -2049,7 +2049,7 @@ module Bosh::AzureCloud
     end
 
     def merge_http_common_headers(request)
-      request['User-Agent']    = USER_AGENT
+      request['User-Agent']    = USER_AGENT_FOR_REST
       # https://msdn.microsoft.com/en-us/library/azure/mt163564.aspx
       # Caller-specified request ID, in the form of a GUID with no decoration such as curly braces.
       # If specified, this will be included in response information as a way to map the request.
