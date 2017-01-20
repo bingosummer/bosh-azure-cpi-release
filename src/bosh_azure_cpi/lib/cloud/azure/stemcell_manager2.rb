@@ -123,7 +123,8 @@ module Bosh::AzureCloud
       begin
         @azure_client2.create_user_image(user_image_params)
       rescue => e
-        if e.message.include?("The request failed due to conflict with a concurrent request") || e.message.include?("Operation 'Image Update' is not supported in Preview")
+        # Since the operation 'Image Update' is not supported in Preview, so it's a workaround for now.
+        if e.message.include?('"code": "Conflict"') || e.message.include?("Operation 'Image Update' is not supported in Preview")
           @logger.info("get_user_image: Waiting for other processes to finish creating the user image")
         else
           cloud_error("get_user_image: #{e.inspect}\n#{e.backtrace.join("\n")}")
