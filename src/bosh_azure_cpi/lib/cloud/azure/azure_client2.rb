@@ -862,11 +862,10 @@ module Bosh::AzureCloud
       @logger.debug("create_managed_snapshot - trying to create a snapshot `#{snapshot_name}' for the managed disk `#{disk_name}'")
       disk = get_managed_disk_by_name(disk_name)
       raise AzureNotFoundError, "The disk `#{disk_name}' cannot be found" if disk.nil?
-      tags = params[:tags].merge(disk[:tags])
       snapshot_url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_SNAPSHOTS, name: snapshot_name)
       snapshot = {
         'location'   => disk[:location],
-        'tags'       => tags,
+        'tags'       => params[:tags],
         'properties' => {
           'creationData' => {
             'createOption' => 'Copy',

@@ -66,8 +66,7 @@ describe Bosh::AzureCloud::AzureClient2 do
       {
         :location => "c",
         :tags     => {
-          "snapshot" => snapshot_name,
-          "disk" => disk_name
+          "snapshot" => snapshot_name
         },
         :properties => {
           :creationData => {
