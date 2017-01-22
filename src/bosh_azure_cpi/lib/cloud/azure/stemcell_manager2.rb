@@ -6,6 +6,8 @@ module Bosh::AzureCloud
     BOSH_LOCK_CREATE_STORAGE_ACCOUNT = '/tmp/bosh-lock-create-storage-account'
     BOSH_LOCK_COPY_STEMCELL = '/tmp/bosh-lock-copy-stemcell'
     BOSH_LOCK_COPY_STEMCELL_TIMEOUT = 180
+    BOSH_LOCK_CREATE_USER_IMAGE = '/tmp/bosh-lock-create-user-image'
+    BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE = 'timeout'
 
     def initialize(blob_manager, table_manager, storage_account_manager, azure_client2)
       super(blob_manager, table_manager, storage_account_manager)
@@ -53,7 +55,6 @@ module Bosh::AzureCloud
     def get_user_image_info(stemcell_name, storage_account_type, location)
       @logger.info("get_user_image_info(#{stemcell_name}, #{storage_account_type}, #{location})")
       user_image = get_user_image(stemcell_name, storage_account_type, location)
-      cloud_error("get_user_image_info: Failed to get user image for the stemcell `#{stemcell_name}'") if user_image.nil?
       StemcellInfo.new(user_image[:id], user_image[:tags])
     end
 
@@ -67,7 +68,11 @@ module Bosh::AzureCloud
 
       default_storage_account = @storage_account_manager.default_storage_account
       default_storage_account_name = default_storage_account[:name]
-      return nil unless has_stemcell?(default_storage_account_name, stemcell_name)
+      unless has_stemcell?(default_storage_account_name, stemcell_name)
+        error_message = "get_user_image: Failed to get user image for the stemcell `#{stemcell_name}' because the stemcell doesn't exist in the default storage account `#{default_storage_account_name}'"
+        @logger.error(error_message)
+        cloud_error(error_message)
+      end
 
       storage_account_name = nil
       default_storage_account_location = default_storage_account[:location]
@@ -86,7 +91,7 @@ module Bosh::AzureCloud
               @storage_account_manager.create_storage_account(storage_account_name, location, storage_account_type, STEMCELL_STORAGE_ACCOUNT_TAGS)
             end
           rescue => e
-            raise 'Failed to create a storage account because of timeout' if e.message == 'timeout'
+            raise "Failed to finish the creation of the storage account `#{storage_account_name}', `#{storage_account_type}' in location `#{location}' in 60 seconds." if e.message == BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE
             raise e.inspect
           end
           @blob_manager.prepare(storage_account_name)
@@ -106,7 +111,7 @@ module Bosh::AzureCloud
             end
           end
         rescue => e
-          raise 'Failed to create a storage account because of timeout' if e.message == 'timeout'
+          raise "Failed to finish the copying process of the stemcell `#{stemcell_name}' from the default storage account `#{default_storage_account_name}' to the storage acccount `#{storage_account_name}' in `#{BOSH_LOCK_COPY_STEMCELL_TIMEOUT}' seconds." if e.message == BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE
           raise e.inspect
         end
       end
@@ -121,15 +126,14 @@ module Bosh::AzureCloud
         :account_type        => storage_account_type
       }
       begin
-        @azure_client2.create_user_image(user_image_params)
-      rescue => e
-        # Since the operation 'Image Update' is not supported in Preview, so it's a workaround for now.
-        if e.message.include?('"code": "Conflict"') || e.message.include?("Operation 'Image Update' is not supported in Preview")
-          @logger.info("get_user_image: Waiting for other processes to finish creating the user image")
-        else
-          cloud_error("get_user_image: #{e.inspect}\n#{e.backtrace.join("\n")}")
+        mutex = FileMutex.new(BOSH_LOCK_CREATE_USER_IMAGE, @logger)
+        mutex.synchronize do
+          @azure_client2.create_user_image(user_image_params)
         end
+      rescue => e
+        cloud_error("get_user_image: #{e.inspect}\n#{e.backtrace.join("\n")}")
       end
+
       loop do
         user_image = @azure_client2.get_user_image_by_name(user_image_name)
         if user_image 

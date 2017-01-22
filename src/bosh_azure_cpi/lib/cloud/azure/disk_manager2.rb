@@ -23,7 +23,7 @@ module Bosh::AzureCloud
     # [optional, String] caching the disk caching type. It can be either None, ReadOnly or ReadWrite.
     #                            Default is None. Only None and ReadOnly are supported for premium disks.
     # [optional, String] storage_account_type the storage account type.
-    #                    For managed disks, it can only be Standard_LRS or Premium_LRS.
+    #                                         For managed disks, it can only be Standard_LRS or Premium_LRS.
     #
     # @return [String] disk name
     def create_disk(size, location, default_storage_account_type, cloud_properties)
@@ -180,7 +180,6 @@ module Bosh::AzureCloud
 
     def get_data_disk_caching(disk_name)
       @logger.info("get_data_disk_caching(#{disk_name})")
-      caching = "None"
       caching = disk_name.split('-')[-1]
       validate_disk_caching(caching)
       caching

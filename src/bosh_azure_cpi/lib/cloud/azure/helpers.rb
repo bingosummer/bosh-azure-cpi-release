@@ -90,6 +90,9 @@ module Bosh::AzureCloud
     EPHEMERAL_DISK_NAME           = 'ephemeral-disk'
     AZURE_SCSI_HOST_DEVICE_ID     = '{f8b3781b-1e82-4818-a1c3-63d806ec15bb}'
 
+    # Lock
+    BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE = 'timeout'
+
     ##
     # Raises CloudError exception
     #
@@ -102,7 +105,6 @@ module Bosh::AzureCloud
     end
 
     ## Encode all values in metadata to string.
-    ## Add a tag user-agent, value is bosh.
     # @param [Hash] metadata
     # @return [Hash]
     def encode_metadata(metadata)
@@ -362,10 +364,13 @@ module Bosh::AzureCloud
     # mutex = FileMutex('/tmp/bosh-lock-example', logger, 120)
     # begin
     #   mutex.synchronize do
-    #     Your work
+    #     # If your work is a long-running task, you need to update the lock. If it's not, you can just do_your_work_here.
+    #     do_your_work_here do
+    #       mutex.update()
+    #     end
     #   end
     # rescue => e
-    #   raise 'what action fails because of timeout' if e.message == 'timeout'
+    #   raise 'what action fails because of timeout' if e.message == BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE
     #   raise e.inspect
     # end 
     class FileMutex
@@ -376,18 +381,19 @@ module Bosh::AzureCloud
       end
 
       def synchronize
-        if self.lock
+        if lock
           begin
             yield
           ensure
-            self.unlock
+            unlock
           end
         else
-          raise "timeout" unless self.wait
+          raise BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE unless wait
         end
       end
 
       def update()
+        raise "The lock doesn't exist" unless File.exists?(@file_path)
         File.open(@file_path, 'wb') { |f|
           f.write("InProgress")
         }
@@ -399,7 +405,7 @@ module Bosh::AzureCloud
         if File.exists?(@file_path)
           if Time.new() - File.mtime(@file_path) > @expired
             File.delete(@file_path)
-            raise "timeout"
+            raise BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE
           else
             return false
           end
@@ -424,12 +430,11 @@ module Bosh::AzureCloud
           break if Time.new() - File.mtime(@file_path) > @expired
           sleep(1)
         end
-        File.delete(@file_path)
         return false
       end
 
       def unlock()
-        File.delete(@file_path)
+        File.delete(@file_path) if File.exists?(@file_path)
       end
     end
 
