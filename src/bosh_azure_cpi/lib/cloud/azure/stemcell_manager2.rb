@@ -7,7 +7,7 @@ module Bosh::AzureCloud
     BOSH_LOCK_COPY_STEMCELL = '/tmp/bosh-lock-copy-stemcell'
     BOSH_LOCK_COPY_STEMCELL_TIMEOUT = 180
     BOSH_LOCK_CREATE_USER_IMAGE = '/tmp/bosh-lock-create-user-image'
-    BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE = 'timeout'
+    BOSH_LOCK_EXCEPTION_TIMEOUT = 'timeout'
 
     def initialize(blob_manager, table_manager, storage_account_manager, azure_client2)
       super(blob_manager, table_manager, storage_account_manager)
@@ -91,7 +91,7 @@ module Bosh::AzureCloud
               @storage_account_manager.create_storage_account(storage_account_name, location, storage_account_type, STEMCELL_STORAGE_ACCOUNT_TAGS)
             end
           rescue => e
-            raise "Failed to finish the creation of the storage account `#{storage_account_name}', `#{storage_account_type}' in location `#{location}' in 60 seconds." if e.message == BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE
+            raise "Failed to finish the creation of the storage account `#{storage_account_name}', `#{storage_account_type}' in location `#{location}' in 60 seconds." if e.message == BOSH_LOCK_EXCEPTION_TIMEOUT
             raise e.inspect
           end
           @blob_manager.prepare(storage_account_name)
@@ -111,7 +111,7 @@ module Bosh::AzureCloud
             end
           end
         rescue => e
-          raise "Failed to finish the copying process of the stemcell `#{stemcell_name}' from the default storage account `#{default_storage_account_name}' to the storage acccount `#{storage_account_name}' in `#{BOSH_LOCK_COPY_STEMCELL_TIMEOUT}' seconds." if e.message == BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE
+          raise "Failed to finish the copying process of the stemcell `#{stemcell_name}' from the default storage account `#{default_storage_account_name}' to the storage acccount `#{storage_account_name}' in `#{BOSH_LOCK_COPY_STEMCELL_TIMEOUT}' seconds." if e.message == BOSH_LOCK_EXCEPTION_TIMEOUT
           raise e.inspect
         end
       end

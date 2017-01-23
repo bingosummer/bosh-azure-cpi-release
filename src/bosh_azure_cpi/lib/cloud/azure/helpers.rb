@@ -91,7 +91,8 @@ module Bosh::AzureCloud
     AZURE_SCSI_HOST_DEVICE_ID     = '{f8b3781b-1e82-4818-a1c3-63d806ec15bb}'
 
     # Lock
-    BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE = 'timeout'
+    BOSH_LOCK_EXCEPTION_TIMEOUT        = 'timeout'
+    BOSH_LOCK_EXCEPTION_LOCK_NOT_FOUND = 'lock_not_found'
 
     ##
     # Raises CloudError exception
@@ -361,16 +362,17 @@ module Bosh::AzureCloud
 
     # The file mutex
     # Example codes:
-    # mutex = FileMutex('/tmp/bosh-lock-example', logger, 120)
+    # expired = 120
+    # mutex = FileMutex('/tmp/bosh-lock-example', logger, expired)
     # begin
     #   mutex.synchronize do
-    #     # If your work is a long-running task, you need to update the lock. If it's not, you can just do_your_work_here.
+    #     # If your work is a long-running task, you need to update the lock before it timeouts. If it's not, you can just do_your_work_here.
     #     do_your_work_here do
     #       mutex.update()
     #     end
     #   end
     # rescue => e
-    #   raise 'what action fails because of timeout' if e.message == BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE
+    #   raise 'what action fails because of timeout' if e.message == BOSH_LOCK_EXCEPTION_TIMEOUT
     #   raise e.inspect
     # end 
     class FileMutex
@@ -382,21 +384,19 @@ module Bosh::AzureCloud
 
       def synchronize
         if lock
-          begin
-            yield
-          ensure
-            unlock
-          end
+          yield
+          unlock
         else
-          raise BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE unless wait
+          raise BOSH_LOCK_EXCEPTION_TIMEOUT unless wait
         end
       end
 
       def update()
-        raise "The lock doesn't exist" unless File.exists?(@file_path)
         File.open(@file_path, 'wb') { |f|
           f.write("InProgress")
         }
+      rescue => e
+        raise BOSH_LOCK_EXCEPTION_LOCK_NOT_FOUND, e
       end
 
       private
@@ -405,8 +405,10 @@ module Bosh::AzureCloud
         if File.exists?(@file_path)
           if Time.new() - File.mtime(@file_path) > @expired
             File.delete(@file_path)
-            raise BOSH_LOCK_TIMEOUT_EXCEPTION_MESSAGE
+            @logger.debug("The lock `#{@file_path}' exists, but timeouts.")
+            raise BOSH_LOCK_EXCEPTION_TIMEOUT
           else
+            @logger.debug("The lock `#{@file_path}' exists")
             return false
           end
         else
@@ -414,11 +416,12 @@ module Bosh::AzureCloud
             fd = IO::sysopen(@file_path, Fcntl::O_WRONLY | Fcntl::O_EXCL | Fcntl::O_CREAT) # Using O_EXCL, creation fails if the file exists
             f = IO.open(fd)
             f.syswrite("InProgress")
+            @logger.debug("The lock `#{@file_path}' is created")
           rescue => e
-            @logger.debug("Failed to create the lock file `#{@file_path}'. Error: #{e.inspect}\n#{e.backtrace.join("\n")}")
+            @logger.error("Failed to create the lock file `#{@file_path}'. Error: #{e.inspect}\n#{e.backtrace.join("\n")}")
             return false
           ensure
-            f.close
+            f.close unless f.nil?
           end
           return true
         end
@@ -434,7 +437,9 @@ module Bosh::AzureCloud
       end
 
       def unlock()
-        File.delete(@file_path) if File.exists?(@file_path)
+        File.delete(@file_path)
+      rescue => e
+        raise BOSH_LOCK_EXCEPTION_LOCK_NOT_FOUND, e
       end
     end
 
