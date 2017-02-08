@@ -94,6 +94,10 @@ module Bosh::AzureCloud
     BOSH_LOCK_EXCEPTION_TIMEOUT        = 'timeout'
     BOSH_LOCK_EXCEPTION_LOCK_NOT_FOUND = 'lock_not_found'
 
+    # REST Connection Errors
+    ERROR_OPENSSL_RESET           = 'SSL_connect'
+    ERROR_SOCKET_UNKNOWN_HOSTNAME = 'SocketError: Hostname not known'
+
     ##
     # Raises CloudError exception
     #
