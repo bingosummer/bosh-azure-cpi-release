@@ -69,14 +69,11 @@ module Bosh::AzureCloud
       default_storage_account = @storage_account_manager.default_storage_account
       default_storage_account_name = default_storage_account[:name]
       unless has_stemcell?(default_storage_account_name, stemcell_name)
-        error_message = "get_user_image: Failed to get user image for the stemcell `#{stemcell_name}' because the stemcell doesn't exist in the default storage account `#{default_storage_account_name}'"
-        @logger.error(error_message)
-        cloud_error(error_message)
+        cloud_error("get_user_image: Failed to get user image for the stemcell `#{stemcell_name}' because the stemcell doesn't exist in the default storage account `#{default_storage_account_name}'")
       end
 
       storage_account_name = nil
-      default_storage_account_location = default_storage_account[:location]
-      if default_storage_account_location == location
+      if location == default_storage_account[:location]
         storage_account_name = default_storage_account_name
       else
         storage_account = @azure_client2.list_storage_accounts().find{ |s|
@@ -88,13 +85,12 @@ module Bosh::AzureCloud
           mutex = FileMutex.new(BOSH_LOCK_CREATE_STORAGE_ACCOUNT, @logger)
           begin
             mutex.synchronize do
-              @storage_account_manager.create_storage_account(storage_account_name, location, storage_account_type, STEMCELL_STORAGE_ACCOUNT_TAGS)
+              @storage_account_manager.create_storage_account(storage_account_name, storage_account_type, location, STEMCELL_STORAGE_ACCOUNT_TAGS)
             end
           rescue => e
             raise "Failed to finish the creation of the storage account `#{storage_account_name}', `#{storage_account_type}' in location `#{location}' in 60 seconds." if e.message == BOSH_LOCK_EXCEPTION_TIMEOUT
             raise e.inspect
           end
-          @blob_manager.prepare(storage_account_name)
         else
           storage_account_name = storage_account[:name]
         end

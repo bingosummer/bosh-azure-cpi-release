@@ -364,21 +364,35 @@ module Bosh::AzureCloud
       end
     end
 
-    # The file mutex
+    # File Mutex
+    #
     # Example codes:
-    # expired = 120
+    #
+    # expired = 60
     # mutex = FileMutex('/tmp/bosh-lock-example', logger, expired)
+    #
+    # # If your work can finish before it timeouts.
     # begin
     #   mutex.synchronize do
-    #     # If your work is a long-running task, you need to update the lock before it timeouts. If it's not, you can just do_your_work_here.
-    #     do_your_work_here do
+    #     do_something()
+    #   end
+    # rescue => e
+    #   raise 'what action fails because of timeout' if e.message == BOSH_LOCK_EXCEPTION_TIMEOUT
+    #   raise e.inspect
+    # end
+    #
+    # # If your work is a long-running task, you need to update the lock before it timeouts.
+    # begin
+    #   mutex.synchronize do
+    #     loop do
+    #       do_something() # MUST be finished in 60 seconds. Otherwise, you need to change your loop.
     #       mutex.update()
     #     end
     #   end
     # rescue => e
     #   raise 'what action fails because of timeout' if e.message == BOSH_LOCK_EXCEPTION_TIMEOUT
     #   raise e.inspect
-    # end 
+    # end
     class FileMutex
       def initialize(file_path, logger, expired = 60)
         @file_path = file_path
@@ -448,10 +462,10 @@ module Bosh::AzureCloud
     end
 
     def get_storage_account_type_by_instance_type(instance_type)
-      storage_account_type = ACCOUNT_TYPE_STANDARD_LRS
       instance_type = instance_type.downcase
+      storage_account_type = ACCOUNT_TYPE_STANDARD_LRS
       if instance_type.start_with?("standard_ds") || instance_type.start_with?("standard_gs") || ((instance_type =~ /^standard_f(\d)+s/) == 0)
-        storage_account_type = 'Premium_LRS'
+        storage_account_type = ACCOUNT_TYPE_PREMIUM_LRS
       end
       storage_account_type
     end
@@ -463,6 +477,10 @@ module Bosh::AzureCloud
 
     def is_stemcell_storage_account?(tags)
       (STEMCELL_STORAGE_ACCOUNT_TAGS.to_a - tags.to_a).empty?
+    end
+
+    def is_ephemeral_disk?(name)
+      name.end_with?(EPHEMERAL_DISK_POSTFIX) || name == EPHEMERAL_DISK_NAME
     end
 
     private

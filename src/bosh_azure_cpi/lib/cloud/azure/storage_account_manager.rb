@@ -13,10 +13,8 @@ module Bosh::AzureCloud
       @default_storage_account = nil
     end
 
-    def create_storage_account(storage_account_name, storage_account_location, storage_account_type, tags = {})
-      @logger.debug("create_storage_account(#{storage_account_name}, #{storage_account_location}, #{storage_account_type}, #{tags})")
-
-      cloud_error("missing required cloud property `storage_account_type' to create the storage account `#{storage_account_name}'.") if storage_account_type.nil?
+    def create_storage_account(storage_account_name, storage_account_type, storage_account_location = nil, tags = {})
+      @logger.debug("create_storage_account(#{storage_account_name}, #{storage_account_type}, #{storage_account_location}, #{tags})")
 
       created = false
       result = @azure_client2.check_storage_account_name_availability(storage_account_name)
@@ -65,7 +63,7 @@ module Bosh::AzureCloud
       @logger.debug("get_storage_account_from_resource_pool(#{resource_pool})")
 
       # If storage_account_name is not specified in resource_pool, use the default storage account in global configurations
-      storage_account_name = @default_storage_account_name
+      storage_account_name = default_storage_account_name
       unless resource_pool['storage_account_name'].nil?
         if resource_pool['storage_account_name'].include?('*')
           ret = resource_pool['storage_account_name'].match('^\*{1}[a-z0-9]+\*{1}$')
@@ -107,7 +105,9 @@ module Bosh::AzureCloud
           storage_account = @azure_client2.get_storage_account_by_name(storage_account_name)
           # Create the storage account automatically if the storage account in resource_pool does not exist
           if storage_account.nil?
-            create_storage_account(storage_account_name, resource_pool['storage_account_location'], resource_pool['storage_account_type'])
+            storage_account_type = resource_pool['storage_account_type']
+            cloud_error("missing required cloud property `storage_account_type' in the resource pool.") if storage_account_type.nil?
+            create_storage_account(storage_account_name, storage_account_type, resource_pool['storage_account_location'])
           end
         end
       end
@@ -168,7 +168,7 @@ module Bosh::AzureCloud
       @logger.debug("Cannot find any existing storage account in the location `#{location}'")
       storage_account_name = "cpi#{SecureRandom.hex(10)}"
       @logger.debug("Creating a storage account `#{storage_account_name}' with the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' in the location `#{location}'")
-      create_storage_account(storage_account_name, location, 'Standard_LRS', STEMCELL_STORAGE_ACCOUNT_TAGS)
+      create_storage_account(storage_account_name, ACCOUNT_TYPE_STANDARD_LRS, location, STEMCELL_STORAGE_ACCOUNT_TAGS)
       @logger.debug("The default storage account is `#{storage_account_name}'")
       @default_storage_account = @azure_client2.get_storage_account_by_name(storage_account_name)
     end

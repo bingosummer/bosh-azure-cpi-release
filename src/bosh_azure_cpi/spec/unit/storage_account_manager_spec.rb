@@ -14,16 +14,6 @@ describe Bosh::AzureCloud::StorageAccountManager do
     let(:storage_account_type) { "fake-storage-account-type" }
     let(:tags) { {"foo" => "bar"} }
 
-    context 'when the storage account type is nil' do
-      let(:storage_account_type) { nil }
-
-      it 'should raise an error' do
-        expect {
-          storage_account_manager.create_storage_account(storage_account_name, storage_account_location, storage_account_type, tags)
-        }.to raise_error(/missing required cloud property `storage_account_type' to create the storage account `#{storage_account_name}'/)
-      end
-    end
-
     context 'when the storage account name is invalid' do
       let(:result) {
         {
@@ -39,7 +29,7 @@ describe Bosh::AzureCloud::StorageAccountManager do
 
       it 'should raise an error' do
         expect {
-          storage_account_manager.create_storage_account(storage_account_name, storage_account_location, storage_account_type, tags)
+          storage_account_manager.create_storage_account(storage_account_name, storage_account_type, storage_account_location, tags)
         }.to raise_error(/The storage account name `#{storage_account_name}' is invalid./)
       end
     end
@@ -60,7 +50,7 @@ describe Bosh::AzureCloud::StorageAccountManager do
         expect(blob_manager).to receive(:prepare).with(storage_account_name)
 
         expect(
-          storage_account_manager.create_storage_account(storage_account_name, storage_account_location, storage_account_type, tags)
+          storage_account_manager.create_storage_account(storage_account_name, storage_account_type, storage_account_location, tags)
         ).to be(true)
       end
     end
@@ -90,7 +80,7 @@ describe Bosh::AzureCloud::StorageAccountManager do
         expect(blob_manager).to receive(:prepare).with(storage_account_name)
 
         expect(
-          storage_account_manager.create_storage_account(storage_account_name, storage_account_location, storage_account_type, tags)
+          storage_account_manager.create_storage_account(storage_account_name, storage_account_type, storage_account_location, tags)
         ).to be(true)
       end
     end
@@ -124,7 +114,7 @@ describe Bosh::AzureCloud::StorageAccountManager do
         expect(blob_manager).to receive(:prepare).with(storage_account_name)
 
         expect(
-          storage_account_manager.create_storage_account(storage_account_name, storage_account_location, storage_account_type, tags)
+          storage_account_manager.create_storage_account(storage_account_name, storage_account_type, storage_account_location, tags)
         ).to be(true)
       end
     end
@@ -147,7 +137,7 @@ describe Bosh::AzureCloud::StorageAccountManager do
         expect(blob_manager).not_to receive(:prepare)
 
         expect {
-          storage_account_manager.create_storage_account(storage_account_name, storage_account_location, storage_account_type, tags)
+          storage_account_manager.create_storage_account(storage_account_name, storage_account_type, storage_account_location, tags)
         }.to raise_error(/The storage account with the name `fake-storage-account-name' does not belong to the resource group `#{MOCK_RESOURCE_GROUP_NAME}'./)
       end
     end
@@ -164,7 +154,7 @@ describe Bosh::AzureCloud::StorageAccountManager do
         expect(blob_manager).not_to receive(:prepare)
 
         expect {
-          storage_account_manager.create_storage_account(storage_account_name, storage_account_location, storage_account_type, tags)
+          storage_account_manager.create_storage_account(storage_account_name, storage_account_type, storage_account_location, tags)
         }.to raise_error(/create_storage_account - Error/)
       end
     end
@@ -194,7 +184,7 @@ describe Bosh::AzureCloud::StorageAccountManager do
         expect(client2).to receive(:create_storage_account)
 
         expect {
-          storage_account_manager.create_storage_account(storage_account_name, storage_account_location, storage_account_type, tags)
+          storage_account_manager.create_storage_account(storage_account_name, storage_account_type, storage_account_location, tags)
         }.to raise_error(/The storage account `fake-storage-account-name' is created successfully.\nBut it failed to prepare the containers/)
       end
     end
@@ -212,15 +202,13 @@ describe Bosh::AzureCloud::StorageAccountManager do
         :name => storage_account_name
       }
     }
-    let(:resource_pool) {
-      {
-        'instance_type' => 'fake-vm-size',
-        'storage_account_name' => storage_account_name
-      }
-    }
 
     context 'when resource_pool does not contain storage_account_name' do
-      let(:resource_pool) { {} }
+      let(:resource_pool) {
+        {
+          'instance_type' => 'fake-vm-size'
+        }
+      }
 
       before do
         allow(client2).to receive(:get_storage_account_by_name).with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME).and_return(default_storage_account)
@@ -235,184 +223,232 @@ describe Bosh::AzureCloud::StorageAccountManager do
       end
     end
 
-    context 'when the storage account exists' do
-      before do
-        allow(client2).to receive(:get_storage_account_by_name).with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME).and_return(default_storage_account)
-        allow(client2).to receive(:get_storage_account_by_name).with(storage_account_name).and_return(storage_account)
-      end
-
-      it 'should return the existing storage account' do
-        storage_account_manager.default_storage_account_name()
-
-        expect(
-          storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
-        ).to be(storage_account)
-      end
-    end
-
-    context 'when the storage account name is a pattern' do
-      context 'when the pattern is valid' do
+    context 'when resource_pool contains storage_account_name' do
+      context 'when the storage account name is not a pattern' do
         let(:resource_pool) {
           {
             'instance_type' => 'fake-vm-size',
-            'storage_account_name' => '*pattern*'
+            'storage_account_name' => storage_account_name
           }
         }
-        let(:storage_accounts) {
-          [
-            {
-              :name => 'pattern',
-              :location => 'fake-location'
-            }, {
-              :name => '2pattern',
-              :location => 'fake-location'
-            }, {
-              :name => 'pattern3',
-              :location => 'fake-location'
-            }, {
-              :name => '4pattern4',
-              :location => 'fake-location'
-            }, {
-              :name => 'tpattern',
-              :location => 'fake-location'
-            }, {
-              :name => 'patternt',
-              :location => 'fake-location'
-            }, {
-              :name => 'tpatternt',
-              :location => 'fake-location'
-            }, {
-              :name => 'patten',
-              :location => 'fake-location'
-            }, {
-              :name => 'foo',
-              :location => 'fake-location'
-            }
-          ]
-        }
 
-        context 'when finding an availiable storage account successfully' do
-          let(:disks) {
-            [
-              1,2,3
-            ]
-          }
-
+        context 'when the storage account exists' do
           before do
             allow(client2).to receive(:get_storage_account_by_name).with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME).and_return(default_storage_account)
-            allow(client2).to receive(:list_storage_accounts).and_return(storage_accounts)
+            allow(client2).to receive(:get_storage_account_by_name).with(storage_account_name).and_return(storage_account)
           end
 
-          context 'without storage_account_max_disk_number' do
-            before do
-              allow(disk_manager).to receive(:list_disks).and_return(disks)
-            end
+          it 'should return the existing storage account' do
+            storage_account_manager.default_storage_account_name()
 
-            it 'should not raise any error' do
-              expect(client2).not_to receive(:create_storage_account)
-              expect(disk_manager).to receive(:list_disks).with(/pattern/)
-              expect(disk_manager).not_to receive(:list_disks).with('patten')
-              expect(disk_manager).not_to receive(:list_disks).with('foo')
-
+            expect(
               storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
-            end
-          end
-
-          context 'with 2 as storage_account_max_disk_number' do
-            let(:resource_pool) {
-              {
-                'instance_type' => 'fake-vm-size',
-                'storage_account_name' => '*pattern*',
-                'storage_account_max_disk_number' => 2
-              }
-            }
-
-            before do
-              allow(disk_manager).to receive(:list_disks).and_return(disks)
-              allow(disk_manager).to receive(:list_disks).with('4pattern4').and_return([])
-            end
-
-            it 'should return an available storage account whose disk number is smaller than storage_account_max_disk_number' do
-              expect(client2).not_to receive(:create_storage_account)
-              expect(disk_manager).to receive(:list_disks).with(/pattern/)
-              expect(disk_manager).not_to receive(:list_disks).with('patten')
-              expect(disk_manager).not_to receive(:list_disks).with('foo')
-
-              expect(
-                storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
-              ).to eq(
-                {
-                  :name => '4pattern4',
-                  :location => 'fake-location'
-                }
-              )
-            end
+            ).to be(storage_account)
           end
         end
 
-        context 'when cannot find an availiable storage account' do
-          context 'when cannot find a storage account by the pattern' do
-            let(:storage_accounts) { [] }
-
-            before do
-              allow(client2).to receive(:list_storage_accounts).and_return(storage_accounts)
-            end
-
-            it 'should raise an error' do
-              expect(client2).not_to receive(:create_storage_account)
-              expect(disk_manager).not_to receive(:list_disks)
-
-              expect {
-                storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
-              }.to raise_error(/get_storage_account_from_resource_pool - Cannot find an available storage account./)
-            end
+        context 'when the storage account does not exist' do
+          before do
+            allow(client2).to receive(:get_storage_account_by_name).with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME).and_return(default_storage_account)
+            allow(client2).to receive(:get_storage_account_by_name).with(storage_account_name).and_return(nil)
           end
 
-          context 'when the disk number of every storage account is more than the limitation' do
-            let(:disks) { (1..31).to_a }
-
-            before do
-              allow(client2).to receive(:list_storage_accounts).and_return(storage_accounts)
-              allow(disk_manager).to receive(:list_disks).and_return(disks)
-            end
-
+          context 'when resource_pool does not contain storage_account_type' do
             it 'should raise an error' do
-              expect(client2).not_to receive(:create_storage_account)
+              storage_account_manager.default_storage_account_name()
 
               expect {
                 storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
-              }.to raise_error(/get_storage_account_from_resource_pool - Cannot find an available storage account./)
+              }.to raise_error(/missing required cloud property `storage_account_type'/)
             end
           end
         end
       end
 
-      context 'when the pattern is invalid' do
-        context 'when the pattern contains one asterisk' do
-          context 'when the pattern starts with one asterisk' do
-            let(:resource_pool) {
+      context 'when the storage account name is a pattern' do
+        context 'when the pattern is valid' do
+          let(:resource_pool) {
+            {
+              'instance_type' => 'fake-vm-size',
+              'storage_account_name' => '*pattern*'
+            }
+          }
+          let(:storage_accounts) {
+            [
               {
-                'instance_type' => 'fake-vm-size',
-                'storage_account_name' => '*pattern'
+                :name => 'pattern',
+                :location => 'fake-location'
+              }, {
+                :name => '2pattern',
+                :location => 'fake-location'
+              }, {
+                :name => 'pattern3',
+                :location => 'fake-location'
+              }, {
+                :name => '4pattern4',
+                :location => 'fake-location'
+              }, {
+                :name => 'tpattern',
+                :location => 'fake-location'
+              }, {
+                :name => 'patternt',
+                :location => 'fake-location'
+              }, {
+                :name => 'tpatternt',
+                :location => 'fake-location'
+              }, {
+                :name => 'patten',
+                :location => 'fake-location'
+              }, {
+                :name => 'foo',
+                :location => 'fake-location'
               }
+            ]
+          }
+
+          context 'when finding an availiable storage account successfully' do
+            let(:disks) {
+              [
+                1,2,3
+              ]
             }
 
-            it 'should raise an error' do
-              expect(client2).not_to receive(:list_storage_accounts)
-              expect(client2).not_to receive(:create_storage_account)
-              expect(disk_manager).not_to receive(:list_disks)
+            before do
+              allow(client2).to receive(:get_storage_account_by_name).with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME).and_return(default_storage_account)
+              allow(client2).to receive(:list_storage_accounts).and_return(storage_accounts)
+            end
 
-              expect {
+            context 'without storage_account_max_disk_number' do
+              before do
+                allow(disk_manager).to receive(:list_disks).and_return(disks)
+              end
+
+              it 'should not raise any error' do
+                expect(client2).not_to receive(:create_storage_account)
+                expect(disk_manager).to receive(:list_disks).with(/pattern/)
+                expect(disk_manager).not_to receive(:list_disks).with('patten')
+                expect(disk_manager).not_to receive(:list_disks).with('foo')
+
                 storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
-              }.to raise_error(/get_storage_account_from_resource_pool - storage_account_name in resource_pool is invalid./)
+              end
+            end
+
+            context 'with 2 as storage_account_max_disk_number' do
+              let(:resource_pool) {
+                {
+                  'instance_type' => 'fake-vm-size',
+                  'storage_account_name' => '*pattern*',
+                  'storage_account_max_disk_number' => 2
+                }
+              }
+
+              before do
+                allow(disk_manager).to receive(:list_disks).and_return(disks)
+                allow(disk_manager).to receive(:list_disks).with('4pattern4').and_return([])
+              end
+
+              it 'should return an available storage account whose disk number is smaller than storage_account_max_disk_number' do
+                expect(client2).not_to receive(:create_storage_account)
+                expect(disk_manager).to receive(:list_disks).with(/pattern/)
+                expect(disk_manager).not_to receive(:list_disks).with('patten')
+                expect(disk_manager).not_to receive(:list_disks).with('foo')
+
+                expect(
+                  storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
+                ).to eq(
+                  {
+                    :name => '4pattern4',
+                    :location => 'fake-location'
+                  }
+                )
+              end
             end
           end
 
-          context 'when the pattern ends with one asterisk' do
+          context 'when cannot find an availiable storage account' do
+            context 'when cannot find a storage account by the pattern' do
+              let(:storage_accounts) { [] }
+
+              before do
+                allow(client2).to receive(:list_storage_accounts).and_return(storage_accounts)
+              end
+
+              it 'should raise an error' do
+                expect(client2).not_to receive(:create_storage_account)
+                expect(disk_manager).not_to receive(:list_disks)
+
+                expect {
+                  storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
+                }.to raise_error(/get_storage_account_from_resource_pool - Cannot find an available storage account./)
+              end
+            end
+
+            context 'when the disk number of every storage account is more than the limitation' do
+              let(:disks) { (1..31).to_a }
+
+              before do
+                allow(client2).to receive(:list_storage_accounts).and_return(storage_accounts)
+                allow(disk_manager).to receive(:list_disks).and_return(disks)
+              end
+
+              it 'should raise an error' do
+                expect(client2).not_to receive(:create_storage_account)
+
+                expect {
+                  storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
+                }.to raise_error(/get_storage_account_from_resource_pool - Cannot find an available storage account./)
+              end
+            end
+          end
+        end
+
+        context 'when the pattern is invalid' do
+          context 'when the pattern contains one asterisk' do
+            context 'when the pattern starts with one asterisk' do
+              let(:resource_pool) {
+                {
+                  'instance_type' => 'fake-vm-size',
+                  'storage_account_name' => '*pattern'
+                }
+              }
+
+              it 'should raise an error' do
+                expect(client2).not_to receive(:list_storage_accounts)
+                expect(client2).not_to receive(:create_storage_account)
+                expect(disk_manager).not_to receive(:list_disks)
+
+                expect {
+                  storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
+                }.to raise_error(/get_storage_account_from_resource_pool - storage_account_name in resource_pool is invalid./)
+              end
+            end
+
+            context 'when the pattern ends with one asterisk' do
+              let(:resource_pool) {
+                {
+                  'instance_type' => 'fake-vm-size',
+                  'storage_account_name' => 'pattern*'
+                }
+              }
+
+              it 'should raise an error' do
+                expect(client2).not_to receive(:list_storage_accounts)
+                expect(client2).not_to receive(:create_storage_account)
+                expect(client2).not_to receive(:get_storage_account_by_name)
+                expect(disk_manager).not_to receive(:list_disks)
+
+                expect {
+                  storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
+                }.to raise_error(/get_storage_account_from_resource_pool - storage_account_name in resource_pool is invalid./)
+              end
+            end
+          end
+
+          context 'when the pattern contains more than two asterisks' do
             let(:resource_pool) {
               {
                 'instance_type' => 'fake-vm-size',
-                'storage_account_name' => 'pattern*'
+                'storage_account_name' => '**pattern*'
               }
             }
 
@@ -427,65 +463,45 @@ describe Bosh::AzureCloud::StorageAccountManager do
               }.to raise_error(/get_storage_account_from_resource_pool - storage_account_name in resource_pool is invalid./)
             end
           end
-        end
 
-        context 'when the pattern contains more than two asterisks' do
-          let(:resource_pool) {
-            {
-              'instance_type' => 'fake-vm-size',
-              'storage_account_name' => '**pattern*'
+          context 'when the pattern contains upper-case letters' do
+            let(:resource_pool) {
+              {
+                'instance_type' => 'fake-vm-size',
+                'storage_account_name' => '*PATTERN*'
+              }
             }
-          }
 
-          it 'should raise an error' do
-            expect(client2).not_to receive(:list_storage_accounts)
-            expect(client2).not_to receive(:create_storage_account)
-            expect(client2).not_to receive(:get_storage_account_by_name)
-            expect(disk_manager).not_to receive(:list_disks)
+            it 'should raise an error' do
+              expect(client2).not_to receive(:list_storage_accounts)
+              expect(client2).not_to receive(:create_storage_account)
+              expect(client2).not_to receive(:get_storage_account_by_name)
+              expect(disk_manager).not_to receive(:list_disks)
 
-            expect {
-              storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
-            }.to raise_error(/get_storage_account_from_resource_pool - storage_account_name in resource_pool is invalid./)
+              expect {
+                storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
+              }.to raise_error(/get_storage_account_from_resource_pool - storage_account_name in resource_pool is invalid./)
+            end
           end
-        end
 
-        context 'when the pattern contains upper-case letters' do
-          let(:resource_pool) {
-            {
-              'instance_type' => 'fake-vm-size',
-              'storage_account_name' => '*PATTERN*'
+          context 'when the pattern contains special characters' do
+            let(:resource_pool) {
+              {
+                'instance_type' => 'fake-vm-size',
+                'storage_account_name' => '*pat+tern*'
+              }
             }
-          }
 
-          it 'should raise an error' do
-            expect(client2).not_to receive(:list_storage_accounts)
-            expect(client2).not_to receive(:create_storage_account)
-            expect(client2).not_to receive(:get_storage_account_by_name)
-            expect(disk_manager).not_to receive(:list_disks)
+            it 'should raise an error' do
+              expect(client2).not_to receive(:list_storage_accounts)
+              expect(client2).not_to receive(:create_storage_account)
+              expect(client2).not_to receive(:get_storage_account_by_name)
+              expect(disk_manager).not_to receive(:list_disks)
 
-            expect {
-              storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
-            }.to raise_error(/get_storage_account_from_resource_pool - storage_account_name in resource_pool is invalid./)
-          end
-        end
-
-        context 'when the pattern contains special characters' do
-          let(:resource_pool) {
-            {
-              'instance_type' => 'fake-vm-size',
-              'storage_account_name' => '*pat+tern*'
-            }
-          }
-
-          it 'should raise an error' do
-            expect(client2).not_to receive(:list_storage_accounts)
-            expect(client2).not_to receive(:create_storage_account)
-            expect(client2).not_to receive(:get_storage_account_by_name)
-            expect(disk_manager).not_to receive(:list_disks)
-
-            expect {
-              storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
-            }.to raise_error(/get_storage_account_from_resource_pool - storage_account_name in resource_pool is invalid./)
+              expect {
+                storage_account_manager.get_storage_account_from_resource_pool(resource_pool)
+              }.to raise_error(/get_storage_account_from_resource_pool - storage_account_name in resource_pool is invalid./)
+            end
           end
         end
       end

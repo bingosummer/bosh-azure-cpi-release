@@ -31,8 +31,8 @@ describe Bosh::AzureCloud::TableManager do
   }
 
   before do
-    allow(storage_account_manager).to receive(:default_storage_account_name).
-      and_return(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME)
+    allow(storage_account_manager).to receive(:default_storage_account).
+      and_return(storage_account)
     allow(Azure::Storage::Client).to receive(:create).
       and_return(azure_client)
     allow(Bosh::AzureCloud::AzureClient2).to receive(:new).

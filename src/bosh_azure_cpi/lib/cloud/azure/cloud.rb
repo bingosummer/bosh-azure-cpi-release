@@ -78,6 +78,7 @@ module Bosh::AzureCloud
     #    # storage_account_name may be a pattern '*xxx*'. CPI will filter all storage accounts under the resource group
     #      by the pattern and pick one storage account which has less than 30 disks to create the VM.
     #    "storage_account_name" => "xxx",
+    #    "storage_account_type" => "Standard_LRS",
     #    "storage_account_max_disk_number" => 30,
     #    "availability_set" => "DEA_set",
     #    "platform_update_domain_count" => 5,
@@ -116,7 +117,8 @@ module Bosh::AzureCloud
       with_thread_name("create_vm(#{agent_id}, ...)") do
         if @use_managed_disks
           instance_id = agent_id
-          storage_account_type = get_storage_account_type_by_instance_type(resource_pool['instance_type'])
+          storage_account_type = resource_pool['storage_account_type']
+          storage_account_type = get_storage_account_type_by_instance_type(resource_pool['instance_type']) if storage_account_type.nil?
           if !resource_pool['storage_account_location'].nil?
             location = resource_pool['storage_account_location'] 
           else
@@ -395,7 +397,7 @@ module Bosh::AzureCloud
         vm = @vm_manager.find(instance_id)
         raise Bosh::Clouds::VMNotFound, "VM `#{instance_id}' cannot be found" if vm.nil?
         vm[:data_disks].each do |disk|
-          disks << disk[:name] if disk[:name] != EPHEMERAL_DISK_NAME
+          disks << disk[:name] unless is_ephemeral_disk?(disk[:name])
         end
         disks
       end
