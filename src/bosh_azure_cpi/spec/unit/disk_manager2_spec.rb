@@ -252,7 +252,7 @@ describe Bosh::AzureCloud::DiskManager2 do
     let(:instance_id) { "fake-instance-id" }
 
     it "returns the right ephemeral disk name" do
-      expect(disk_manager2.generate_ephemeral_disk_name(instance_id)).to eq("#{managed_os_disk_prefix}-fake-instance-id-ephemeral")
+      expect(disk_manager2.generate_ephemeral_disk_name(instance_id)).to eq("#{managed_os_disk_prefix}-fake-instance-id-ephemeral-disk")
     end
   end
 
@@ -497,7 +497,7 @@ describe Bosh::AzureCloud::DiskManager2 do
 
   describe "#ephemeral_disk" do
     let(:instance_id) { 'fake-instance-id' }
-    let(:disk_name) { "#{managed_os_disk_prefix}-#{instance_id}-ephemeral" }
+    let(:disk_name) { "#{managed_os_disk_prefix}-#{instance_id}-ephemeral-disk" }
 
     context "without ephemeral_disk" do
       context "with a valid instance_type" do

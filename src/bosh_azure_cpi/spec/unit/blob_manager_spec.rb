@@ -613,17 +613,15 @@ describe Bosh::AzureCloud::BlobManager do
     end
 
     context "when the container exists" do
-      let(:container) { instance_double(Azure::Storage::Blob::Container::Container) }
-      let(:container_properties) { "fake-properties" }
-
       before do
-        allow(blob_service).to receive(:get_container_properties).
-          with(container_name, options).and_return(container)
-        allow(container).to receive(:properties).and_return(container_properties)
+        allow(blob_service).to receive(:create_container).
+          and_raise("ContainerAlreadyExists")
       end
 
       it "does not create the container" do
-        expect(blob_service).not_to receive(:create_container)
+        expect(blob_service).to receive(:create_container).
+          with(container_name, options).
+          and_return(true)
         expect(blob_service).to receive(:set_container_acl).
           with(anything, 'blob', options)
 
@@ -639,7 +637,8 @@ describe Bosh::AzureCloud::BlobManager do
 
       it "create the container" do
         expect(blob_service).to receive(:create_container).
-          with(container_name, options)
+          with(container_name, options).
+          and_return(true)
         expect(blob_service).to receive(:set_container_acl).
           with(anything, 'blob', options)
 

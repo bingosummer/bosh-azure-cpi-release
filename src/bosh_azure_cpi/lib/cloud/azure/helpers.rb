@@ -69,25 +69,23 @@ module Bosh::AzureCloud
     AZURE_MAX_RETRY_COUNT         = 10
 
     # Storage Account
-    ACCOUNT_TYPE_STANDARD_LRS     = 'Standard_LRS'
-    ACCOUNT_TYPE_PREMIUM_LRS      = 'Premium_LRS'
-    DISK_CONTAINER                = 'bosh'
-    STEMCELL_CONTAINER            = 'stemcell'
-    STEMCELL_TABLE                = 'stemcells'
-    PUBLIC_ACCESS_LEVEL_BLOB      = "blob"
-    STEMCELL_STORAGE_ACCOUNT_TAGS = AZURE_TAGS.merge({
+    STORAGE_ACCOUNT_TYPE_STANDARD_LRS = 'Standard_LRS'
+    STORAGE_ACCOUNT_TYPE_PREMIUM_LRS  = 'Premium_LRS'
+    STEMCELL_STORAGE_ACCOUNT_TAGS     = AZURE_TAGS.merge({
       'type' => 'stemcell'
     })
+    DISK_CONTAINER                    = 'bosh'
+    STEMCELL_CONTAINER                = 'stemcell'
+    STEMCELL_TABLE                    = 'stemcells'
+    PUBLIC_ACCESS_LEVEL_BLOB          = "blob"
 
     # Disk
     OS_DISK_PREFIX                = 'bosh-os'
     DATA_DISK_PREFIX              = 'bosh-data'
     MANAGED_OS_DISK_PREFIX        = 'bosh-disk-os'
     MANAGED_DATA_DISK_PREFIX      = 'bosh-disk-data'
-    EPHEMERAL_DISK_POSTFIX        = 'ephemeral'
+    EPHEMERAL_DISK_POSTFIX        = 'ephemeral-disk'
     STEMCELL_PREFIX               = 'bosh-stemcell'
-
-    EPHEMERAL_DISK_NAME           = 'ephemeral-disk'
     AZURE_SCSI_HOST_DEVICE_ID     = '{f8b3781b-1e82-4818-a1c3-63d806ec15bb}'
 
     # Lock
@@ -411,8 +409,9 @@ module Bosh::AzureCloud
 
       def update()
         File.open(@file_path, 'wb') { |f|
-          f.write("InProgress")
+          f.write("#{Process.pid}")
         }
+        @logger.debug("The lock `#{@file_path}' is updated by the process `#{Process.pid}'")
       rescue => e
         raise BOSH_LOCK_EXCEPTION_LOCK_NOT_FOUND, e
       end
@@ -433,10 +432,10 @@ module Bosh::AzureCloud
           begin
             fd = IO::sysopen(@file_path, Fcntl::O_WRONLY | Fcntl::O_EXCL | Fcntl::O_CREAT) # Using O_EXCL, creation fails if the file exists
             f = IO.open(fd)
-            f.syswrite("InProgress")
-            @logger.debug("The lock `#{@file_path}' is created")
-          rescue => e
-            @logger.error("Failed to create the lock file `#{@file_path}'. Error: #{e.inspect}\n#{e.backtrace.join("\n")}")
+            f.syswrite("#{Process.pid}")
+            @logger.debug("The lock `#{@file_path}' is created by the process `#{Process.pid}'")
+          rescue Errno::EEXIST => e
+            @logger.error("Failed to create the lock file `#{@file_path}' because it already exists. Error: #{e.inspect}\n#{e.backtrace.join("\n")}")
             return false
           ensure
             f.close unless f.nil?
@@ -463,9 +462,9 @@ module Bosh::AzureCloud
 
     def get_storage_account_type_by_instance_type(instance_type)
       instance_type = instance_type.downcase
-      storage_account_type = ACCOUNT_TYPE_STANDARD_LRS
+      storage_account_type = STORAGE_ACCOUNT_TYPE_STANDARD_LRS
       if instance_type.start_with?("standard_ds") || instance_type.start_with?("standard_gs") || ((instance_type =~ /^standard_f(\d)+s/) == 0)
-        storage_account_type = ACCOUNT_TYPE_PREMIUM_LRS
+        storage_account_type = STORAGE_ACCOUNT_TYPE_PREMIUM_LRS
       end
       storage_account_type
     end
@@ -480,7 +479,7 @@ module Bosh::AzureCloud
     end
 
     def is_ephemeral_disk?(name)
-      name.end_with?(EPHEMERAL_DISK_POSTFIX) || name == EPHEMERAL_DISK_NAME
+      name.end_with?(EPHEMERAL_DISK_POSTFIX)
     end
 
     private

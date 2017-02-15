@@ -168,7 +168,7 @@ module Bosh::AzureCloud
       @logger.debug("Cannot find any existing storage account in the location `#{location}'")
       storage_account_name = "cpi#{SecureRandom.hex(10)}"
       @logger.debug("Creating a storage account `#{storage_account_name}' with the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' in the location `#{location}'")
-      create_storage_account(storage_account_name, ACCOUNT_TYPE_STANDARD_LRS, location, STEMCELL_STORAGE_ACCOUNT_TAGS)
+      create_storage_account(storage_account_name, STORAGE_ACCOUNT_TYPE_STANDARD_LRS, location, STEMCELL_STORAGE_ACCOUNT_TAGS)
       @logger.debug("The default storage account is `#{storage_account_name}'")
       @default_storage_account = @azure_client2.get_storage_account_by_name(storage_account_name)
     end

@@ -259,10 +259,8 @@ module Bosh::AzureCloud
     def prepare(storage_account_name, containers: [DISK_CONTAINER, STEMCELL_CONTAINER])
       @logger.info("prepare(#{storage_account_name}, #{containers})")
       containers.each do |container|
-        unless has_container?(storage_account_name, container)
-          @logger.debug("Creating the container `#{container}' in the storage account `#{storage_account_name}'")
-          create_container(storage_account_name, container)
-        end
+        @logger.debug("Creating the container `#{container}' in the storage account `#{storage_account_name}'")
+        create_container(storage_account_name, container)
       end
       set_stemcell_container_acl_to_public(storage_account_name)
     end

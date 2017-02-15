@@ -146,7 +146,7 @@ module Bosh::AzureCloud
       end
 
       return {
-        :disk_name    => EPHEMERAL_DISK_NAME,
+        :disk_name    => EPHEMERAL_DISK_POSTFIX,
         :disk_uri     => get_disk_uri(generate_ephemeral_disk_name(instance_id)),
         :disk_size    => disk_size,
         :disk_caching => 'ReadWrite'

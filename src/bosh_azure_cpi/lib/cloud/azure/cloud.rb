@@ -271,7 +271,7 @@ module Bosh::AzureCloud
             # If instance_id is nil, the managed disk will be created in the resource group location.
             resource_group = @azure_client2.get_resource_group()
             location = resource_group[:location]
-            default_storage_account_type = ACCOUNT_TYPE_STANDARD_LRS
+            default_storage_account_type = STORAGE_ACCOUNT_TYPE_STANDARD_LRS
           else
             cloud_error("Cannot create a managed disk for a VM with blob based disks") unless is_managed_vm?(instance_id)
             # If the instance is a managed VM, the managed disk will be created in the location of the VM.
@@ -332,7 +332,7 @@ module Bosh::AzureCloud
               storage_account = @azure_client2.get_storage_account_by_name(storage_account_name)
               location = storage_account[:location]
               # Can not use the type of the default storage account because only Standard_LRS and Premium_LRS are supported for managed disk.
-              account_type = (storage_account[:account_type] == ACCOUNT_TYPE_PREMIUM_LRS) ? ACCOUNT_TYPE_PREMIUM_LRS : ACCOUNT_TYPE_STANDARD_LRS
+              account_type = (storage_account[:account_type] == STORAGE_ACCOUNT_TYPE_PREMIUM_LRS) ? STORAGE_ACCOUNT_TYPE_PREMIUM_LRS : STORAGE_ACCOUNT_TYPE_STANDARD_LRS
               @disk_manager2.create_disk_from_blob(disk_id, blob_uri, location, account_type)
 
               # Set below tags but not delete it.

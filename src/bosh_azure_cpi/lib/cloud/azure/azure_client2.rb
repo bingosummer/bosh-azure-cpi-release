@@ -317,7 +317,7 @@ module Bosh::AzureCloud
 
     # Attach a specified disk to a virtual machine
     # @param [String] name      - Name of virtual machine.
-    # @param [String] disk_name - Disk name. If managed is ture, disk_name should match the resource name of the managed disk. 
+    # @param [String] disk_name - Disk name. If managed is true, disk_name should match the resource name of the managed disk. 
     # @param [String] disk_uri  - URI of disk (managed: false) or ID of managed disk (managed: true)
     # @param [String] caching   - Caching option: None, ReadOnly or ReadWrite
     # @param [Boolean] managed  - Needs to be true to attach disk to a managed disk VM.
@@ -519,7 +519,7 @@ module Bosh::AzureCloud
     # * +:location+                     - String. The location where the availability set will be created.
     # * +:tags+                         - Hash. Tags of availability set.
     # * +:platform_update_domain_count+ - Integer. Specifies the update domain count of availability set.
-    # * +:platform_fault_domain_count+  - Integer. Specifies the fault domain count of availability set. The value must be between '1' and '2' inclusive if managed is true.
+    # * +:platform_fault_domain_count+  - Integer. Specifies the fault domain count of availability set. The max value is 2 if managed is true.
     # * +:managed                       - Boolean. Needs to be true if the availability set intends to host managed disk VMs.
     #
     # @return [Boolean]
