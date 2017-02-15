@@ -94,7 +94,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/dn758095.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/resources/resourcegroups#ResourceGroups_Get
     #
     def get_resource_group()
       resource_group = nil
@@ -168,7 +168,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163591.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/virtualmachines-create-or-update
     #
     def create_virtual_machine(vm_params, network_interfaces, availability_set = nil)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_VIRTUAL_MACHINES, name: vm_params[:name])
@@ -287,7 +287,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163577.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/virtualmachines-restart
     #
     def restart_virtual_machine(name)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_VIRTUAL_MACHINES, name: name, others: 'restart')
@@ -300,7 +300,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163591.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/virtualmachines-create-or-update
     #
     def update_tags_of_virtual_machine(name, tags)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_VIRTUAL_MACHINES, name: name)
@@ -324,7 +324,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163591.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/virtualmachines-create-or-update
     #
     def attach_disk_to_virtual_machine(name, disk_name, disk_uri, caching, managed = false)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_VIRTUAL_MACHINES, name: name)
@@ -386,7 +386,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163591.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/virtualmachines-create-or-update
     #
     def detach_disk_from_virtual_machine(name, disk_name)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_VIRTUAL_MACHINES, name: name)
@@ -413,7 +413,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163682.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/virtualmachines-get
     #
     def get_virtual_machine_by_name(name)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_VIRTUAL_MACHINES, name: name)
@@ -425,7 +425,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163682.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/virtualmachines-get
     #
     def get_virtual_machine(url)
       vm = nil
@@ -496,7 +496,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163594.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/virtualmachines-delete
     #
     def delete_virtual_machine(name)
       @logger.debug("delete_virtual_machine - trying to delete #{name}")
@@ -524,7 +524,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163607.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/compute/availabilitysets/availabilitysets-create
     #
     def create_availability_set(params)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_AVAILABILITY_SETS, name: params[:name])
@@ -548,7 +548,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163594.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/compute/availabilitysets/availabilitysets-get
     #
     def get_availability_set_by_name(name)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_AVAILABILITY_SETS, name: name)
@@ -560,7 +560,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163594.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/compute/availabilitysets/availabilitysets-get
     #
     def get_availability_set(url)
       availability_set = nil
@@ -593,7 +593,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163602.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/compute/availabilitysets/availabilitysets-delete
     #
     def delete_availability_set(name)
       @logger.debug("delete_availability_set - trying to delete #{name}")
@@ -617,8 +617,9 @@ module Bosh::AzureCloud
     # * +:tags+                         - Hash. Tags of the empty managed disk.
     # * +:disk_size+                    - Integer. Specifies the size in GB of the empty managed disk.
     # * +:account_type+                 - String. Specifies the account type of the empty managed disk.
-    #                                     Optional values: Standard_LRS, Standard_ZRS, Standard_GRS, Standard_RAGRS or Premium_LRS.
-    #                                     Reference https://msdn.microsoft.com/en-us/library/azure/mt163564.aspx.
+    #                                     Optional values: Standard_LRS or Premium_LRS.
+    #
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/disks/disks-create-or-update
     #
     def create_empty_managed_disk(params)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_DISKS, name: params[:name])
@@ -650,8 +651,9 @@ module Bosh::AzureCloud
     # * +:tags+                         - Hash. Tags of the managed disk.
     # * +:source_uri+                   - String. The SAS URI of the source storage blob.
     # * +:account_type+                 - String. Specifies the account type of the managed disk.
-    #                                     Optional values: Standard_LRS, Standard_ZRS, Standard_GRS, Standard_RAGRS or Premium_LRS.
-    #                                     Reference https://msdn.microsoft.com/en-us/library/azure/mt163564.aspx.
+    #                                     Optional values: Standard_LRS or Premium_LRS.
+    #
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/disks/disks-create-or-update
     #
     def create_managed_disk_from_blob(params)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_DISKS, name: params[:name])
@@ -674,7 +676,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See TBD
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/disks/disks-delete
     #
     def delete_managed_disk(name)
       @logger.debug("delete_managed_disk - trying to delete #{name}")
@@ -687,7 +689,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See TBD
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/disks/disks-get
     #
     def get_managed_disk_by_name(name)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_DISKS, name: name)
@@ -699,18 +701,18 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See TBD
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/disks/disks-get
     #
     def get_managed_disk(url)
       result = get_resource_by_id(url)
       parse_managed_disk(result)
     end
 
-    # List managed disks under the default resource group
+    # List managed disks within the default resource group
     #
     # @return [Array]
     #
-    # @See TBD
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/disks/disks-list-by-resource-group
     #
     def list_managed_disks()
       managed_disks = []
@@ -730,7 +732,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See TBD
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/disks/disks-get
     #
     def get_tags_of_managed_disk(name)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_DISKS, name: name)
@@ -755,11 +757,10 @@ module Bosh::AzureCloud
     # * +:source_uri+                   - String. The SAS URI of the source storage blob.
     # * +:account_type+                 - String. Specifies the account type of the user image.
     #                                     Possible values: Standard_LRS or Premium_LRS.
-    #                                     Reference https://msdn.microsoft.com/en-us/library/azure/mt163564.aspx.
     #
     # @return [Boolean]
     #
-    # @See TBD
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/images/images-create
     #
     def create_user_image(params)
       @logger.debug("create_user_image - trying to create a user image `#{params[:name]}'")
@@ -788,7 +789,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See TBD
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/images/images-delete
     #
     def delete_user_image(name)
       @logger.debug("delete_user_image - trying to delete `#{name}'")
@@ -801,7 +802,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See TBD
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/images/images-get
     #
     def get_user_image_by_name(name)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_IMAGES, name: name)
@@ -813,18 +814,18 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See TBD
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/images/images-get
     #
     def get_user_image(url)
       result = get_resource_by_id(url)
       parse_user_image(result)
     end
 
-    # List user images under the default resource group
+    # List user images within the default resource group
     #
     # @return [Array]
     #
-    # @See TBD
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/images/images-list-by-resource-group
     #
     def list_user_images()
       user_images = []
@@ -854,7 +855,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See TBD
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/snapshots/snapshots-create-or-update
     #
     def create_managed_snapshot(params)
       snapshot_name = params[:name]
@@ -882,7 +883,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See TBD
+    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/snapshots/snapshots-delete
     #
     def delete_managed_snapshot(name)
       @logger.debug("delete_managed_snapshot - trying to delete `#{name}'")
@@ -899,7 +900,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163590.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/create-or-update-a-public-ip-address
     #
     def create_public_ip(name, location, is_static = true)
       url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_NETWORK_PUBLIC_IP_ADDRESSES, name: name)
@@ -918,7 +919,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163570.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/get-information-about-a-public-ip-address
     #
     def get_public_ip_by_name(name)
       url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_NETWORK_PUBLIC_IP_ADDRESSES, name: name)
@@ -930,19 +931,19 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163570.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/get-information-about-a-public-ip-address
     #
     def get_public_ip(url)
       result = get_resource_by_id(url)
       parse_public_ip(result)
     end
 
-    # List all public IPs under a specified resource group
+    # List all public IPs within a specified resource group
     # @param [String] resource_group_name - Name of resource group.
     #
     # @return [Array]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163657.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/list-public-ip-addresses-within-a-resource-group
     #
     def list_public_ips(resource_group_name)
       ip_addresses = []
@@ -962,7 +963,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163631.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/delete-a-public-ip-address
     #
     def delete_public_ip(name)
       @logger.debug("delete_public_ip - trying to delete #{name}")
@@ -981,7 +982,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163574.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/loadbalancer/create-or-update-a-load-balancer
     #
     def create_load_balancer(name,  public_ip, tags, tcp_endpoints = [], udp_endpoints = [])
       url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_NETWORK_LOAD_BALANCERS, name: name)
@@ -1047,7 +1048,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163636.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/loadbalancer/get-information-about-a-load-balancer
     #
     def get_load_balancer_by_name(name)
       url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_NETWORK_LOAD_BALANCERS, name: name)
@@ -1059,7 +1060,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163636.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/loadbalancer/get-information-about-a-load-balancer
     #
     def get_load_balancer(url)
       load_balancer = nil
@@ -1107,7 +1108,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163566.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/loadbalancer/delete-a-load-balancer
     #
     def delete_load_balancer(name)
       @logger.debug("delete_load_balancer - trying to delete #{name}")
@@ -1139,7 +1140,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163668.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/create-or-update-a-network-interface-card
     #
     def create_network_interface(nic_params, subnet, tags, load_balancer = nil)
       url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_NETWORK_INTERFACES, name: nic_params[:name])
@@ -1188,7 +1189,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163611.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/get-information-about-a-network-interface-card
     #
     def get_network_interface_by_name(name)
       url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_NETWORK_INTERFACES, name: name)
@@ -1200,7 +1201,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163611.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/get-information-about-a-network-interface-card
     #
     def get_network_interface(url)
       result = get_resource_by_id(url)
@@ -1212,7 +1213,7 @@ module Bosh::AzureCloud
     #
     # @return [Array] - Array of network interfaces, however, the network interface here will not contain details about public ip or load balancer.
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163611.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/list-network-interface-cards-within-a-resource-group
     #
     def list_network_interfaces_by_instance_id(keyword)
       network_interfaces = []
@@ -1238,7 +1239,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163562.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/delete-a-network-interface-card
     #
     def delete_network_interface(name)
       @logger.debug("delete_network_interface - trying to delete #{name}")
@@ -1255,7 +1256,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163583.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/create-or-update-a-subnet
     #
     def get_network_subnet_by_name(resource_group_name, vnet_name, subnet_name)
       url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_NETWORK_VNETS, resource_group_name: resource_group_name, name: vnet_name, others: "subnets/#{subnet_name}")
@@ -1267,7 +1268,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163583.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/get-information-about-a-subnet
     #
     def get_network_subnet(url)
       subnet = nil
@@ -1292,7 +1293,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163654.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/get-information-about-a-network-security-group
     #
     def get_network_security_group_by_name(resource_group_name, name)
       url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_NETWORK_SECURITY_GROUPS, resource_group_name: resource_group_name, name: name)
@@ -1304,7 +1305,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163654.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/network/get-information-about-a-network-security-group
     #
     def get_network_security_group(url)
       nsg = nil
@@ -1332,7 +1333,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163564.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/storagerp/storageaccounts#StorageAccounts_Create
     #
     def create_storage_account(name, location, account_type, tags)
       url = rest_api_url(REST_API_PROVIDER_STORAGE, REST_API_STORAGE_ACCOUNTS, name: name)
@@ -1390,7 +1391,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163642.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/storagerp/storageaccounts#StorageAccounts_CheckNameAvailability
     #
     def check_storage_account_name_availability(name)
       url =  "/subscriptions/#{URI.escape(@azure_properties['subscription_id'])}"
@@ -1416,7 +1417,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163553.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/storagerp/storageaccounts#StorageAccounts_GetProperties
     #
     def get_storage_account_by_name(name)
       url = rest_api_url(REST_API_PROVIDER_STORAGE, REST_API_STORAGE_ACCOUNTS, name: name)
@@ -1428,7 +1429,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163553.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/storagerp/storageaccounts#StorageAccounts_GetProperties
     #
     def get_storage_account(url)
       storage_account = nil
@@ -1455,7 +1456,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://msdn.microsoft.com/en-us/library/azure/mt163589.aspx
+    # @See https://docs.microsoft.com/en-us/rest/api/storagerp/storageaccounts#StorageAccounts_ListKeys
     #
     def get_storage_account_keys_by_name(name)
       result = nil
@@ -1474,7 +1475,7 @@ module Bosh::AzureCloud
       keys
     end
 
-    # List storage accounts under the default resource group
+    # List storage accounts within the default resource group
     #
     # @return [Array]
     #
@@ -2025,7 +2026,7 @@ module Bosh::AzureCloud
 
     def merge_http_common_headers(request)
       request['User-Agent']    = USER_AGENT_FOR_REST
-      # https://msdn.microsoft.com/en-us/library/azure/mt163564.aspx
+      # https://msdn.microsoft.com/en-us/library/mt766820.aspx
       # Caller-specified request ID, in the form of a GUID with no decoration such as curly braces.
       # If specified, this will be included in response information as a way to map the request.
       request['x-ms-client-request-id'] = SecureRandom.uuid
