@@ -9,6 +9,8 @@ set -e
 : ${AZURE_STORAGE_ACCOUNT_NAME:?}
 : ${AZURE_GROUP_NAME_FOR_VMS:?}
 : ${AZURE_GROUP_NAME_FOR_NETWORK:?}
+: ${AZURE_GROUP_NAME_FOR_VMS_MANAGED_DISKS:?}
+: ${AZURE_GROUP_NAME_FOR_NETWORK_MANAGED_DISKS:?}
 : ${AZURE_VNET_NAME_FOR_LIFECYCLE:?}
 : ${AZURE_BOSH_SUBNET_NAME:?}
 : ${AZURE_BOSH_SECOND_SUBNET_NAME:?}
@@ -54,6 +56,8 @@ pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null
 popd > /dev/null
 
 # With managed disks and default storage account
+export BOSH_AZURE_RESOURCE_GROUP_NAME_FOR_VMS=${AZURE_GROUP_NAME_FOR_VMS_MANAGED_DISKS}
+export BOSH_AZURE_RESOURCE_GROUP_NAME_FOR_NETWORK=${AZURE_GROUP_NAME_FOR_NETWORK_MANAGED_DISKS}
 export BOSH_AZURE_STORAGE_ACCOUNT_NAME=${AZURE_STORAGE_ACCOUNT_NAME}
 export BOSH_AZURE_USE_MANAGED_DISKS=true
 pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null
@@ -62,6 +66,8 @@ pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null
 popd > /dev/null
 
 # With managed disks, without default storage account
+export BOSH_AZURE_RESOURCE_GROUP_NAME_FOR_VMS=${AZURE_GROUP_NAME_FOR_VMS_MANAGED_DISKS}
+export BOSH_AZURE_RESOURCE_GROUP_NAME_FOR_NETWORK=${AZURE_GROUP_NAME_FOR_NETWORK_MANAGED_DISKS}
 unset BOSH_AZURE_STORAGE_ACCOUNT_NAME
 export BOSH_AZURE_USE_MANAGED_DISKS=true
 pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null

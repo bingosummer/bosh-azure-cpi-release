@@ -55,6 +55,7 @@ module Bosh::AzureCloud
 
     PROVISIONING_STATE_SUCCEEDED  = 'Succeeded'
     PROVISIONING_STATE_FAILED     = 'Failed'
+    PROVISIONING_STATE_CANCELED   = 'Canceled'
     PROVISIONING_STATE_INPROGRESS = 'InProgress'
 
     # About user-agent:

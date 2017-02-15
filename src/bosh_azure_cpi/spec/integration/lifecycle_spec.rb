@@ -21,7 +21,7 @@ describe Bosh::AzureCloud::Cloud do
 
   let(:azure_environment)    { ENV.fetch('BOSH_AZURE_ENVIRONMENT', 'AzureCloud') }
   let(:storage_account_name) { ENV.fetch('BOSH_AZURE_STORAGE_ACCOUNT_NAME', nil) }
-  let(:use_managed_disks)    { ENV.fetch('BOSH_AZURE_USE_MANAGED_DISKS', false) }
+  let(:use_managed_disks)    { ENV.fetch('BOSH_AZURE_USE_MANAGED_DISKS', false).to_s == 'true' }
   let(:vnet_name)            { ENV.fetch('BOSH_AZURE_VNET_NAME', 'boshvnet-crp') }
   let(:subnet_name)          { ENV.fetch('BOSH_AZURE_SUBNET_NAME', 'BOSH1') }
   let(:second_subnet_name)   { ENV.fetch('BOSH_AZURE_SECOND_SUBNET_NAME', 'BOSH2') }
@@ -63,8 +63,7 @@ describe Bosh::AzureCloud::Cloud do
   }
 
   before { allow(Bosh::Clouds::Config).to receive_messages(logger: logger) }
-  #let(:logger) { Logger.new(STDERR) }
-  let(:logger) { Logger.new("lifecycle.log") }
+  let(:logger) { Logger.new(STDERR) }
 
   before { allow(Bosh::Cpi::RegistryClient).to receive_messages(new: double('registry').as_null_object) }
 

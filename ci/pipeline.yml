@@ -85,18 +85,20 @@ jobs:
   - task: test
     file: bosh-cpi-src/ci/tasks/run-lifecycle.yml
     params:
-      AZURE_SUBSCRIPTION_ID:          {{azure_subscription_id}}
-      AZURE_CLIENT_ID:                {{azure_client_id}}
-      AZURE_CLIENT_SECRET:            {{azure_client_secret}}
-      AZURE_TENANT_ID:                {{azure_tenant_id}}
-      AZURE_GROUP_NAME_FOR_VMS:       {{azure_group_name_for_vms}}
-      AZURE_GROUP_NAME_FOR_NETWORK:   {{azure_group_name_for_network}}
-      AZURE_STORAGE_ACCOUNT_NAME:     {{azure_storage_account_name}}
-      AZURE_VNET_NAME_FOR_LIFECYCLE:  {{azure_vnet_name_for_lifecycle}}
-      AZURE_BOSH_SUBNET_NAME:         {{azure_bosh_subnet_name}}
-      AZURE_BOSH_SECOND_SUBNET_NAME:  {{azure_bosh_second_subnet_name}}
-      AZURE_DEFAULT_SECURITY_GROUP:   {{azure_default_security_group}}
-      SSH_PUBLIC_KEY:                 {{ssh_public_key}}
+      AZURE_SUBSCRIPTION_ID:                      {{azure_subscription_id}}
+      AZURE_CLIENT_ID:                            {{azure_client_id}}
+      AZURE_CLIENT_SECRET:                        {{azure_client_secret}}
+      AZURE_TENANT_ID:                            {{azure_tenant_id}}
+      AZURE_GROUP_NAME_FOR_VMS:                   {{azure_group_name_for_vms}}
+      AZURE_GROUP_NAME_FOR_NETWORK:               {{azure_group_name_for_network}}
+      AZURE_GROUP_NAME_FOR_VMS_MANAGED_DISKS:     {{azure_group_name_for_vms_managed_disks}}
+      AZURE_GROUP_NAME_FOR_NETWORK_MANAGED_DISKS: {{azure_group_name_for_network_managed_disks}}
+      AZURE_STORAGE_ACCOUNT_NAME:                 {{azure_storage_account_name}}
+      AZURE_VNET_NAME_FOR_LIFECYCLE:              {{azure_vnet_name_for_lifecycle}}
+      AZURE_BOSH_SUBNET_NAME:                     {{azure_bosh_subnet_name}}
+      AZURE_BOSH_SECOND_SUBNET_NAME:              {{azure_bosh_second_subnet_name}}
+      AZURE_DEFAULT_SECURITY_GROUP:               {{azure_default_security_group}}
+      SSH_PUBLIC_KEY:                             {{ssh_public_key}}
 
 - name: bats-ubuntu-blob-disks
   serial: true

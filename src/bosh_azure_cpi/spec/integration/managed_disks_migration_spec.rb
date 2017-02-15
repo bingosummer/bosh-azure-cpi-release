@@ -58,8 +58,7 @@ describe Bosh::AzureCloud::Cloud do
   }
 
   before { allow(Bosh::Clouds::Config).to receive_messages(logger: logger) }
-  #let(:logger) { Logger.new(STDERR) }
-  let(:logger) { Logger.new("managed-disks-migration.log") }
+  let(:logger) { Logger.new(STDERR) }
 
   before { allow(Bosh::Cpi::RegistryClient).to receive_messages(new: double('registry').as_null_object) }
 

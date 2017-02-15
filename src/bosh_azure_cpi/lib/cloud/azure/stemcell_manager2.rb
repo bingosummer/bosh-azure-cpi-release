@@ -136,7 +136,7 @@ module Bosh::AzureCloud
         provisioning_state = user_image[:provisioning_state]
         if provisioning_state == PROVISIONING_STATE_SUCCEEDED
           break
-        elsif provisioning_state == PROVISIONING_STATE_FAILED || provisioning_state == PROVISIONING_STATE_CANCELLED
+        elsif provisioning_state == PROVISIONING_STATE_FAILED || provisioning_state == PROVISIONING_STATE_CANCELED
           cloud_error("get_user_image: Failed to create a user image `#{user_image_name}' whose provisioning state is `#{provisioning_state}'.")
         end
         sleep(5)
