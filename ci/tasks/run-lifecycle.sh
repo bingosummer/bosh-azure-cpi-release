@@ -9,8 +9,6 @@ set -e
 : ${AZURE_STORAGE_ACCOUNT_NAME:?}
 : ${AZURE_GROUP_NAME_FOR_VMS:?}
 : ${AZURE_GROUP_NAME_FOR_NETWORK:?}
-: ${AZURE_GROUP_NAME_FOR_VMS_MANAGED_DISKS:?}
-: ${AZURE_GROUP_NAME_FOR_NETWORK_MANAGED_DISKS:?}
 : ${AZURE_VNET_NAME_FOR_LIFECYCLE:?}
 : ${AZURE_BOSH_SUBNET_NAME:?}
 : ${AZURE_BOSH_SECOND_SUBNET_NAME:?}
@@ -23,6 +21,7 @@ export BOSH_AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
 export BOSH_AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
 export BOSH_AZURE_RESOURCE_GROUP_NAME_FOR_VMS=${AZURE_GROUP_NAME_FOR_VMS}
 export BOSH_AZURE_RESOURCE_GROUP_NAME_FOR_NETWORK=${AZURE_GROUP_NAME_FOR_NETWORK}
+export BOSH_AZURE_STORAGE_ACCOUNT_NAME=${AZURE_STORAGE_ACCOUNT_NAME}
 export BOSH_AZURE_VNET_NAME=${AZURE_VNET_NAME_FOR_LIFECYCLE}
 export BOSH_AZURE_SUBNET_NAME=${AZURE_BOSH_SUBNET_NAME}
 export BOSH_AZURE_SECOND_SUBNET_NAME=${AZURE_BOSH_SECOND_SUBNET_NAME}
@@ -47,36 +46,13 @@ azure storage blob upload --quiet --blobtype PAGE /mnt/root.vhd stemcell ${BOSH_
 source /etc/profile.d/chruby.sh
 chruby ${RUBY_VERSION}
 
-# Without managed disks
-export BOSH_AZURE_STORAGE_ACCOUNT_NAME=${AZURE_STORAGE_ACCOUNT_NAME}
-export BOSH_AZURE_USE_MANAGED_DISKS=false
-pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null
-  bundle install
-  bundle exec rspec spec/integration/lifecycle_spec.rb
-popd > /dev/null
-
-# With managed disks and default storage account
-export BOSH_AZURE_RESOURCE_GROUP_NAME_FOR_VMS=${AZURE_GROUP_NAME_FOR_VMS_MANAGED_DISKS}
-export BOSH_AZURE_RESOURCE_GROUP_NAME_FOR_NETWORK=${AZURE_GROUP_NAME_FOR_NETWORK_MANAGED_DISKS}
-export BOSH_AZURE_STORAGE_ACCOUNT_NAME=${AZURE_STORAGE_ACCOUNT_NAME}
-export BOSH_AZURE_USE_MANAGED_DISKS=true
-pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null
-  bundle install
-  bundle exec rspec spec/integration/lifecycle_spec.rb
-popd > /dev/null
-
-# With managed disks, without default storage account
-export BOSH_AZURE_RESOURCE_GROUP_NAME_FOR_VMS=${AZURE_GROUP_NAME_FOR_VMS_MANAGED_DISKS}
-export BOSH_AZURE_RESOURCE_GROUP_NAME_FOR_NETWORK=${AZURE_GROUP_NAME_FOR_NETWORK_MANAGED_DISKS}
-unset BOSH_AZURE_STORAGE_ACCOUNT_NAME
-export BOSH_AZURE_USE_MANAGED_DISKS=true
+export BOSH_AZURE_USE_MANAGED_DISKS=${AZURE_USE_MANAGED_DISKS}
 pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null
   bundle install
   bundle exec rspec spec/integration/lifecycle_spec.rb
 popd > /dev/null
 
 # Migration
-export BOSH_AZURE_STORAGE_ACCOUNT_NAME=${AZURE_STORAGE_ACCOUNT_NAME}
 unset BOSH_AZURE_USE_MANAGED_DISKS
 pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null
   bundle install

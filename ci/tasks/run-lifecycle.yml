@@ -18,8 +18,6 @@ params:
   AZURE_TENANT_ID:                            ""
   AZURE_GROUP_NAME_FOR_VMS:                   ""
   AZURE_GROUP_NAME_FOR_NETWORK:               ""
-  AZURE_GROUP_NAME_FOR_VMS_MANAGED_DISKS:     ""
-  AZURE_GROUP_NAME_FOR_NETWORK_MANAGED_DISKS: ""
   AZURE_STORAGE_ACCOUNT_NAME:                 ""
   AZURE_VNET_NAME_FOR_LIFECYCLE:              ""
   AZURE_BOSH_SUBNET_NAME:                     ""
