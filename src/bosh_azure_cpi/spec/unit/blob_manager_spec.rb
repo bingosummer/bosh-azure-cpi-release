@@ -605,7 +605,6 @@ describe Bosh::AzureCloud::BlobManager do
         :storage_table_host => "fake-table-endpoint"
       }
     }
-    let(:blob) { instance_double(Azure::Storage::Blob::Blob) }
     before do
       allow(azure_client2).to receive(:get_storage_account_by_name).
         with(another_storage_account_name).
