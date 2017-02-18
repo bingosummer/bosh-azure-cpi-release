@@ -540,7 +540,7 @@ describe Bosh::AzureCloud::StorageAccountManager do
         }
       }
 
-      context 'When the storage accounts with the specified tags are found in the resource group location' do
+      context 'When the storage account with the specified tags is found in the resource group location' do
         let(:targeted_storage_account) {
           {
             :name => 'account1',
@@ -557,7 +557,7 @@ describe Bosh::AzureCloud::StorageAccountManager do
               :tags => {}
             },
             {
-              :name => 'account1',
+              :name => 'account3',
               :location => 'different-location',
               :tags => tags
             }
@@ -576,41 +576,88 @@ describe Bosh::AzureCloud::StorageAccountManager do
         end
       end
 
-      context 'When the storage accounts without the specified tags are found in the resource group location' do
+      context 'When the storage account with the specified tags is not found in the resource group location' do
+        let(:request_id) { 'fake-client-request-id' }
+        let(:options) {
+          {
+            :request_id => request_id
+          }
+        }
+        let(:azure_client) { instance_double(Azure::Storage::Client) }
+        let(:table_service) { instance_double(Azure::Storage::Table::TableService) }
+        let(:exponential_retry) { instance_double(Azure::Storage::Core::Filter::ExponentialRetryPolicyFilter) }
+
         let(:targeted_storage_account) {
           {
             :name => 'account1',
-            :location => resource_group_location
+            :location => resource_group_location,
+            :storage_table_host => 'fake-host'
           }
         }
         let(:storage_accounts) {
           [
-            targeted_storage_account,
-            {
-              :name => 'account2',
-              :location => resource_group_location
-            },
-            {
-              :name => 'account1',
-              :location => 'different-location'
-            }
+            targeted_storage_account
           ]
         }
+        let(:keys) { ['fake-key-1', 'fake-key-2'] }
+
         before do
           allow(client2).to receive(:list_storage_accounts).and_return(storage_accounts)
           allow(client2).to receive(:get_resource_group).and_return(resource_group)
+          allow(client2).to receive(:get_storage_account_by_name).
+            with(targeted_storage_account[:name]).
+            and_return(targeted_storage_account)
+          allow(client2).to receive(:get_storage_account_keys_by_name).
+            with(targeted_storage_account[:name]).
+            and_return(keys)
+          allow(Azure::Storage::Client).to receive(:create).
+            with({
+              :storage_account_name => targeted_storage_account[:name],
+              :storage_access_key => keys[0],
+              :user_agent_prefix=>"BOSH-AZURE-CPI"
+            }).and_return(azure_client)
+          allow(azure_client).to receive(:storage_table_host=)
+          allow(azure_client).to receive(:table_client).
+            and_return(table_service)
+          allow(Azure::Storage::Core::Filter::ExponentialRetryPolicyFilter).to receive(:new).
+            and_return(exponential_retry)
+          allow(table_service).to receive(:with_filter).with(exponential_retry)
+
+          allow(SecureRandom).to receive(:uuid).and_return(request_id)
         end
 
-        it 'should return the storage account' do
-          azure_properties.delete('storage_account_name')
-          expect(client2).not_to receive(:get_storage_account_by_name).with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME)
-          expect(client2).to receive(:update_tags_of_storage_account).with(targeted_storage_account[:name], tags)
+        context 'When the old storage account with the stemcell table is found in the resource group location' do
+          before do
+            allow(table_service).to receive(:get_table).
+              with('stemcells', options)
+          end
 
-          expect(storage_account_manager.default_storage_account).to eq(targeted_storage_account)
+          it 'should return the storage account' do
+            azure_properties.delete('storage_account_name')
+            expect(client2).not_to receive(:get_storage_account_by_name).with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME)
+            expect(client2).to receive(:update_tags_of_storage_account).with(targeted_storage_account[:name], tags)
+  
+            expect(storage_account_manager.default_storage_account).to eq(targeted_storage_account)
+          end
+        end
+
+        context 'When the old storage account with the stemcell table is not found in the resource group location' do
+          before do
+            allow(table_service).to receive(:get_table).
+              and_raise("(404)")
+          end
+
+          it 'should return the storage account' do
+            azure_properties.delete('storage_account_name')
+            expect(client2).not_to receive(:get_storage_account_by_name).with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME)
+            expect(client2).to receive(:update_tags_of_storage_account).with(targeted_storage_account[:name], tags)
+  
+            expect(storage_account_manager.default_storage_account).to eq(targeted_storage_account)
+          end
         end
       end
 
-      context 'When no storage accounts are found in the resource group location' do
+      context 'When no valid storage account is found in the resource group location' do
         let(:result) {
           {
             :available => true
