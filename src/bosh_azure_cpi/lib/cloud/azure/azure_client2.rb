@@ -392,7 +392,7 @@ module Bosh::AzureCloud
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_VIRTUAL_MACHINES, name: name)
       vm = get_resource_by_id(url)
       if vm.nil?
-        raise AzureNotFoundError, "detach_disk_from_virtual_machine - cannot find the virtual machine by name \"#{name}\""
+        raise AzureNotFoundError, "detach_disk_from_virtual_machine - cannot find the virtual machine by name `#{name}'"
       end
 
       vm = remove_resources_from_vm(vm)
@@ -736,7 +736,11 @@ module Bosh::AzureCloud
     #
     def get_tags_of_managed_disk(name)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_DISKS, name: name)
-      get_tags_of_resource(url)
+      disk = get_resource_by_id(url)
+      if disk.nil?
+        raise AzureNotFoundError, "get_tags_of_managed_disk - cannot find the managed disk by name `#{name}'"
+      end
+      disk['tags']
     end
 
     # Compute/Images
@@ -2041,21 +2045,6 @@ module Bosh::AzureCloud
       message += "x-ms-correlation-request-id: #{response['x-ms-correlation-request-id']}\n"
       message += "x-ms-routing-request-id: #{response['x-ms-routing-request-id']}\n"
       message
-    end
-
-    # Get tags of a resource
-    # @param [string] url  - url of resource.
-    #
-    # @return [HASH]
-    #
-    #
-    def get_tags_of_resource(url)
-      resource = get_resource_by_id(url)
-      if resource.nil?
-        raise AzureNotFoundError, "get_tags_of_resource - cannot find the resource by url `#{url}'"
-      end
-
-      resource['tags']
     end
 
     # Sometimes Azure returns VM information with a node 'resources' which contains all extensions' information.
