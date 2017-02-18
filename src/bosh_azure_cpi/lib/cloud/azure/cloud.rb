@@ -273,22 +273,27 @@ module Bosh::AzureCloud
             location = resource_group[:location]
             default_storage_account_type = STORAGE_ACCOUNT_TYPE_STANDARD_LRS
           else
-            cloud_error("Cannot create a managed disk for a VM with blob based disks") unless is_managed_vm?(instance_id)
+            cloud_error("Cannot create a managed disk for a VM with unmanaged disks") unless is_managed_vm?(instance_id)
             # If the instance is a managed VM, the managed disk will be created in the location of the VM.
             vm = @azure_client2.get_virtual_machine_by_name(instance_id)
             location = vm[:location]
             instance_type = vm[:vm_size]
             default_storage_account_type = get_storage_account_type_by_instance_type(instance_type)
           end
-          disk_id = @disk_manager2.create_disk(size/1024, location, default_storage_account_type, cloud_properties)
+          storage_account_type = cloud_properties.fetch('storage_account_type', default_storage_account_type)
+          caching = cloud_properties.fetch('caching', 'None')
+          validate_disk_caching(caching)
+          disk_id = @disk_manager2.create_disk(location, size/1024, storage_account_type, caching)
         else
           storage_account_name = azure_properties['storage_account_name']
+          caching = cloud_properties.fetch('caching', 'None')
+          validate_disk_caching(caching)
           unless instance_id.nil?
             @logger.info("Create disk for vm #{instance_id}")
             storage_account_name = get_storage_account_name_from_instance_id(instance_id)
           end
 
-          disk_id = @disk_manager.create_disk(storage_account_name, size/1024, cloud_properties)
+          disk_id = @disk_manager.create_disk(size/1024, storage_account_name, caching)
         end
         disk_id
       end
@@ -323,7 +328,7 @@ module Bosh::AzureCloud
     def attach_disk(instance_id, disk_id)
       with_thread_name("attach_disk(#{instance_id},#{disk_id})") do
         if @use_managed_disks
-          cloud_error("Cannot attach a managed disk to a VM with blob based disks") unless is_managed_vm?(instance_id)
+          cloud_error("Cannot attach a managed disk to a VM with unmanaged disks") unless is_managed_vm?(instance_id)
           disk = @disk_manager2.get_disk(disk_id)
           if disk.nil?
             begin
@@ -344,9 +349,13 @@ module Bosh::AzureCloud
               @blob_manager.set_blob_metadata(storage_account_name, DISK_CONTAINER, "#{disk_id}.vhd", metadata)
             rescue => e
               if account_type # There are no other functions between defining account_type and @disk_manager2.create_disk_from_blob
-                @disk_manager2.delete_disk(disk_id)
+                begin
+                  @disk_manager2.delete_disk(disk_id)
+                rescue => err
+                  @logger.error("attach_disk - Failed to delete the created managed disk #{disk_id}. Error: #{e.inspect}\n#{e.backtrace.join("\n")}")
+                end
               end
-              cloud_error("#{e.inspect}\n#{e.backtrace.join("\n")}")
+              cloud_error("attach_disk - Failed to create the managed disk for #{disk_id}. Error: #{e.inspect}\n#{e.backtrace.join("\n")}")
             end
           end
         end

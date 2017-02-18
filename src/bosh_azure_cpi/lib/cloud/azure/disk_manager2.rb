@@ -13,33 +13,16 @@ module Bosh::AzureCloud
     ##
     # Creates a disk (possibly lazily) that will be attached later to a VM.
     #
-    # @param [Integer] size disk size in GiB
-    # @param [string] location location of the disk
-    # @param [string] default_storage_account_type The default storage account type,
-    #                 which will be used if storage_account_type is not provided in cloud_properties.
-    # @param [Hash] cloud_properties cloud properties to create the disk
-    #
-    # ==== cloud_properties
-    # [optional, String] caching the disk caching type. It can be either None, ReadOnly or ReadWrite.
-    #                            Default is None. Only None and ReadOnly are supported for premium disks.
-    # [optional, String] storage_account_type the storage account type.
-    #                                         For managed disks, it can only be Standard_LRS or Premium_LRS.
+    # @param [string]  location              location of the disk
+    # @param [Integer] size                  disk size in GiB
+    # @param [string]  storage_account_type  the storage account type. Possible values: Standard_LRS or Premium_LRS.
+    # @param [string]  caching               the disk caching type.
+    #                                        Possible values: None, ReadOnly or ReadWrite for standard disks.
+    #                                                         None or ReadOnly for premium disks.
     #
     # @return [String] disk name
-    def create_disk(size, location, default_storage_account_type, cloud_properties)
-      @logger.info("create_disk(#{size}, #{location}, #{cloud_properties})")
-      caching = 'None'
-      if !cloud_properties.nil?
-        if !cloud_properties['caching'].nil?
-          caching = cloud_properties['caching']
-          validate_disk_caching(caching)
-        end
-        if !cloud_properties['storage_account_type'].nil?
-          storage_account_type = cloud_properties['storage_account_type']
-        else
-          storage_account_type = default_storage_account_type
-        end
-      end
+    def create_disk(location, size, storage_account_type, caching)
+      @logger.info("create_disk(#{location}, #{size}, #{storage_account_type}, #{caching}")
       disk_name = generate_data_disk_name(caching)
       tags = AZURE_TAGS.merge({
         "caching" => caching

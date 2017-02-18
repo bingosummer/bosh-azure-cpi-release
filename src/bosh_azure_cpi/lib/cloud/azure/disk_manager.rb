@@ -47,24 +47,15 @@ module Bosh::AzureCloud
     ##
     # Creates a disk (possibly lazily) that will be attached later to a VM.
     #
-    # @param [string] storage_account_name the storage account where the disk is created
     # @param [Integer] size disk size in GiB
-    # @param [Hash] cloud_properties cloud properties to create the disk
-    #
-    # ==== cloud_properties
-    # [optional, String] caching the disk caching type. It can be either None, ReadOnly or ReadWrite.
-    #                            Default is None. Only None and ReadOnly are supported for premium disks.
-    # [optional, String] storage_account_type the storage account type. For blob disks, it can be either
-    #                                         Standard_LRS, Standard_ZRS, Standard_GRS, Standard_RAGRS or Premium_LRS.
+    # @param [string]  storage_account_name  the storage account where the disk is created
+    # @param [string]  caching               the disk caching type.
+    #                                        Possible values: None, ReadOnly or ReadWrite for standard disks.
+    #                                                         None or ReadOnly for premium disks.
     #
     # @return [String] disk name
-    def create_disk(storage_account_name, size, cloud_properties)
-      @logger.info("create_disk(#{storage_account_name}, #{size}, #{cloud_properties})")
-      caching = 'None'
-      if !cloud_properties.nil? && !cloud_properties['caching'].nil?
-        caching = cloud_properties['caching']
-        validate_disk_caching(caching)
-      end
+    def create_disk(size, storage_account_name, caching)
+      @logger.info("create_disk(#{size}, #{storage_account_name}, #{caching})")
       disk_name = generate_data_disk_name(storage_account_name, caching)
       @logger.info("Start to create an empty vhd blob: blob_name: #{disk_name}.vhd")
       @blob_manager.create_empty_vhd_blob(storage_account_name, DISK_CONTAINER, "#{disk_name}.vhd", size)

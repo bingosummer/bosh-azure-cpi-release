@@ -445,6 +445,43 @@ describe Bosh::AzureCloud::Cloud do
         }.to raise_error /Azure CPI maximum disk size is 1023 GiB/
       end
     end
+
+    context "when caching is invalid in cloud_properties" do
+      let(:disk_size) { 100 * 1024 }
+      let(:cloud_properties) {
+        {
+          "caching" => "Invalid"
+        }
+      }
+
+      it "should raise an error" do
+        expect {
+          cloud.create_disk(disk_size, cloud_properties, instance_id)
+        }.to raise_error /Unknown disk caching/
+      end
+    end
+
+    # TODO
+    #context "when caching is nil in cloud_properties" do
+    #  let(:disk_size) { 100 * 1024 }
+
+    #  it "should use the default caching None" do
+    #    expect(cloud.create_disk(disk_size, cloud_properties, instance_id)).to include("None")
+    #  end
+    #end
+
+    #context "when caching is specified in cloud_properties" do
+    #  let(:disk_size) { 100 * 1024 }
+    #  let(:cloud_properties) {
+    #    {
+    #      "caching" => "ReadOnly"
+    #    }
+    #  }
+
+    #  it "should use the default caching None" do
+    #    expect(cloud.create_disk(disk_size, cloud_properties, instance_id)).to include("ReadOnly")
+    #  end
+    #end
   end
 
   describe "#delete_disk" do

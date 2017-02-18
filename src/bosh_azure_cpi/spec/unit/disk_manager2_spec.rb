@@ -14,68 +14,29 @@ describe Bosh::AzureCloud::DiskManager2 do
   end
 
   describe "#create_disk" do
-    let(:size) { 100 }
+    # Parameters
     let(:location) { "SouthEastAsia" }
-    let(:default_storage_account_type) { "default-storage-account-type" }
+    let(:size) { 100 }
+    let(:storage_account_type) { "fake-storage-account-type" }
+    let(:caching) { "ReadOnly" }
 
-    context "when caching is invalid" do
-      let(:cloud_properties) { {'caching' => 'Invalid'} }
-
-      it "should raise an error" do
-        expect{
-          disk_manager2.create_disk(size, location, default_storage_account_type, cloud_properties)
-        }.to raise_error /Unknown disk caching/
-      end
-    end
-
-    context "when caching and storage_account_type are not specified" do
-      let(:cloud_properties) { {} }
-      let(:disk_params) {
-        {
-          :name => disk_name,
-          :location => location,
-          :tags => {
-            "user-agent" => "bosh",
-            "caching" => "None"
-          },
-          :disk_size => size,
-          :account_type => default_storage_account_type
-        }
+    let(:disk_name) { "#{managed_data_disk_prefix}-#{uuid}-#{caching}" }
+    let(:disk_params) {
+      {
+        :name => disk_name,
+        :location => location,
+        :tags => {
+          "user-agent" => "bosh",
+          "caching" => caching
+        },
+        :disk_size => size,
+        :account_type => storage_account_type
       }
+    }
 
-      it "creates the disk with default caching 'None' and the default storage account type 'default-storage-account-type'" do
-        expect(client2).to receive(:create_empty_managed_disk).with(disk_params)
-        disk_manager2.create_disk(size, location, default_storage_account_type, cloud_properties)
-      end
-    end
-
-    context "when caching and storage_account_type are specified" do
-      let(:disk_name) { "#{managed_data_disk_prefix}-#{uuid}-ReadOnly" }
-      let(:specific_caching) { "ReadOnly" }
-      let(:specific_storage_account_type) { "fake-storage-account-type" }
-      let(:cloud_properties) {
-        {
-          'caching' => specific_caching,
-          'storage_account_type' => specific_storage_account_type
-        }
-      }
-      let(:disk_params) {
-        {
-          :name => disk_name,
-          :location => location,
-          :tags => {
-            "user-agent" => "bosh",
-            "caching" => specific_caching
-          },
-          :disk_size => size,
-          :account_type => specific_storage_account_type
-        }
-      }
-
-      it "creates the disk with the specified caching and storage account type" do
-        expect(client2).to receive(:create_empty_managed_disk).with(disk_params)
-        disk_manager2.create_disk(size, location, default_storage_account_type, cloud_properties)
-      end
+    it "creates the disk with the specified caching and storage account type" do
+      expect(client2).to receive(:create_empty_managed_disk).with(disk_params)
+      disk_manager2.create_disk(location, size, storage_account_type, caching)
     end
   end  
 
