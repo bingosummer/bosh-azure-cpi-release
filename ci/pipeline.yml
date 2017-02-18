@@ -341,7 +341,6 @@ resources:
     branch: master
 
 - name: azure-ubuntu-stemcell
-  type: s3
+  type: bosh-io-stemcell
   source:
-    bucket: bosh-core-stemcells
-    regexp: azure/bosh-stemcell-([0-9\.]+)-azure-hyperv-ubuntu-trusty-go_agent.tgz
+    name: bosh-azure-hyperv-ubuntu-trusty-go_agent
