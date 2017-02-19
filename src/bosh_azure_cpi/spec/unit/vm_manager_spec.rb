@@ -522,6 +522,7 @@ describe Bosh::AzureCloud::VMManager do
         allow(client2).to receive(:get_availability_set_by_name).
           with(resource_pool['availability_set']).
           and_return(availability_set)
+        allow(client2).to receive(:create_availability_set)
         allow(client2).to receive(:get_storage_account_by_name).
           and_return(storage_account)
 
@@ -555,6 +556,7 @@ describe Bosh::AzureCloud::VMManager do
           allow(client2).to receive(:create_virtual_machine)
         end
 
+        # Network Security Group
         context "with the network security group provided in resource_pool" do
           let(:resource_pool) {
             {
@@ -691,6 +693,7 @@ describe Bosh::AzureCloud::VMManager do
           end
         end
 
+        # Availability Set
         context "when another process is creating the same availability set" do
           let(:env) { nil }
           let(:resource_pool) {
@@ -907,6 +910,50 @@ describe Bosh::AzureCloud::VMManager do
               with(avset_params)
 
             expect(client2).to receive(:create_network_interface).exactly(2).times
+            vm_params = vm_manager2.create(instance_id, location, stemcell_info, resource_pool, network_configurator, env)
+            expect(vm_params[:name]).to eq(instance_id)
+          end
+        end
+
+        context "when the availability set exists and the managed property is not aligned with @use_managed_disks" do
+          let(:resource_pool) {
+            {
+              'instance_type' => 'Standard_D1',
+              'availability_set' => 'fake-avset'
+            }
+          }
+
+          let(:existing_avset) {
+            {
+              :name                         => resource_pool['availability_set'],
+              :location                     => location,
+              :tags                         => {'user-agent' => 'bosh'},
+              :platform_update_domain_count => 5,
+              :platform_fault_domain_count  => 3,
+              :managed                      => false
+            }
+          }
+          let(:avset_params) {
+            {
+              :name                         => existing_avset[:name],
+              :location                     => existing_avset[:location],
+              :tags                         => existing_avset[:tags],
+              :platform_update_domain_count => existing_avset[:platform_update_domain_count],
+              :platform_fault_domain_count  => existing_avset[:platform_fault_domain_count],
+              :managed                      => true
+            }
+          }
+
+          before do
+            allow(client2).to receive(:get_availability_set_by_name).
+              with(resource_pool['availability_set']).
+              and_return(existing_avset)
+          end
+
+          it "should update the managed property of the availability set" do
+            expect(client2).to receive(:create_availability_set).with(avset_params)
+            expect(client2).to receive(:create_network_interface).exactly(2).times
+
             vm_params = vm_manager2.create(instance_id, location, stemcell_info, resource_pool, network_configurator, env)
             expect(vm_params[:name]).to eq(instance_id)
           end

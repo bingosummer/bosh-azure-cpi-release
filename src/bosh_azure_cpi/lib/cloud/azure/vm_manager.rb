@@ -283,6 +283,7 @@ module Bosh::AzureCloud
             :managed                      => @use_managed_disks
           }
           begin
+            @logger.debug("create_availability_set - Creating an availability set `#{avset_params[:name]}'")
             @azure_client2.create_availability_set(avset_params)
             availability_set = @azure_client2.get_availability_set_by_name(avset_params[:name])
           rescue AzureConflictError => e
@@ -291,6 +292,30 @@ module Bosh::AzureCloud
               # TODO: has to sleep to avoid throttling
               availability_set = @azure_client2.get_availability_set_by_name(avset_params[:name])
               break unless availability_set.nil?
+            end
+          end
+        else
+          # Update the managed property of the availability set
+          if availability_set[:managed] != @use_managed_disks
+            avset_params = {
+              :name                         => availability_set[:name],
+              :location                     => availability_set[:location],
+              :tags                         => AZURE_TAGS,
+              :platform_update_domain_count => availability_set[:platform_update_domain_count],
+              :platform_fault_domain_count  => availability_set[:platform_fault_domain_count],
+              :managed                      => @use_managed_disks
+            }
+            begin
+              @logger.debug("create_availability_set - Updating the managed property of availability set `#{avset_params[:name]}' from `#{availability_set[:managed]}' to `#{@use_managed_disks}'")
+              @azure_client2.create_availability_set(avset_params)
+              availability_set = @azure_client2.get_availability_set_by_name(avset_params[:name])
+            rescue AzureConflictError => e
+              @logger.debug("create_availability_set - Another process is updating the same availability set `#{avset_params[:name]}'")
+              loop do
+                # TODO: has to sleep to avoid throttling
+                availability_set = @azure_client2.get_availability_set_by_name(avset_params[:name])
+                break unless availability_set[:managed] == @use_managed_disks
+              end
             end
           end
         end
