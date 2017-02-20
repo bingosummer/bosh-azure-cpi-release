@@ -22,6 +22,7 @@ set -e
 : ${BAT_SECOND_NETWORK_GATEWAY:?}
 : ${BAT_NETWORK_STATIC_IP:?}            # static ip for the first subnet
 : ${BAT_SECOND_NETWORK_STATIC_IP:?}     # static ip for the second subnet
+: ${BAT_BASE_OS:?}
 : ${BOSH_DIRECTOR_USERNAME:?}
 : ${BOSH_DIRECTOR_PASSWORD:?}
 : ${SSH_PRIVATE_KEY:?}
@@ -203,7 +204,7 @@ manifest_template_path: ${bats_template}
 properties:
   uuid: $(bosh status --uuid)
   stemcell:
-    name: bosh-azure-hyperv-ubuntu-trusty-go_agent
+    name: bosh-azure-hyperv-${BAT_BASE_OS}-go_agent
     version: latest
   vip: ${CF_IP_ADDRESS}
   pool_size: 1
