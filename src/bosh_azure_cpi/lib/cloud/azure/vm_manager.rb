@@ -295,18 +295,18 @@ module Bosh::AzureCloud
             end
           end
         else
-          # Update the managed property of the availability set
-          if availability_set[:managed] != @use_managed_disks
+          # Update the availability set to an aligned one
+          if @use_managed_disks && availability_set[:managed] != true
             avset_params = {
               :name                         => availability_set[:name],
               :location                     => availability_set[:location],
               :tags                         => AZURE_TAGS,
               :platform_update_domain_count => availability_set[:platform_update_domain_count],
               :platform_fault_domain_count  => availability_set[:platform_fault_domain_count],
-              :managed                      => @use_managed_disks
+              :managed                      => true
             }
             begin
-              @logger.debug("create_availability_set - Updating the managed property of availability set `#{avset_params[:name]}' from `#{availability_set[:managed]}' to `#{@use_managed_disks}'")
+              @logger.debug("create_availability_set - Updating the availability set `#{avset_params[:name]}' to an aligned one")
               @azure_client2.create_availability_set(avset_params)
               availability_set = @azure_client2.get_availability_set_by_name(avset_params[:name])
             rescue AzureConflictError => e

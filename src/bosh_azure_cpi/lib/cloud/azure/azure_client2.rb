@@ -533,12 +533,17 @@ module Bosh::AzureCloud
         'type'       => "#{REST_API_PROVIDER_COMPUTE}/#{REST_API_COMPUTE_AVAILABILITY_SETS}",
         'location'   => params[:location],
         'tags'       => params[:tags],
+        'sku'        => {
+          'name' => 'Classic'
+        },
         'properties' => {
           'platformUpdateDomainCount' => params[:platform_update_domain_count],
           'platformFaultDomainCount'  => params[:platform_fault_domain_count]
         }
       }
-      availability_set['properties']['managed'] = params[:managed] unless params[:managed].nil?
+      if !params[:managed].nil? && params[:managed] == true
+        availability_set['sku']['name'] = 'Aligned'
+      end
 
       http_put(url, availability_set)
     end
@@ -572,13 +577,17 @@ module Bosh::AzureCloud
         availability_set[:location] = result['location']
         availability_set[:tags]     = result['tags']
 
+        if result['sku']['name'] == 'Aligned'
+          availability_set[:managed] = true
+        else
+          availability_set[:managed] = false
+        end
+
         properties = result['properties']
         availability_set[:provisioning_state]           = properties['provisioningState']
         availability_set[:platform_update_domain_count] = properties['platformUpdateDomainCount']
         availability_set[:platform_fault_domain_count]  = properties['platformFaultDomainCount']
-        availability_set[:managed]                      = properties['managed']
         availability_set[:virtual_machines]             = []
-
         unless properties['virtualMachines'].nil?
           properties['virtualMachines'].each do |vm|
             availability_set[:virtual_machines].push({:id => vm["id"]})

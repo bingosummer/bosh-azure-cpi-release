@@ -46,6 +46,9 @@ describe Bosh::AzureCloud::AzureClient2 do
         :tags     => {
           :foo => "bar"
         },
+        :sku => {
+          :name => "Classic"
+        },
         :properties => {
           :platformUpdateDomainCount => 5,
           :platformFaultDomainCount  => 2
@@ -82,7 +85,6 @@ describe Bosh::AzureCloud::AzureClient2 do
     context "When managed is false" do
       before do
         avset_params[:managed] = false
-        request_body[:properties][:managed] = false
       end
 
       it "should raise no error" do
@@ -113,7 +115,7 @@ describe Bosh::AzureCloud::AzureClient2 do
     context "When managed is true" do
       before do
         avset_params[:managed] = true
-        request_body[:properties][:managed] = true
+        request_body[:sku][:name] = "Aligned"
       end
 
       it "should raise no error" do
@@ -153,11 +155,13 @@ describe Bosh::AzureCloud::AzureClient2 do
         :tags     => {
           :foo => "bar"
         },
+        :sku => {
+          :name => "Aligned"
+        },
         :properties => {
           :provisioningState => "d",
           :platformUpdateDomainCount => 5,
           :platformFaultDomainCount => 2,
-          :managed => true
         }
       }
     }
