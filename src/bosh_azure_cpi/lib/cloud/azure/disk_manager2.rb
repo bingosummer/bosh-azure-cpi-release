@@ -16,9 +16,7 @@ module Bosh::AzureCloud
     # @param [string]  location              location of the disk
     # @param [Integer] size                  disk size in GiB
     # @param [string]  storage_account_type  the storage account type. Possible values: Standard_LRS or Premium_LRS.
-    # @param [string]  caching               the disk caching type.
-    #                                        Possible values: None, ReadOnly or ReadWrite for standard disks.
-    #                                                         None or ReadOnly for premium disks.
+    # @param [string]  caching               the disk caching type. Possible values: None, ReadOnly or ReadWrite.
     #
     # @return [String] disk name
     def create_disk(location, size, storage_account_type, caching)
