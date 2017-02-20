@@ -195,12 +195,11 @@ module Bosh::AzureCloud
     # @return [Boolean] True if the disk exists
     def has_disk?(disk_id)
       with_thread_name("has_disk?(#{disk_id})") do
-        # TODO
         if @use_managed_disks
-          @disk_manager2.has_disk?(disk_id)
-        else
-          @disk_manager.has_disk?(disk_id)
+          return true if @disk_manager2.has_disk?(disk_id)
+          return false if @disk_manager.is_migrated?(disk_id)
         end
+        @disk_manager.has_disk?(disk_id)
       end
     end
 
@@ -344,13 +343,9 @@ module Bosh::AzureCloud
                 @logger.debug("attach_disk - Migrating the unmanaged disk `#{disk_id}' to a managed disk")
                 @disk_manager2.create_disk_from_blob(disk_id, blob_uri, location, account_type)
 
-                # Set below tags but not delete it.
+                # Set below metadata but not delete it.
                 # Users can manually delete all blobs in container `bosh` whose names start with `bosh-data` after migration is finished.
-                metadata = {
-                  "user_agent" => USER_AGENT_FOR_AZURE_RESOURCE,
-                  "migrated" => "true"
-                }
-                @blob_manager.set_blob_metadata(storage_account_name, DISK_CONTAINER, "#{disk_id}.vhd", metadata)
+                @blob_manager.set_blob_metadata(storage_account_name, DISK_CONTAINER, "#{disk_id}.vhd", METADATA_FOR_MIGRATED_BLOB_DISK)
               rescue => e
                 if account_type # There are no other functions between defining account_type and @disk_manager2.create_disk_from_blob
                   begin

@@ -81,13 +81,17 @@ module Bosh::AzureCloud
     PUBLIC_ACCESS_LEVEL_BLOB          = "blob"
 
     # Disk
-    OS_DISK_PREFIX                = 'bosh-os'
-    DATA_DISK_PREFIX              = 'bosh-data'
-    MANAGED_OS_DISK_PREFIX        = 'bosh-disk-os'
-    MANAGED_DATA_DISK_PREFIX      = 'bosh-disk-data'
-    EPHEMERAL_DISK_POSTFIX        = 'ephemeral-disk'
-    STEMCELL_PREFIX               = 'bosh-stemcell'
-    AZURE_SCSI_HOST_DEVICE_ID     = '{f8b3781b-1e82-4818-a1c3-63d806ec15bb}'
+    OS_DISK_PREFIX                  = 'bosh-os'
+    DATA_DISK_PREFIX                = 'bosh-data'
+    MANAGED_OS_DISK_PREFIX          = 'bosh-disk-os'
+    MANAGED_DATA_DISK_PREFIX        = 'bosh-disk-data'
+    EPHEMERAL_DISK_POSTFIX          = 'ephemeral-disk'
+    STEMCELL_PREFIX                 = 'bosh-stemcell'
+    AZURE_SCSI_HOST_DEVICE_ID       = '{f8b3781b-1e82-4818-a1c3-63d806ec15bb}'
+    METADATA_FOR_MIGRATED_BLOB_DISK = {
+      "user_agent" => USER_AGENT_FOR_AZURE_RESOURCE, # The key can't be user-agent because '-' is invalid for blob metadata
+      "migrated" => "true"
+    }
 
     # Lock
     BOSH_LOCK_EXCEPTION_TIMEOUT        = 'timeout'
