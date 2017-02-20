@@ -436,7 +436,7 @@ module Bosh::AzureCloud
             f.syswrite("#{Process.pid}")
             @logger.debug("The lock `#{@file_path}' is created by the process `#{Process.pid}'")
           rescue Errno::EEXIST => e
-            @logger.error("Failed to create the lock file `#{@file_path}' because it already exists. Error: #{e.inspect}\n#{e.backtrace.join("\n")}")
+            @logger.info("Failed to create the lock file `#{@file_path}' because it already exists.")
             return false
           ensure
             f.close unless f.nil?
