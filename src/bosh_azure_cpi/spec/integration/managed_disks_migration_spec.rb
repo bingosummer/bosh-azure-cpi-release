@@ -148,7 +148,7 @@ describe Bosh::AzureCloud::Cloud do
       let(:resource_pool) {
         {
           'instance_type' => instance_type,
-          'availability_set' => 'foo-availability-set',
+          'availability_set' => SecureRandom.uuid,
           'ephemeral_disk' => {
             'size' => 20480
           }

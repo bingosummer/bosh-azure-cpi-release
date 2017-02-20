@@ -46,6 +46,12 @@ azure storage blob upload --quiet --blobtype PAGE /mnt/root.vhd stemcell ${BOSH_
 source /etc/profile.d/chruby.sh
 chruby ${RUBY_VERSION}
 
+export BOSH_AZURE_USE_MANAGED_DISKS=${AZURE_USE_MANAGED_DISKS}
+pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null
+  bundle install
+  bundle exec rspec spec/integration/lifecycle_spec.rb
+popd > /dev/null
+
 # Only run migration test when AZURE_USE_MANAGED_DISKS is set to false initially
 if [ "${AZURE_USE_MANAGED_DISKS}" == "false" ]; then
   unset BOSH_AZURE_USE_MANAGED_DISKS
@@ -54,9 +60,3 @@ if [ "${AZURE_USE_MANAGED_DISKS}" == "false" ]; then
     bundle exec rspec spec/integration/managed_disks_migration_spec.rb
   popd > /dev/null
 fi
-
-export BOSH_AZURE_USE_MANAGED_DISKS=${AZURE_USE_MANAGED_DISKS}
-pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null
-  bundle install
-  bundle exec rspec spec/integration/lifecycle_spec.rb
-popd > /dev/null
