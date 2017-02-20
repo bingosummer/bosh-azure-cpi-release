@@ -419,10 +419,15 @@ module Bosh::AzureCloud
     # @return [String] snapshot id
     def snapshot_disk(disk_id, metadata = {})
       with_thread_name("snapshot_disk(#{disk_id},#{metadata})") do
-        if @use_managed_disks
+        if disk_id.start_with?(MANAGED_DATA_DISK_PREFIX)
           snapshot_id = @disk_manager2.snapshot_disk(disk_id, encode_metadata(metadata))
         else
-          snapshot_id = @disk_manager.snapshot_disk(disk_id, encode_metadata(metadata))
+          disk = @disk_manager2.get_disk(disk_id)
+          unless disk.nil?
+            snapshot_id = @disk_manager2.snapshot_disk(disk_id, encode_metadata(metadata))
+          else
+            snapshot_id = @disk_manager.snapshot_disk(disk_id, encode_metadata(metadata))
+          end
         end
 
         @logger.info("Take a snapshot `#{snapshot_id}' for the disk `#{disk_id}'")
@@ -435,7 +440,7 @@ module Bosh::AzureCloud
     # @return [void]
     def delete_snapshot(snapshot_id)
       with_thread_name("delete_snapshot(#{snapshot_id})") do
-        if @use_managed_disks
+        if snapshot_id.start_with?(MANAGED_DATA_DISK_PREFIX)
           @disk_manager2.delete_snapshot(snapshot_id)
         else
           @disk_manager.delete_snapshot(snapshot_id)

@@ -534,30 +534,79 @@ describe Bosh::AzureCloud::Cloud do
   end
 
   describe "#snapshot_disk" do
-    # Parameters
-    let(:disk_id) { "fake-disk-id" }
     let(:metadata) { {} }
-
-    # Return Values
     let(:snapshot_id) { 'fake-snapshot-id' }
 
-    it 'should take a snapshot of a disk' do
-      expect(disk_manager).to receive(:snapshot_disk).
-        with(disk_id, metadata).
-        and_return(snapshot_id)
+    context "when the disk is a managed disk" do
+      context "when the disk starts with bosh-disk-data" do
+        let(:disk_id) { "bosh-disk-data-fake-guid" }
 
-      expect(cloud.snapshot_disk(disk_id, metadata)).to eq(snapshot_id)
+        it 'should take a managed snapshot of the disk' do
+          expect(disk_manager2).to receive(:snapshot_disk).
+            with(disk_id, metadata).
+            and_return(snapshot_id)
+
+          expect(cloud.snapshot_disk(disk_id, metadata)).to eq(snapshot_id)
+        end
+      end
+
+      context "when the disk starts with bosh-disk-data" do
+        let(:disk_id) { "fakestorageaccountname-fake-guid" }
+
+        before do
+          expect(disk_manager2).to receive(:get_disk).
+            with(disk_id).
+            and_return({:name=>disk_id})
+        end
+
+        it 'should take a managed snapshot of the disk' do
+          expect(disk_manager2).to receive(:snapshot_disk).
+            with(disk_id, metadata).
+            and_return(snapshot_id)
+
+          expect(cloud.snapshot_disk(disk_id, metadata)).to eq(snapshot_id)
+        end
+      end
+    end
+
+    context "when the disk is an unmanaged disk" do
+      let(:disk_id) { "fakestorageaccountname-fake-guid" }
+
+      before do
+        expect(disk_manager2).to receive(:get_disk).
+          with(disk_id).
+          and_return(nil)
+      end
+
+      it 'should take an unmanaged snapshot of the disk' do
+        expect(disk_manager).to receive(:snapshot_disk).
+          with(disk_id, metadata).
+          and_return(snapshot_id)
+
+        expect(cloud.snapshot_disk(disk_id, metadata)).to eq(snapshot_id)
+      end
     end
   end
 
   describe "#delete_snapshot" do
-    # Parameters
-    let(:snapshot_id) { 'fake-snapshot-id' }
+    context "when the snapshot is a managed snapshot" do
+      let(:snapshot_id) { 'bosh-disk-data-fake-guid' }
 
-    it 'should delete the snapshot' do
-      expect(disk_manager).to receive(:delete_snapshot).with(snapshot_id)
+      it 'should delete the managed snapshot' do
+        expect(disk_manager2).to receive(:delete_snapshot).with(snapshot_id)
 
-      cloud.delete_snapshot(snapshot_id)
+        cloud.delete_snapshot(snapshot_id)
+      end
+    end
+
+    context "when the snapshot is an unmanaged snapshot" do
+      let(:snapshot_id) { 'fake-snapshot-id' }
+
+      it 'should delete the unmanaged snapshot' do
+        expect(disk_manager).to receive(:delete_snapshot).with(snapshot_id)
+
+        cloud.delete_snapshot(snapshot_id)
+      end
     end
   end
 

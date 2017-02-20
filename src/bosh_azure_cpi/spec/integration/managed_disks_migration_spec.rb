@@ -24,6 +24,15 @@ describe Bosh::AzureCloud::Cloud do
   let(:vm_metadata)          { { deployment: 'deployment', job: 'cpi_spec', index: '0', delete_me: 'please' } }
   let(:network_spec)         { {} }
   let(:resource_pool)        { { 'instance_type' => instance_type } }
+  let(:snapshot_metadata)    {
+    vm_metadata.merge(
+      bosh_data: 'bosh data',
+      instance_id: 'instance',
+      agent_id: 'agent',
+      director_name: 'Director',
+      director_uuid: SecureRandom.uuid
+    )
+  }
 
   let(:cloud_options) {
     {
@@ -91,51 +100,67 @@ describe Bosh::AzureCloud::Cloud do
     context 'Without availability set' do
       it 'should exercise the vm lifecycle' do
         begin
+          # Create an unmanaged VM
           logger.info("Creating unmanaged VM with stemcell_id=`#{@stemcell_id}'")
           unmanaged_instance_id = cpi_unmanaged.create_vm(SecureRandom.uuid, @stemcell_id, resource_pool, network_spec)
-
           logger.info("Checking unmanaged VM existence instance_id=`#{unmanaged_instance_id}'")
           expect(cpi_unmanaged.has_vm?(unmanaged_instance_id)).to be(true)
+          logger.info("Setting VM metadata instance_id=`#{unmanaged_instance_id}'")
+          cpi_unmanaged.set_vm_metadata(unmanaged_instance_id, vm_metadata)
+          cpi_unmanaged.reboot_vm(unmanaged_instance_id)
 
+          # Create an unmanaged disk, and attach it to the unmanaged VM
           disk_id = cpi_unmanaged.create_disk(2048, {}, unmanaged_instance_id)
           expect(disk_id).not_to be_nil
           @disk_id_pool.push(disk_id)
-
           cpi_unmanaged.attach_disk(unmanaged_instance_id, disk_id)
 
-          # Assume that use_managed_disks is enabled at this moment
+          # Create and delete an unmanaged snapshot
+          unmanaged_snapshot_id = cpi_unmanaged.snapshot_disk(disk_id, snapshot_metadata)
+          expect(unmanaged_snapshot_id).not_to be_nil
+          cpi_unmanaged.delete_snapshot(unmanaged_snapshot_id)
 
+          # Detach the unmanaged disk
+          Bosh::Common.retryable(tries: 20, on: Bosh::Clouds::DiskNotAttached, sleep: lambda { |n, _| [2**(n-1), 30].min }) do
+            cpi.detach_disk(unmanaged_instance_id, disk_id)
+            true
+          end
+
+          logger.info("Assume that the new BOSH director (use_managed_disks=true) is deployed.") # After this line, cpi instead of cpi_unmanaged will be used
+
+          # Even use_managed_disks is enabled, but the unmanaged VM and disks have not been updated
+          unmanaged_snapshot_id = cpi.snapshot_disk(disk_id, snapshot_metadata)
+          expect(unmanaged_snapshot_id).not_to be_nil
+          cpi.delete_snapshot(unmanaged_snapshot_id)
+
+          logger.info("The new BOSH director starts to update the unmanaged VM to a managed VM")
+
+          # Delete the unmanaged VM
           cpi.delete_vm(unmanaged_instance_id)
 
+          # Create a managed VM
           logger.info("Creating managed VM with stemcell_id=`#{@stemcell_id}'")
-          managed_instance_id = cpi.create_vm(
-            SecureRandom.uuid,
-            @stemcell_id,
-            resource_pool,
-            network_spec)
+          managed_instance_id = cpi.create_vm(SecureRandom.uuid, @stemcell_id, resource_pool, network_spec)
           logger.info("Checking managed VM existence instance_id=`#{managed_instance_id}'")
           expect(cpi.has_vm?(managed_instance_id)).to be(true)
 
+          # Migrate the unmanaged disk to a managed disk, and attach the managed disk to the managed VM. The disk_id won't be changed.
           cpi.attach_disk(managed_instance_id, disk_id)
 
-          snapshot_metadata = vm_metadata.merge(
-            bosh_data: 'bosh data',
-            instance_id: 'instance',
-            agent_id: 'agent',
-            director_name: 'Director',
-            director_uuid: SecureRandom.uuid
-          )
+          # Create and delete a managed snapshot
           managed_snapshot_id = cpi.snapshot_disk(disk_id, snapshot_metadata)
           expect(managed_snapshot_id).not_to be_nil
           cpi.delete_snapshot(managed_snapshot_id)
 
+          # Detach the managed disk
           Bosh::Common.retryable(tries: 20, on: Bosh::Clouds::DiskNotAttached, sleep: lambda { |n, _| [2**(n-1), 30].min }) do
             cpi.detach_disk(managed_instance_id, disk_id)
             true
           end
 
-          cpi.delete_disk(disk_id) # Delete the managed disk
-          cpi_unmanaged.delete_disk(disk_id) # Migration: delete the migrated unmanaged disk
+          # Delete the managed disk, and the migrated unmanaged disk
+          cpi.delete_disk(disk_id)
+          cpi_unmanaged.delete_disk(disk_id)
           @disk_id_pool.delete(disk_id)
         ensure
           cpi_unmanaged.delete_vm(unmanaged_instance_id) unless unmanaged_instance_id.nil?
@@ -161,19 +186,18 @@ describe Bosh::AzureCloud::Cloud do
         instance_id_and_disk_id_pool = Array.new
         begin
           for i in 1..3
+            # Create an unmanaged VM
             logger.info("Creating VM with stemcell_id=`#{@stemcell_id}'")
             instance_id = cpi_unmanaged.create_vm(SecureRandom.uuid, @stemcell_id, resource_pool, network_spec)
             expect(instance_id).to be
             unmanaged_instance_id_pool.push(instance_id)
-
             logger.info("Checking VM existence instance_id=`#{instance_id}'")
             expect(cpi_unmanaged.has_vm?(instance_id)).to be(true)
-
             logger.info("Setting VM metadata instance_id=`#{instance_id}'")
             cpi_unmanaged.set_vm_metadata(instance_id, vm_metadata)
-
             cpi_unmanaged.reboot_vm(instance_id)
 
+            # Create an unmanaged disk, and attach it to the unmanaged VM
             disk_id = cpi_unmanaged.create_disk(2048, {}, instance_id)
             expect(disk_id).not_to be_nil
             @disk_id_pool.push(disk_id)
@@ -185,13 +209,17 @@ describe Bosh::AzureCloud::Cloud do
             })
           end
 
-          # Assume that use_managed_disks is enabled at this moment
+          logger.info("Assume that the new BOSH director (use_managed_disks=true) is deployed.") # After this line, cpi instead of cpi_unmanaged will be used
+          logger.info("The new BOSH director starts to update the unmanaged VM to an managed VM one by one")
+
           instance_id_and_disk_id_pool.each do |instance_id_and_disk_id|
             unmanaged_instance_id = instance_id_and_disk_id[:instance_id]
             disk_id = instance_id_and_disk_id[:disk_id]
 
+            # Delete the unmanaged VM
             cpi_unmanaged.delete_vm(unmanaged_instance_id) unless unmanaged_instance_id.nil?
 
+            # Create a managed VM
             logger.info("Creating managed VM with stemcell_id=`#{@stemcell_id}'")
             managed_instance_id = cpi.create_vm(SecureRandom.uuid, @stemcell_id, resource_pool, network_spec)
             logger.info("Checking managed VM existence instance_id=`#{managed_instance_id}'")
@@ -201,24 +229,20 @@ describe Bosh::AzureCloud::Cloud do
             # Migrate the unmanaged disk to a managed disk, and attach the managed disk to the VM. The disk_id won't be changed.
             cpi.attach_disk(managed_instance_id, disk_id)
 
-            snapshot_metadata = vm_metadata.merge(
-              bosh_data: 'bosh data',
-              instance_id: 'instance',
-              agent_id: 'agent',
-              director_name: 'Director',
-              director_uuid: SecureRandom.uuid
-            )
+            # Create and delete a managed snapshot
             managed_snapshot_id = cpi.snapshot_disk(disk_id, snapshot_metadata)
             expect(managed_snapshot_id).not_to be_nil
             cpi.delete_snapshot(managed_snapshot_id)
 
+            # Detach the managed disk
             Bosh::Common.retryable(tries: 20, on: Bosh::Clouds::DiskNotAttached, sleep: lambda { |n, _| [2**(n-1), 30].min }) do
               cpi.detach_disk(managed_instance_id, disk_id)
               true
             end
 
-            cpi.delete_disk(disk_id) # Delete the managed disk
-            cpi_unmanaged.delete_disk(disk_id) # Migration: delete the migrated unmanaged disk
+            # Delete the managed disk, and the migrated unmanaged disk
+            cpi.delete_disk(disk_id)
+            cpi_unmanaged.delete_disk(disk_id)
             @disk_id_pool.delete(disk_id)
           end
         ensure
