@@ -126,7 +126,7 @@ describe Bosh::AzureCloud::StemcellManager2 do
       end
     end
 
-    context "when the user image doesn't exists" do
+    context "when the user image doesn't exist" do
       before do
         allow(client2).to receive(:get_user_image_by_name).
           with(user_image_name).

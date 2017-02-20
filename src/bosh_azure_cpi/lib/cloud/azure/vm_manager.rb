@@ -145,7 +145,7 @@ module Bosh::AzureCloud
       if @use_managed_disks
         managed_disk = @azure_client2.get_managed_disk_by_name(disk_name)
         caching = @disk_manager2.get_data_disk_caching(disk_name)
-        disk = @azure_client2.attach_disk_to_virtual_machine(instance_id, disk_name, managed_disk[:id], caching, @use_managed_disks)
+        disk = @azure_client2.attach_disk_to_virtual_machine(instance_id, disk_name, managed_disk[:id], caching, true)
       else
         disk_uri = @disk_manager.get_disk_uri(disk_name)
         caching = @disk_manager.get_data_disk_caching(disk_name)
@@ -274,12 +274,13 @@ module Bosh::AzureCloud
       unless availability_set_name.nil?
         availability_set = @azure_client2.get_availability_set_by_name(availability_set_name)
         if availability_set.nil?
+          # In some regions, the max fault domain count of a managed availability set is 2
           avset_params = {
             :name                         => availability_set_name,
             :location                     => location,
             :tags                         => AZURE_TAGS,
             :platform_update_domain_count => resource_pool['platform_update_domain_count'] || 5,
-            :platform_fault_domain_count  => resource_pool['platform_fault_domain_count'] || (@use_managed_disks ? 2 : 3), # For managed disks, the max count is 2
+            :platform_fault_domain_count  => resource_pool['platform_fault_domain_count'] || (@use_managed_disks ? 2 : 3),
             :managed                      => @use_managed_disks
           }
           begin
@@ -295,8 +296,8 @@ module Bosh::AzureCloud
             end
           end
         else
-          # Update the availability set to an aligned one
-          if @use_managed_disks && availability_set[:managed] != true
+          # Update the availability set to a managed one
+          if @use_managed_disks && !availability_set[:managed]
             avset_params = {
               :name                         => availability_set[:name],
               :location                     => availability_set[:location],
@@ -306,7 +307,7 @@ module Bosh::AzureCloud
               :managed                      => true
             }
             begin
-              @logger.debug("create_availability_set - Updating the availability set `#{avset_params[:name]}' to an aligned one")
+              @logger.debug("create_availability_set - Updating the availability set `#{avset_params[:name]}' to a managed one")
               @azure_client2.create_availability_set(avset_params)
               availability_set = @azure_client2.get_availability_set_by_name(avset_params[:name])
             rescue AzureConflictError => e

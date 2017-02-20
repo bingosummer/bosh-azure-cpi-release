@@ -25,7 +25,7 @@ describe Bosh::AzureCloud::Cloud do
   let(:vnet_name)            { ENV.fetch('BOSH_AZURE_VNET_NAME', 'boshvnet-crp') }
   let(:subnet_name)          { ENV.fetch('BOSH_AZURE_SUBNET_NAME', 'BOSH1') }
   let(:second_subnet_name)   { ENV.fetch('BOSH_AZURE_SECOND_SUBNET_NAME', 'BOSH2') }
-  let(:instance_type)        { ENV.fetch('BOSH_AZURE_INSTANCE_TYPE', 'Standard_D1') }
+  let(:instance_type)        { ENV.fetch('BOSH_AZURE_INSTANCE_TYPE', 'Standard_D1_v2') }
   let(:vm_metadata)          { { deployment: 'deployment', job: 'cpi_spec', index: '0', delete_me: 'please' } }
   let(:network_spec)         { {} }
   let(:resource_pool)        { { 'instance_type' => instance_type } }
