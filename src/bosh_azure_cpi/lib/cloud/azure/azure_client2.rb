@@ -317,7 +317,7 @@ module Bosh::AzureCloud
 
     # Attach a specified disk to a virtual machine
     # @param [String] name      - Name of virtual machine.
-    # @param [String] disk_name - Disk name. If managed is true, disk_name should match the resource name of the managed disk. 
+    # @param [String] disk_name - Disk name.
     # @param [String] disk_uri  - URI of disk (managed: false) or ID of managed disk (managed: true)
     # @param [String] caching   - Caching option: None, ReadOnly or ReadWrite
     # @param [Boolean] managed  - Needs to be true to attach disk to a managed disk VM.
@@ -1549,9 +1549,6 @@ module Bosh::AzureCloud
         managed_disk[:provisioning_state] = properties['provisioningState']
         managed_disk[:disk_size]          = properties['diskSizeGB']
         managed_disk[:account_type]       = properties['accountType']
-        managed_disk[:owner_id]           = properties['owner']['id'] unless properties['owner'].nil?
-        managed_disk[:fault_domain]       = properties['faultDomain'] unless properties['faultDomain'].nil?
-        managed_disk[:storage_avset_id]   = properties['storageAvailabilitySet'] unless properties['storageAvailabilitySet'].nil?
       end
       managed_disk
     end

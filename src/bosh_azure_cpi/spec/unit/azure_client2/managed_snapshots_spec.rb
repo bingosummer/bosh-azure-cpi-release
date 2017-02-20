@@ -52,12 +52,7 @@ describe Bosh::AzureCloud::AzureClient2 do
         :properties => {
           :provisioningState => "d",
           :diskSizeGB => "e",
-          :accountType => "f",
-          :owner => {
-            :id => "a"
-          },
-          :faultDomain => "g",
-          :storageAvailabilitySet => "h"
+          :accountType => "f"
         }
       }
     }

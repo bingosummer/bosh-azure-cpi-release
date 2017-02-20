@@ -147,12 +147,7 @@ describe Bosh::AzureCloud::AzureClient2 do
         :properties => {
           :provisioningState => "d",
           :diskSizeGB => "e",
-          :accountType => "f",
-          :owner => {
-            :id => "a"
-          },
-          :faultDomain => "g",
-          :storageAvailabilitySet => "h"
+          :accountType => "f"
         }
       }
     }
@@ -166,10 +161,7 @@ describe Bosh::AzureCloud::AzureClient2 do
         },
         :provisioning_state => "d",
         :disk_size => "e",
-        :account_type => "f",
-        :owner_id => "a",
-        :fault_domain => "g",
-        :storage_avset_id => "h"
+        :account_type => "f"
       }
     }
 
@@ -208,12 +200,7 @@ describe Bosh::AzureCloud::AzureClient2 do
             :properties => {
               :provisioningState => "d1",
               :diskSizeGB => "e1",
-              :accountType => "f1",
-              :owner => {
-                :id => "a1"
-              },
-              :faultDomain => "g1",
-              :storageAvailabilitySet => "h1"
+              :accountType => "f1"
             }
           },
           {
@@ -226,12 +213,7 @@ describe Bosh::AzureCloud::AzureClient2 do
             :properties => {
               :provisioningState => "d2",
               :diskSizeGB => "e2",
-              :accountType => "f2",
-              :owner => {
-                :id => "a2"
-              },
-              :faultDomain => "g2",
-              :storageAvailabilitySet => "h2"
+              :accountType => "f2"
             }
           }
         ]
@@ -248,10 +230,7 @@ describe Bosh::AzureCloud::AzureClient2 do
           },
           :provisioning_state => "d1",
           :disk_size => "e1",
-          :account_type => "f1",
-          :owner_id => "a1",
-          :fault_domain => "g1",
-          :storage_avset_id => "h1"
+          :account_type => "f1"
         },
         {
           :id => "a2",
@@ -262,10 +241,7 @@ describe Bosh::AzureCloud::AzureClient2 do
           },
           :provisioning_state => "d2",
           :disk_size => "e2",
-          :account_type => "f2",
-          :owner_id => "a2",
-          :fault_domain => "g2",
-          :storage_avset_id => "h2"
+          :account_type => "f2"
         }
       ]
     }
@@ -304,12 +280,7 @@ describe Bosh::AzureCloud::AzureClient2 do
           :properties => {
             :provisioningState => "d",
             :diskSizeGB => "e",
-            :accountType => "f",
-            :owner => {
-              :id => "a"
-            },
-            :faultDomain => "g",
-            :storageAvailabilitySet => "h"
+            :accountType => "f"
           }
         }
       }
@@ -323,10 +294,7 @@ describe Bosh::AzureCloud::AzureClient2 do
           },
           :provisioning_state => "d",
           :disk_size => "e",
-          :account_type => "f",
-          :owner_id => "a",
-          :fault_domain => "g",
-          :storage_avset_id => "h"
+          :account_type => "f"
         }
       }
 
