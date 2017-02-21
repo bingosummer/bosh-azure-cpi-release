@@ -20,7 +20,7 @@ describe Bosh::AzureCloud::Cloud do
   let(:storage_account_name) { ENV.fetch('BOSH_AZURE_STORAGE_ACCOUNT_NAME', nil) }
   let(:vnet_name)            { ENV.fetch('BOSH_AZURE_VNET_NAME', 'boshvnet-crp') }
   let(:subnet_name)          { ENV.fetch('BOSH_AZURE_SUBNET_NAME', 'BOSH1') }
-  let(:instance_type)        { ENV.fetch('BOSH_AZURE_INSTANCE_TYPE', 'Standard_D1') }
+  let(:instance_type)        { ENV.fetch('BOSH_AZURE_INSTANCE_TYPE', 'Standard_D1_v2') }
   let(:vm_metadata)          { { deployment: 'deployment', job: 'cpi_spec', index: '0', delete_me: 'please' } }
   let(:network_spec)         { {} }
   let(:resource_pool)        { { 'instance_type' => instance_type } }
@@ -120,20 +120,20 @@ describe Bosh::AzureCloud::Cloud do
           expect(unmanaged_snapshot_id).not_to be_nil
           cpi_unmanaged.delete_snapshot(unmanaged_snapshot_id)
 
-          # Detach the unmanaged disk
-          Bosh::Common.retryable(tries: 20, on: Bosh::Clouds::DiskNotAttached, sleep: lambda { |n, _| [2**(n-1), 30].min }) do
-            cpi.detach_disk(unmanaged_instance_id, disk_id)
-            true
-          end
-
           logger.info("Assume that the new BOSH director (use_managed_disks=true) is deployed.") # After this line, cpi instead of cpi_unmanaged will be used
 
-          # Even use_managed_disks is enabled, but the unmanaged VM and disks have not been updated
+          # Even use_managed_disks is enabled, but the unmanaged VM and disks have not been updated. It should succeed to snapshot the unmanaged disk.
           unmanaged_snapshot_id = cpi.snapshot_disk(disk_id, snapshot_metadata)
           expect(unmanaged_snapshot_id).not_to be_nil
           cpi.delete_snapshot(unmanaged_snapshot_id)
 
           logger.info("The new BOSH director starts to update the unmanaged VM to a managed VM")
+
+          # Detach the unmanaged disk
+          Bosh::Common.retryable(tries: 20, on: Bosh::Clouds::DiskNotAttached, sleep: lambda { |n, _| [2**(n-1), 30].min }) do
+            cpi.detach_disk(unmanaged_instance_id, disk_id)
+            true
+          end
 
           # Delete the unmanaged VM
           cpi.delete_vm(unmanaged_instance_id)
