@@ -142,7 +142,7 @@ module Bosh::AzureCloud
     # @return [String] lun
     def attach_disk(instance_id, disk_name)
       @logger.info("attach_disk(#{instance_id}, #{disk_name})")
-      if @use_managed_disks
+      if @use_managed_disks && is_managed_vm?(instance_id)
         managed_disk = @azure_client2.get_managed_disk_by_name(disk_name)
         caching = @disk_manager2.get_data_disk_caching(disk_name)
         disk = @azure_client2.attach_disk_to_virtual_machine(instance_id, disk_name, managed_disk[:id], caching, true)
