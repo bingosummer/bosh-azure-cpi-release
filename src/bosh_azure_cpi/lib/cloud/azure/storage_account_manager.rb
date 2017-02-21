@@ -139,9 +139,10 @@ module Bosh::AzureCloud
         return @default_storage_account
       end
 
+      @logger.debug("The default storage account is not specified in global settings.")
       storage_accounts = @azure_client2.list_storage_accounts()
       location = @azure_client2.get_resource_group()[:location]
-      @logger.debug("The default storage account is not specified in global settings. Will look for an existing storage account in the location `#{location}'")
+      @logger.debug("Will look for an existing storage account with the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' in the location `#{location}'")
       storage_account = storage_accounts.find{ |s|
         s[:location] == location && is_stemcell_storage_account?(s[:tags])
       }
@@ -154,27 +155,27 @@ module Bosh::AzureCloud
       @logger.debug("Can't find a storage account with the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}'")
       @logger.debug("Will look for the old storage account (with the table `#{STEMCELL_TABLE}') which stores all uploaded stemcells")
       storage_account = storage_accounts.find{ |s|
-        s[:location] == location && is_old_storage_account?(s[:name])
+        is_old_storage_account?(s[:name])
       }
-      if storage_account.nil?
-        @logger.debug("Can't the old storage account with the table `#{STEMCELL_TABLE}'")
-        @logger.debug("Will look for another storage account without the table `#{STEMCELL_TABLE}'")
-        storage_account = storage_accounts.find{ |s|
-          s[:location] == location
-        }
-      end
 
       unless storage_account.nil?
         storage_account_name = storage_account[:name]
-        @logger.debug("Use an exisiting storage account `#{storage_account_name}' as the default storage account")
-        @logger.debug("Set the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' for the storage account `#{storage_account_name}'")
-        @azure_client2.update_tags_of_storage_account(storage_account_name, STEMCELL_STORAGE_ACCOUNT_TAGS)
-        @default_storage_account = storage_account
-        return @default_storage_account
+        if storage_account[:location] == location
+          @logger.debug("Use an exisiting storage account `#{storage_account_name}' as the default storage account")
+          @logger.debug("Set the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' for the storage account `#{storage_account_name}'")
+          @azure_client2.update_tags_of_storage_account(storage_account_name, STEMCELL_STORAGE_ACCOUNT_TAGS)
+          @default_storage_account = storage_account
+          return @default_storage_account
+        else
+          error_msg = "The exisiting storage account `#{storage_account_name}' has a different location other than the resource group location.\n"
+          error_msg += "Please create a new storage account in the resource group location `#{location}',\n"
+          error_msg += "and copy the stemcells and the tabel `#{STEMCELL_TABLE}' from the old one to the new one."
+          cloud_error(error_msg)
+        end
       end
 
-      @logger.debug("Cannot find any existing storage account in the location `#{location}'")
-      storage_account_name = "cpi#{SecureRandom.hex(10)}"
+      @logger.debug("Cannot find any valid storage account in the location `#{location}'")
+      storage_account_name = "#{SecureRandom.hex(12)}"
       @logger.debug("Creating a storage account `#{storage_account_name}' with the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' in the location `#{location}'")
       create_storage_account(storage_account_name, STORAGE_ACCOUNT_TYPE_STANDARD_LRS, location, STEMCELL_STORAGE_ACCOUNT_TAGS)
       @logger.debug("The default storage account is `#{storage_account_name}'")

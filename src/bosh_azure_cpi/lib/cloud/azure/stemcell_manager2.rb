@@ -80,7 +80,7 @@ module Bosh::AzureCloud
           s[:location] == location && is_stemcell_storage_account?(s[:tags])
         }
         if storage_account.nil?
-          storage_account_name = "cpi#{SecureRandom.hex(10)}"
+          storage_account_name = "#{SecureRandom.hex(12)}"
           @logger.debug("get_user_image: Creating a storage account `#{storage_account_name}' with the tags `#{STEMCELL_STORAGE_ACCOUNT_TAGS}' in the location `#{location}'")
           mutex = FileMutex.new(BOSH_LOCK_CREATE_STORAGE_ACCOUNT, @logger)
           begin
