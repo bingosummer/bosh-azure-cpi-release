@@ -193,6 +193,11 @@ export BAT_DIRECTOR_USER=${BOSH_DIRECTOR_USERNAME}
 export BAT_DIRECTOR_PASSWORD=${BOSH_DIRECTOR_PASSWORD}
 export BAT_RSPEC_FLAGS="--tag ~raw_ephemeral_storage"
 
+# multiple_manual_networks fails due to the issue described in https://github.com/cloudfoundry/bosh/pull/1457. Once it's merged, the tag should be removed.
+if [ "${BAT_BASE_OS}" == "centos-7" ]; then
+  export BAT_RSPEC_FLAGS="--tag ~raw_ephemeral_storage --tag ~multiple_manual_networks"
+fi
+
 bosh -n target ${BAT_DIRECTOR}
 echo Using This version of bosh:
 bosh --version
