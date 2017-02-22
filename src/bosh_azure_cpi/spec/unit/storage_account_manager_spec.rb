@@ -608,6 +608,7 @@ describe Bosh::AzureCloud::StorageAccountManager do
               {
                 :name => 'account1',
                 :location => resource_group_location,
+                :account_type => 'Standard_LRS',
                 :storage_table_host => 'fake-host'
               }
             }
@@ -649,6 +650,7 @@ describe Bosh::AzureCloud::StorageAccountManager do
               {
                 :name => 'account1',
                 :location => 'another-resource-group-location',
+                :account_type => 'Standard_LRS',
                 :storage_table_host => 'fake-host'
               }
             }
@@ -686,11 +688,60 @@ describe Bosh::AzureCloud::StorageAccountManager do
           end
         end
 
+        context 'When no standard storage account is found in the resource group' do
+          let(:targeted_storage_account) {
+            {
+              :name => 'account1',
+              :location => resource_group_location,
+              :account_type => 'Premium_LRS',
+              :storage_table_host => 'fake-host'
+            }
+          }
+          let(:storage_accounts) {
+            [
+              targeted_storage_account
+            ]
+          }
+
+          before do
+            allow(client2).to receive(:list_storage_accounts).and_return(storage_accounts)
+            allow(client2).to receive(:get_resource_group).and_return(resource_group)
+            allow(client2).to receive(:get_storage_account_by_name).
+              with(targeted_storage_account[:name]).
+              and_return(targeted_storage_account)
+          end
+
+          let(:result) {
+            {
+              :available => true
+            }
+          }
+          let(:random_postfix) { SecureRandom.hex(12) }
+          let(:new_storage_account_name) { "#{random_postfix}" }
+
+          before do
+            allow(SecureRandom).to receive(:hex).and_return(random_postfix)
+            allow(client2).to receive(:check_storage_account_name_availability).with(new_storage_account_name).and_return(result)
+            allow(blob_manager).to receive(:prepare).with(new_storage_account_name)
+            allow(blob_manager).to receive(:set_stemcell_container_acl_to_public)
+          end
+
+          it 'should create a new storage account' do
+            azure_properties.delete('storage_account_name')
+            expect(client2).not_to receive(:get_storage_account_by_name).with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME)
+            expect(client2).to receive(:create_storage_account)
+            expect(client2).to receive(:get_storage_account_by_name).with(new_storage_account_name)
+
+            storage_account_manager.default_storage_account
+          end
+        end
+
         context 'When the old storage account with the stemcell table is not found in the resource group' do
           let(:targeted_storage_account) {
             {
               :name => 'account1',
               :location => resource_group_location,
+              :account_type => 'Standard_LRS',
               :storage_table_host => 'fake-host'
             }
           }
