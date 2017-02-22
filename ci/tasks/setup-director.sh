@@ -62,6 +62,9 @@ releases:
   url: file://bosh-release/bosh-release.tgz
 - name: bosh-azure-cpi
   url: file://cpi-release/bosh-cpi.tgz
+- name: os-conf
+  url:  https://bosh.io/d/github.com/cloudfoundry/os-conf-release?v=11
+  sha1: 651f10a765a2900a7f69ea07705f3367bd8041eb
 
 networks:
 - name: public
@@ -102,6 +105,7 @@ jobs:
   - {name: health_monitor, release: bosh}
   - {name: registry, release: bosh}
   - {name: azure_cpi, release: bosh-azure-cpi}
+  - {name: user_add, release: os-conf}
 
   instances: 1
   resource_pool: vms
@@ -115,6 +119,10 @@ jobs:
     static_ips: [${DIRECTOR_PIP}]
 
   properties:
+    users:
+    - name: cpidebug
+      public_key: ${SSH_PUBLIC_KEY}
+
     nats:
       address: 127.0.0.1
       user: nats
