@@ -167,9 +167,9 @@ module Bosh::AzureCloud
           @default_storage_account = storage_account
           return @default_storage_account
         else
-          error_msg = "The exisiting storage account `#{storage_account_name}' has a different location other than the resource group location.\n"
-          error_msg += "Please create a new storage account in the resource group location `#{location}',\n"
-          error_msg += "and copy the stemcells and the tabel `#{STEMCELL_TABLE}' from the old one to the new one."
+          error_msg = "The existing default storage account `#{storage_account_name}' has a different location other than the resource group location.\n"
+          error_msg += "For migration, please create a new storage account in the resource group location `#{location}' as the default storage account,\n"
+          error_msg += "and copy the container `#{STEMCELL_CONTAINER}' and the tabel `#{STEMCELL_TABLE}' from the old one to the new one."
           cloud_error(error_msg)
         end
       end

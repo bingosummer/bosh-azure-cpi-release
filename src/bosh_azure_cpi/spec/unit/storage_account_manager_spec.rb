@@ -683,7 +683,7 @@ describe Bosh::AzureCloud::StorageAccountManager do
 
               expect {
                 storage_account_manager.default_storage_account
-              }.to raise_error(/The exisiting storage account `#{targeted_storage_account[:name]}' has a different location other than the resource group location./)
+              }.to raise_error(/The existing default storage account `#{targeted_storage_account[:name]}' has a different location other than the resource group location./)
             end
           end
         end
