@@ -141,35 +141,6 @@ describe Bosh::AzureCloud::DiskManager2 do
     end
   end
 
-  describe "#list_disks" do
-    let(:disks) {
-      [
-        { :name => "fake-name-1" },
-        { :name => "fake-name-2" },
-        { :name => "specific-prefix-1" }
-      ]
-    }
-
-    before do
-      allow(client2).to receive(:list_managed_disks).
-        and_return(disks)
-    end
-
-    context "When no prefix is provided" do
-      it "should list the disks" do
-        expect(disk_manager2.list_disks()).to be(disks)
-      end
-    end
-
-    context "When the prefix is provided" do
-      it "should list the disks" do
-        expect(
-          disk_manager2.list_disks("specific-prefix")
-        ).to eq([{ :name => "specific-prefix-1" }])
-      end
-    end
-  end
-
   describe "#snapshot_disk" do
     let(:metadata) { {"foo" => "bar"} }
     let(:snapshot_name) { "#{managed_data_disk_prefix}-#{uuid}-None" }

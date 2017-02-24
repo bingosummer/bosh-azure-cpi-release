@@ -71,15 +71,6 @@ module Bosh::AzureCloud
       disk = @azure_client2.get_managed_disk_by_name(disk_name)
     end
 
-    def list_disks(prefix=nil)
-      @logger.info("list_disks()")
-      disks = @azure_client2.list_managed_disks()
-      unless prefix.nil?
-        disks = disks.select{ |disk| disk[:name] =~ /^#{prefix}/ }
-      end
-      disks
-    end
-
     def snapshot_disk(disk_name, metadata)
       @logger.info("snapshot_disk(#{disk_name}, #{metadata})")
       caching = get_data_disk_caching(disk_name)

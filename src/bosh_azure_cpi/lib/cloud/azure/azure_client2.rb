@@ -717,25 +717,6 @@ module Bosh::AzureCloud
       parse_managed_disk(result)
     end
 
-    # List managed disks within the default resource group
-    #
-    # @return [Array]
-    #
-    # @See https://docs.microsoft.com/en-us/rest/api/manageddisks/disks/disks-list-by-resource-group
-    #
-    def list_managed_disks()
-      managed_disks = []
-      url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_COMPUTE_DISKS)
-      result = get_resource_by_id(url)
-      unless result.nil?
-        result['value'].each do |value|
-          managed_disk = parse_managed_disk(value)
-          managed_disks << managed_disk
-        end
-      end
-      managed_disks
-    end
- 
     # Get a managed disk's tags
     # @param [String] name - Name of managed disk.
     #
