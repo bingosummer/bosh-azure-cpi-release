@@ -459,6 +459,7 @@ module Bosh::AzureCloud
       end
 
       def unlock()
+        @logger.debug("The lock `#{@file_path}' is deleted by the process `#{Process.pid}'")
         File.delete(@file_path)
       rescue => e
         raise BOSH_LOCK_EXCEPTION_LOCK_NOT_FOUND, e
