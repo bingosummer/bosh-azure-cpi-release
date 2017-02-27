@@ -73,6 +73,7 @@ jobs:
         AZURE_TENANT_ID:                {{azure_tenant_id}}
         AZURE_GROUP_NAME_FOR_VMS:       {{azure_group_name_for_vms_centos}}
         AZURE_GROUP_NAME_FOR_NETWORK:   {{azure_group_name_for_network_centos}}
+        AZURE_STORAGE_ACCOUNT_NAME:                 {{azure_storage_account_name}}
         AZURE_VNET_NAME_FOR_BATS:       {{azure_vnet_name_for_bats}}
         AZURE_BOSH_SUBNET_NAME:         {{azure_bosh_subnet_name}}
         AZURE_DEFAULT_SECURITY_GROUP:   {{azure_default_security_group}}
