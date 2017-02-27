@@ -78,7 +78,6 @@ jobs:
         AZURE_BOSH_SUBNET_NAME:         {{azure_bosh_subnet_name}}
         AZURE_DEFAULT_SECURITY_GROUP:   {{azure_default_security_group}}
         AZURE_DEBUG_MODE:               {{azure_debug_mode}}
-        AZURE_USE_MANAGED_DISKS:        true
         BAT_NETWORK_GATEWAY:            {{bat_network_gateway}}
         BOSH_DIRECTOR_USERNAME:         {{bosh_director_username}}
         BOSH_DIRECTOR_PASSWORD:         {{bosh_director_password}}
