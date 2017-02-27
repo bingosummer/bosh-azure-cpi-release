@@ -51,7 +51,7 @@ done
 
 set -e
 
-resource_group_names="${AZURE_GROUP_NAME_FOR_VMS} ${AZURE_GROUP_NAME_FOR_NETWORK} ${AZURE_GROUP_NAME_FOR_VMS_MANAGED_DISKS} ${AZURE_GROUP_NAME_FOR_NETWORK_MANAGED_DISKS} ${AZURE_GROUP_NAME_FOR_VMS_CENTOS} ${AZURE_GROUP_NAME_FOR_NETWORK_CENTOS}"
+resource_group_names="${AZURE_GROUP_NAME_FOR_VMS_CENTOS} ${AZURE_GROUP_NAME_FOR_NETWORK_CENTOS}"
 for resource_group_name in ${resource_group_names}
 do
   echo azure group create ${resource_group_name} ${AZURE_REGION_SHORT_NAME}
@@ -82,15 +82,9 @@ EOF
 done
 
 # Setup the storage account
-resource_group_name="${AZURE_GROUP_NAME_FOR_VMS}"
+resource_group_name="${AZURE_GROUP_NAME_FOR_VMS_CENTOS}"
 storage_account_name="${AZURE_STORAGE_ACCOUNT_NAME}"
 azure storage account create --location ${AZURE_REGION_SHORT_NAME} --sku-name LRS --kind Storage --resource-group ${resource_group_name} ${storage_account_name}
 storage_account_key=$(azure storage account keys list ${storage_account_name} --resource-group ${resource_group_name} --json | jq '.[0].value' -r)
 azure storage container create --account-name ${storage_account_name} --account-key ${storage_account_key} --container bosh
-azure storage container create --account-name ${storage_account_name} --account-key ${storage_account_key} --permission blob --container stemcell
-
-resource_group_name="${AZURE_GROUP_NAME_FOR_VMS_MANAGED_DISKS}"
-storage_account_name="${AZURE_STORAGE_ACCOUNT_NAME_MANAGED_DISKS}"
-azure storage account create --location ${AZURE_REGION_SHORT_NAME} --sku-name LRS --kind Storage --resource-group ${resource_group_name} ${storage_account_name}
-storage_account_key=$(azure storage account keys list ${storage_account_name} --resource-group ${resource_group_name} --json | jq '.[0].value' -r)
 azure storage container create --account-name ${storage_account_name} --account-key ${storage_account_key} --permission blob --container stemcell
