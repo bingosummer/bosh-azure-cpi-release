@@ -3,11 +3,8 @@ groups:
   - name: bosh-azure-cpi-release
     jobs:
       - recreate-infrastructure-primary
-      - reset-resources
       - build-candidate
-      - lifecycle
-      - bats-ubuntu
-      - promote-candidate
+      - bats-centos
 jobs:
 - name: recreate-infrastructure-primary
   serial: true
@@ -18,42 +15,25 @@ jobs:
   - task: azure-provision
     file: bosh-cpi-src/ci/tasks/azure-provision.yml
     params:
-      AZURE_CLIENT_ID:                {{azure_client_id}}
-      AZURE_CLIENT_SECRET:            {{azure_client_secret}}
-      AZURE_TENANT_ID:                {{azure_tenant_id}}
-      AZURE_GROUP_NAME_FOR_VMS:       {{azure_group_name_for_vms}}
-      AZURE_GROUP_NAME_FOR_NETWORK:   {{azure_group_name_for_network}}
-      AZURE_REGION_NAME:              {{azure_region_name}}
-      AZURE_VNET_NAME_FOR_BATS:       {{azure_vnet_name_for_bats}}
-      AZURE_VNET_NAME_FOR_LIFECYCLE:  {{azure_vnet_name_for_lifecycle}}
-      AZURE_REGION_SHORT_NAME:        {{azure_region_short_name}}
-      AZURE_STORAGE_ACCOUNT_NAME:     {{azure_storage_account_name}}
-      AZURE_BOSH_SUBNET_NAME:         {{azure_bosh_subnet_name}}
-      AZURE_BOSH_SECOND_SUBNET_NAME:  {{azure_bosh_second_subnet_name}}
-      AZURE_CF_SUBNET_NAME:           {{azure_cf_subnet_name}}
-      AZURE_CF_SECOND_SUBNET_NAME:    {{azure_cf_second_subnet_name}}
-
-- name: reset-resources
-  serial: true
-  plan:
-  - aggregate:
-    - {trigger: false, get: bosh-cpi-src, resource: bosh-cpi-src-in}
-
-  - task: reset-resources
-    file: bosh-cpi-src/ci/tasks/reset-resources.yml
-    params:
-      AZURE_TENANT_ID:                {{azure_tenant_id}}
-      AZURE_CLIENT_ID:                {{azure_client_id}}
-      AZURE_CLIENT_SECRET:            {{azure_client_secret}}
-      AZURE_GROUP_NAME_FOR_VMS:       {{azure_group_name_for_vms}}
-      AZURE_GROUP_NAME_FOR_NETWORK:   {{azure_group_name_for_network}}
-      AZURE_STORAGE_ACCOUNT_NAME:     {{azure_storage_account_name}}
-      AZURE_VNET_NAME_FOR_BATS:       {{azure_vnet_name_for_bats}}
-      AZURE_VNET_NAME_FOR_LIFECYCLE:  {{azure_vnet_name_for_lifecycle}}
-      AZURE_BOSH_SUBNET_NAME:         {{azure_bosh_subnet_name}}
-      AZURE_BOSH_SECOND_SUBNET_NAME:  {{azure_bosh_second_subnet_name}}
-      AZURE_CF_SUBNET_NAME:           {{azure_cf_subnet_name}}
-      AZURE_CF_SECOND_SUBNET_NAME:    {{azure_cf_second_subnet_name}}
+      AZURE_CLIENT_ID:                            {{azure_client_id}}
+      AZURE_CLIENT_SECRET:                        {{azure_client_secret}}
+      AZURE_TENANT_ID:                            {{azure_tenant_id}}
+      AZURE_GROUP_NAME_FOR_VMS:                   {{azure_group_name_for_vms}}
+      AZURE_GROUP_NAME_FOR_NETWORK:               {{azure_group_name_for_network}}
+      AZURE_GROUP_NAME_FOR_VMS_MANAGED_DISKS:     {{azure_group_name_for_vms_managed_disks}}
+      AZURE_GROUP_NAME_FOR_NETWORK_MANAGED_DISKS: {{azure_group_name_for_network_managed_disks}}
+      AZURE_GROUP_NAME_FOR_VMS_CENTOS:            {{azure_group_name_for_vms_centos}}
+      AZURE_GROUP_NAME_FOR_NETWORK_CENTOS:        {{azure_group_name_for_network_centos}}
+      AZURE_REGION_NAME:                          {{azure_region_name}}
+      AZURE_VNET_NAME_FOR_BATS:                   {{azure_vnet_name_for_bats}}
+      AZURE_VNET_NAME_FOR_LIFECYCLE:              {{azure_vnet_name_for_lifecycle}}
+      AZURE_REGION_SHORT_NAME:                    {{azure_region_short_name}}
+      AZURE_STORAGE_ACCOUNT_NAME:                 {{azure_storage_account_name}}
+      AZURE_STORAGE_ACCOUNT_NAME_MANAGED_DISKS:   {{azure_storage_account_name_managed_disks}}
+      AZURE_BOSH_SUBNET_NAME:                     {{azure_bosh_subnet_name}}
+      AZURE_BOSH_SECOND_SUBNET_NAME:              {{azure_bosh_second_subnet_name}}
+      AZURE_CF_SUBNET_NAME:                       {{azure_cf_subnet_name}}
+      AZURE_CF_SECOND_SUBNET_NAME:                {{azure_cf_second_subnet_name}}
 
 - name: build-candidate
   serial: true
@@ -71,36 +51,12 @@ jobs:
   - put: bosh-cpi-dev-artifacts
     params: {file: candidate/*.tgz}
 
-- name: lifecycle
+- name: bats-centos
   serial: true
   plan:
   - aggregate:
     - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
-    - {trigger: false, passed: [build-candidate], get: bosh-cpi-src, resource: bosh-cpi-src-in}
-    - {trigger: false,                            get: stemcell, resource: azure-ubuntu-stemcell}
-
-  - task: test
-    file: bosh-cpi-src/ci/tasks/run-lifecycle.yml
-    params:
-      AZURE_SUBSCRIPTION_ID:          {{azure_subscription_id}}
-      AZURE_CLIENT_ID:                {{azure_client_id}}
-      AZURE_CLIENT_SECRET:            {{azure_client_secret}}
-      AZURE_TENANT_ID:                {{azure_tenant_id}}
-      AZURE_GROUP_NAME_FOR_VMS:       {{azure_group_name_for_vms}}
-      AZURE_GROUP_NAME_FOR_NETWORK:   {{azure_group_name_for_network}}
-      AZURE_STORAGE_ACCOUNT_NAME:     {{azure_storage_account_name}}
-      AZURE_VNET_NAME_FOR_LIFECYCLE:  {{azure_vnet_name_for_lifecycle}}
-      AZURE_BOSH_SUBNET_NAME:         {{azure_bosh_subnet_name}}
-      AZURE_BOSH_SECOND_SUBNET_NAME:  {{azure_bosh_second_subnet_name}}
-      AZURE_DEFAULT_SECURITY_GROUP:   {{azure_default_security_group}}
-      SSH_PUBLIC_KEY:                 {{ssh_public_key}}
-
-- name: bats-ubuntu
-  serial: true
-  plan:
-  - aggregate:
-    - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
-    - {trigger: false,                            get: stemcell, resource: azure-ubuntu-stemcell}
+    - {trigger: false,                            get: stemcell, resource: azure-centos-stemcell}
     - {trigger: false, passed: [build-candidate], get: bosh-cpi-src, resource: bosh-cpi-src-in}
     - {trigger: false,                            get: bats}
     - {trigger: false,                            get: bosh-init}
@@ -115,10 +71,10 @@ jobs:
         AZURE_CLIENT_ID:                {{azure_client_id}}
         AZURE_CLIENT_SECRET:            {{azure_client_secret}}
         AZURE_TENANT_ID:                {{azure_tenant_id}}
-        AZURE_GROUP_NAME_FOR_VMS:       {{azure_group_name_for_vms}}
-        AZURE_GROUP_NAME_FOR_NETWORK:   {{azure_group_name_for_network}}
+        AZURE_GROUP_NAME_FOR_VMS:       {{azure_group_name_for_vms_centos}}
+        AZURE_GROUP_NAME_FOR_NETWORK:   {{azure_group_name_for_network_centos}}
+        AZURE_STORAGE_ACCOUNT_NAME:                 {{azure_storage_account_name}}
         AZURE_VNET_NAME_FOR_BATS:       {{azure_vnet_name_for_bats}}
-        AZURE_STORAGE_ACCOUNT_NAME:     {{azure_storage_account_name}}
         AZURE_BOSH_SUBNET_NAME:         {{azure_bosh_subnet_name}}
         AZURE_DEFAULT_SECURITY_GROUP:   {{azure_default_security_group}}
         AZURE_DEBUG_MODE:               {{azure_debug_mode}}
@@ -134,7 +90,7 @@ jobs:
         AZURE_CLIENT_ID:                    {{azure_client_id}}
         AZURE_CLIENT_SECRET:                {{azure_client_secret}}
         AZURE_TENANT_ID:                    {{azure_tenant_id}}
-        AZURE_GROUP_NAME:                   {{azure_group_name_for_network}}
+        AZURE_GROUP_NAME:                   {{azure_group_name_for_network_centos}}
         AZURE_VNET_NAME_FOR_BATS:           {{azure_vnet_name_for_bats}}
         AZURE_CF_SUBNET_NAME:               {{azure_cf_subnet_name}}
         AZURE_CF_SECOND_SUBNET_NAME:        {{azure_cf_second_subnet_name}}
@@ -151,35 +107,11 @@ jobs:
         BAT_SECOND_NETWORK_STATIC_IP:       {{bat_second_network_static_ip}}
         BAT_SECOND_STATIC_IP:               {{bat_second_static_ip}}
         BAT_VCAP_PASSWORD:                  {{bat_vcap_password}}
+        BAT_BASE_OS:                        centos-7
         BOSH_DIRECTOR_USERNAME:             {{bosh_director_username}}
         BOSH_DIRECTOR_PASSWORD:             {{bosh_director_password}}
         SSH_PRIVATE_KEY:                    {{ssh_private_key}}
         COLUMNS:                            80
-
-    ensure:
-      do:
-        - task: teardown-director
-          file: bosh-cpi-src/ci/tasks/teardown-director.yml
-
-- name: promote-candidate
-  plan:
-  - aggregate:
-    - {trigger: false, get: bosh-cpi-release, resource: bosh-cpi-dev-artifacts, passed: [lifecycle, bats-ubuntu]}
-    - {trigger: false, get: bosh-cpi-src, resource: bosh-cpi-src-out}
-    - {trigger: false, get: release-version-semver, params: {bump: major}}
-
-  - task: promote
-    file: bosh-cpi-src/ci/tasks/promote-candidate.yml
-    params:
-      S3_ACCESS_KEY_ID:     {{s3_access_key__primary}}
-      S3_SECRET_ACCESS_KEY: {{s3_secret_key__primary}}
-
-  - put: bosh-cpi-src
-    resource: bosh-cpi-src-out
-    params: {repository: promoted/repo, rebase: true, tag_prefix: "v", tag: promoted/integer_version}
-
-  - put: release-version-semver
-    params: {file: release-version-semver/number}
 
 resources:
 - name: bosh-cpi-dev-artifacts
@@ -194,32 +126,17 @@ resources:
 - name: bosh-cpi-src-in
   type: git
   source:
-    uri: git@github.com:cloudfoundry-incubator/bosh-azure-cpi-release.git
-    branch: master
+    uri: git@github.com:bingosummer/bosh-azure-cpi-release.git
+    branch: test-bats-centos-stemcellv3363.9-dev
     private_key: {{github_deployment_key__bosh-azure-cpi-release}}
     ignore_paths:
       - .final_builds/**/*.yml
       - releases/**/*.yml
 
-- name: bosh-cpi-src-out
-  type: git
-  source:
-    uri: git@github.com:cloudfoundry-incubator/bosh-azure-cpi-release.git
-    branch: master
-    private_key: {{github_deployment_key__bosh-azure-cpi-release}}
-
 - name: version-semver
   type: semver
   source:
     key:               current-version # dev-release version
-    bucket:            {{s3_azure_cpi_pipeline_bucket}}
-    access_key_id:     {{s3_access_key__primary}}
-    secret_access_key: {{s3_secret_key__primary}}
-
-- name: release-version-semver
-  type: semver
-  source:
-    key:               release-current-version
     bucket:            {{s3_azure_cpi_pipeline_bucket}}
     access_key_id:     {{s3_access_key__primary}}
     secret_access_key: {{s3_secret_key__primary}}
@@ -242,8 +159,7 @@ resources:
     uri: https://github.com/cloudfoundry/bosh-acceptance-tests.git
     branch: master
 
-- name: azure-ubuntu-stemcell
-  type: s3
+- name: azure-centos-stemcell
+  type: bosh-io-stemcell
   source:
-    bucket: bosh-azure-stemcells
-    regexp: bosh-stemcell-([0-9\.]+)-azure-hyperv-ubuntu-trusty-go_agent.tgz
+    name: bosh-azure-hyperv-centos-7-go_agent
