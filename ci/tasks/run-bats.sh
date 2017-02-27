@@ -22,6 +22,7 @@ set -e
 : ${BAT_SECOND_NETWORK_GATEWAY:?}
 : ${BAT_NETWORK_STATIC_IP:?}            # static ip for the first subnet
 : ${BAT_SECOND_NETWORK_STATIC_IP:?}     # static ip for the second subnet
+: ${BAT_BASE_OS:?}
 : ${BOSH_DIRECTOR_USERNAME:?}
 : ${BOSH_DIRECTOR_PASSWORD:?}
 : ${SSH_PRIVATE_KEY:?}
@@ -190,7 +191,13 @@ export BAT_INFRASTRUCTURE=azure
 export BAT_NETWORKING=manual
 export BAT_DIRECTOR_USER=${BOSH_DIRECTOR_USERNAME}
 export BAT_DIRECTOR_PASSWORD=${BOSH_DIRECTOR_PASSWORD}
+export BAT_DEBUG_MODE=true
 export BAT_RSPEC_FLAGS="--tag ~raw_ephemeral_storage"
+
+# multiple_manual_networks fails due to the issue described in https://github.com/cloudfoundry/bosh/pull/1457. Once it's merged, the tag should be removed.
+if [ "${BAT_BASE_OS}" == "centos-7" ]; then
+  export BAT_RSPEC_FLAGS="--tag ~raw_ephemeral_storage --tag ~multiple_manual_networks"
+fi
 
 bosh -n target ${BAT_DIRECTOR}
 echo Using This version of bosh:
@@ -203,7 +210,7 @@ manifest_template_path: ${bats_template}
 properties:
   uuid: $(bosh status --uuid)
   stemcell:
-    name: bosh-azure-hyperv-ubuntu-trusty-go_agent
+    name: bosh-azure-hyperv-${BAT_BASE_OS}-go_agent
     version: latest
   vip: ${CF_IP_ADDRESS}
   pool_size: 1
