@@ -5,11 +5,12 @@ set -e
 : ${AZURE_CLIENT_ID:?}
 : ${AZURE_CLIENT_SECRET:?}
 : ${AZURE_TENANT_ID:?}
-: ${AZURE_GROUP_NAME_FOR_VMS:?}
-: ${AZURE_GROUP_NAME_FOR_NETWORK:?}
+: ${AZURE_GROUP_NAME_FOR_VMS_CENTOS:?}
+: ${AZURE_GROUP_NAME_FOR_NETWORK_CENTOS:?}
 : ${AZURE_REGION_NAME:?}
 : ${AZURE_REGION_SHORT_NAME:?}
 : ${AZURE_STORAGE_ACCOUNT_NAME:?}
+: ${AZURE_STORAGE_ACCOUNT_NAME_MANAGED_DISKS:?}
 : ${AZURE_VNET_NAME_FOR_BATS:?}
 : ${AZURE_VNET_NAME_FOR_LIFECYCLE:?}
 : ${AZURE_BOSH_SUBNET_NAME:?}
@@ -22,7 +23,7 @@ azure config mode arm
 
 set +e
 
-resource_group_names="${AZURE_GROUP_NAME_FOR_VMS} ${AZURE_GROUP_NAME_FOR_NETWORK}"
+resource_group_names="${AZURE_GROUP_NAME_FOR_VMS_CENTOS} ${AZURE_GROUP_NAME_FOR_NETWORK_CENTOS}"
 for resource_group_name in ${resource_group_names}
 do
   # Check if the resource group already exists
@@ -46,7 +47,7 @@ done
 
 set -e
 
-resource_group_names="${AZURE_GROUP_NAME_FOR_VMS} ${AZURE_GROUP_NAME_FOR_NETWORK}"
+resource_group_names="${AZURE_GROUP_NAME_FOR_VMS_CENTOS} ${AZURE_GROUP_NAME_FOR_NETWORK_CENTOS}"
 for resource_group_name in ${resource_group_names}
 do
   echo azure group create ${resource_group_name} ${AZURE_REGION_SHORT_NAME}
@@ -77,7 +78,7 @@ EOF
 done
 
 # Setup the storage account
-resource_group_name="${AZURE_GROUP_NAME_FOR_VMS}"
+resource_group_name="${AZURE_GROUP_NAME_FOR_VMS_CENTOS}"
 storage_account_name="${AZURE_STORAGE_ACCOUNT_NAME}"
 azure storage account create --location ${AZURE_REGION_SHORT_NAME} --sku-name LRS --kind Storage --resource-group ${resource_group_name} ${storage_account_name}
 storage_account_key=$(azure storage account keys list ${storage_account_name} --resource-group ${resource_group_name} --json | jq '.[0].value' -r)

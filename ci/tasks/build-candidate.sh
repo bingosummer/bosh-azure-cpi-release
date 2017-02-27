@@ -8,12 +8,6 @@ chruby ${RUBY_VERSION}
 semver=`cat version-semver/number`
 
 pushd bosh-cpi-src > /dev/null
-  echo "running unit tests"
-  pushd src/bosh_azure_cpi > /dev/null
-    bundle install
-    bundle exec rspec spec/unit/*
-  popd > /dev/null
-
   echo "using bosh CLI version..."
   bosh version
 
