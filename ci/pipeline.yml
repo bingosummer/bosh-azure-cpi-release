@@ -113,11 +113,6 @@ jobs:
         SSH_PRIVATE_KEY:                    {{ssh_private_key}}
         COLUMNS:                            80
 
-    ensure:
-      do:
-        - task: teardown-director
-          file: bosh-cpi-src/ci/tasks/teardown-director.yml
-
 resources:
 - name: bosh-cpi-dev-artifacts
   type: s3
