@@ -2,11 +2,9 @@ V21
 
 New Features:
 
-* Support to use managed disks
+* Support [managed disks](https://azure.microsoft.com/en-us/services/managed-disks/). Please reference the [guidance](https://github.com/cloudfoundry-incubator/bosh-azure-cpi-release/tree/master/docs/advanced/managed-disks) to use managed disks with Azure CPI.
 
-  Please follow the [document](https://github.com/cloudfoundry-incubator/bosh-azure-cpi-release/tree/master/docs/advanced/managed-disks) to use managed disks.
-
-  Below issues are fixed with managed disks.
+  Below github issues are fixed with managed disks.
   
   * [#228: Can we support managed disks?](https://github.com/cloudfoundry-incubator/bosh-azure-cpi-release/issues/228)
   * [#225: Stripe storage account placement across each VM in an availability set](https://github.com/cloudfoundry-incubator/bosh-azure-cpi-release/issues/225)
