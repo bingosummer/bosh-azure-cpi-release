@@ -2,7 +2,7 @@ V21
 
 New Features:
 
-* Support [managed disks](https://azure.microsoft.com/en-us/services/managed-disks/). Please reference the [guidance](https://github.com/cloudfoundry-incubator/bosh-azure-cpi-release/tree/master/docs/advanced/managed-disks) to use managed disks with Azure CPI.
+* Support [managed disks](https://azure.microsoft.com/en-us/services/managed-disks/). Please reference the [guidance](https://github.com/cloudfoundry-incubator/bosh-azure-cpi-release/tree/master/docs/advanced/managed-disks) on how to deploy a new deployment, or migrate an existing deployment, utilizing the new Managed Disks Service on Azure.
 
   Below github issues are fixed with managed disks.
   
