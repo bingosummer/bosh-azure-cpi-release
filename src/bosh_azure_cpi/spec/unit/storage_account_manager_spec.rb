@@ -55,6 +55,50 @@ describe Bosh::AzureCloud::StorageAccountManager do
       end
     end
 
+    context 'when the storage account is default storage account' do
+      let(:result) {
+        {
+          :available => true
+        }
+      }
+
+      before do
+        allow(client2).to receive(:check_storage_account_name_availability).with(storage_account_name).and_return(result)
+      end
+
+      it 'should create the storage account, and set the acl of the stemcell container to public' do
+        allow(client2).to receive(:create_storage_account).with(storage_account_name, storage_account_location, storage_account_type, tags)
+        expect(blob_manager).to receive(:prepare).with(storage_account_name)
+        expect(blob_manager).to receive(:set_stemcell_container_acl_to_public).with(storage_account_name)
+
+        expect(
+          storage_account_manager.create_storage_account(storage_account_name, storage_account_type, storage_account_location, tags, true)
+        ).to be(true)
+      end
+    end
+
+    context 'when the storage account is not default storage account' do
+      let(:result) {
+        {
+          :available => true
+        }
+      }
+
+      before do
+        allow(client2).to receive(:check_storage_account_name_availability).with(storage_account_name).and_return(result)
+      end
+
+      it 'should create the storage account, and do not set the acl' do
+        allow(client2).to receive(:create_storage_account).with(storage_account_name, storage_account_location, storage_account_type, tags)
+        expect(blob_manager).to receive(:prepare).with(storage_account_name)
+        expect(blob_manager).not_to receive(:set_stemcell_container_acl_to_public)
+
+        expect(
+          storage_account_manager.create_storage_account(storage_account_name, storage_account_type, storage_account_location, tags, false)
+        ).to be(true)
+      end
+    end
+
     context 'when storage_account_location is not specified' do
       let(:storage_account_location) { nil }
       let(:result) {
