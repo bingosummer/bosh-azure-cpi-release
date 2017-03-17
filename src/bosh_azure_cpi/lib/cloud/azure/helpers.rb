@@ -193,9 +193,11 @@ module Bosh::AzureCloud
           url = "https://#{domain}/oauth2/token"
         elsif azure_properties['azure_stack_authentication']  == 'AzureStackAD'
           url = "https://#{domain}/#{azure_properties['tenant_id']}/oauth2/token"
-        else
+        elsif azure_properties['azure_stack_authentication']  == 'AzureAD'
           url = "#{AZURE_ENVIRONMENTS['AzureCloud']['activeDirectoryEndpointUrl']}/#{azure_properties['tenant_id']}/oauth2/token"
           api_version = AZURE_ENVIRONMENTS['AzureCloud']['apiVersion'][AZURE_RESOURCE_PROVIDER_ACTIVEDIRECTORY]
+        else
+          cloud_error("No support for the AzureStack authentication: `#{azure_properties['azure_stack_authentication']}'")
         end
       else
         url = "#{AZURE_ENVIRONMENTS[azure_properties['environment']]['activeDirectoryEndpointUrl']}/#{azure_properties['tenant_id']}/oauth2/token"
@@ -572,15 +574,6 @@ module Bosh::AzureCloud
         @logger.warn("length of id is too short, can not make sure it is uniq")
         (prefix + suffix)[prefix.length + suffix.length - length, prefix.length + suffix.length]  # get tail
       end
-    end
-
-    private
-
-    def validate_azure_stack_options(azure_properties)
-      missing_keys = []
-      missing_keys << "azure_stack_domain" if azure_properties['azure_stack_domain'].nil?
-      missing_keys << "azure_stack_authentication" if azure_properties['azure_stack_authentication'].nil?
-      raise ArgumentError, "missing configuration parameters for AzureStack > #{missing_keys.join(', ')}" unless missing_keys.empty?
     end
   end
 end

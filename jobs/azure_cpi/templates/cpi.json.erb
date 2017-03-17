@@ -64,9 +64,27 @@
   end
 
   if p('azure.environment') == 'AzureStack'
-    params['cloud']['properties']['azure']['azure_stack_domain'] = p('azure.azure_stack_domain')
-    params['cloud']['properties']['azure']['azure_stack_authentication'] = p('azure.azure_stack_authentication')
-    params['cloud']['properties']['azure']['azure_stack_resource'] = p('azure.azure_stack_resource')
+    if_p('azure.azure_stack_domain') do |domain|
+      raise 'The AzureStack domain can not be empty' if domain.empty?
+      params['cloud']['properties']['azure']['azure_stack_domain'] = p('azure.azure_stack_domain')
+    end.else do
+      raise 'You must provide a domain for AzureStack'
+    end
+
+    if_p('azure.azure_stack_authentication') do |authentication|
+      raise 'The AzureStack authentication can not be empty' if authentication.empty?
+      params['cloud']['properties']['azure']['azure_stack_authentication'] = p('azure.azure_stack_authentication')
+    end.else do
+      raise 'You must provide a authentication for AzureStack'
+    end
+
+    if_p('azure.azure_stack_resource') do |resource|
+      raise 'The AzureStack resource can not be empty' if resource.empty?
+      params['cloud']['properties']['azure']['azure_stack_resource'] = p('azure.azure_stack_resource')
+    end.else do
+      raise 'You must provide a resource for AzureStack'
+    end
+
     params['cloud']['properties']['azure']['azure_stack_endpoint_prefix'] = p('azure.azure_stack_endpoint_prefix')
   end
 
