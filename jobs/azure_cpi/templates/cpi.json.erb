@@ -44,7 +44,7 @@
   if_p('registry.endpoint') do |endpoint|
     params['cloud']['properties']['registry']['endpoint'] = endpoint
   end.else do
-    params['cloud']['properties']['registry']['endpoint'] = "http://#{p('registry.username')}:#{p('registry.password')}@#{p('registry.host')}:#{p('registry.port')}"
+    params['cloud']['properties']['registry']['endpoint'] = "http://#{p('registry.username')}:#{ERB::Util.url_encode(p('registry.password'))}@#{p('registry.host')}:#{p('registry.port')}"
   end
 
   if_p('azure.ssh_public_key') do |ssh_public_key|
