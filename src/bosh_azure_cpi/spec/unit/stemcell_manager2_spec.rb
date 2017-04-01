@@ -181,7 +181,6 @@ describe Bosh::AzureCloud::StemcellManager2 do
               :location => location
             }
           }
-
           before do
             allow(storage_account_manager).to receive(:default_storage_account).
               and_return(default_storage_account)
@@ -191,6 +190,13 @@ describe Bosh::AzureCloud::StemcellManager2 do
             allow(blob_manager).to receive(:get_blob_metadata).
               with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME, stemcell_container, "#{stemcell_name}.vhd").
               and_return(stemcell_blob_metadata)
+          end
+
+          let(:lock_creating_user_image) { instance_double(Bosh::AzureCloud::Helpers::FileMutex) }
+          before do
+            allow(Bosh::AzureCloud::Helpers::FileMutex).to receive(:new).and_return(lock_creating_user_image)
+            allow(lock_creating_user_image).to receive(:lock).and_return(true)
+            allow(lock_creating_user_image).to receive(:unlock)
           end
 
           it "should get the stemcell from the default storage account, create a new user image and return the user image information" do
@@ -251,12 +257,13 @@ describe Bosh::AzureCloud::StemcellManager2 do
 
               context "when copying blob timeouts" do
                 before do
-                  allow(lock_copy_blob).to receive(:wait).and_raise("timeout")
+                  allow(lock_copy_blob).to receive(:wait).and_raise(Bosh::AzureCloud::Helpers::LockTimeoutError)
                 end
 
                 it "should raise a timeout error" do
                   expect(blob_manager).not_to receive(:get_blob_uri)
                   expect(blob_manager).not_to receive(:copy_blob)
+                  expect(File).to receive(:open).with(Bosh::AzureCloud::Helpers::CPI_LOCK_DELETE, "wb")
                   expect {
                     stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
                   }.to raise_error /get_user_image: Failed to finish the copying process of the stemcell/
@@ -350,7 +357,7 @@ describe Bosh::AzureCloud::StemcellManager2 do
             context "when it fails to create the new storage account" do
               let(:lock_creating_storage_account) { instance_double(Bosh::AzureCloud::Helpers::FileMutex) }
               before do
-                allow(Bosh::AzureCloud::Helpers::FileMutex).to receive(:new).with("/tmp/bosh-lock-create-storage-account-#{location}", anything).
+                allow(Bosh::AzureCloud::Helpers::FileMutex).to receive(:new).with("bosh-lock-create-storage-account-#{location}", anything).
                   and_return(lock_creating_storage_account)
               end
 
@@ -375,12 +382,13 @@ describe Bosh::AzureCloud::StemcellManager2 do
                 before do
                   allow(lock_creating_storage_account).to receive(:lock).and_return(false)
                   allow(lock_creating_storage_account).to receive(:wait).
-                    and_raise('timeout')
+                    and_raise(Bosh::AzureCloud::Helpers::LockTimeoutError)
                   allow(lock_creating_storage_account).to receive(:expired).and_return("fake-expired-value")
                 end
 
                 it "raise an error" do
                   expect(lock_creating_storage_account).not_to receive(:unlock)
+                  expect(File).to receive(:open).with(Bosh::AzureCloud::Helpers::CPI_LOCK_DELETE, "wb")
                   expect {
                     stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
                   }.to raise_error /Failed to finish the creation of the storage account/
@@ -470,6 +478,13 @@ describe Bosh::AzureCloud::StemcellManager2 do
               allow(client2).to receive(:get_user_image_by_name).
                 with(user_image_name).
                 and_return(nil, nil) # The first return value nil means the user image doesn't exist, the others are returned after the image is created.
+            end
+
+            let(:lock_creating_user_image) { instance_double(Bosh::AzureCloud::Helpers::FileMutex) }
+            before do
+              allow(Bosh::AzureCloud::Helpers::FileMutex).to receive(:new).and_return(lock_creating_user_image)
+              allow(lock_creating_user_image).to receive(:lock).and_return(true)
+              allow(lock_creating_user_image).to receive(:unlock)
             end
 
             it "should raise an error" do
