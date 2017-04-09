@@ -9,6 +9,7 @@ groups:
       - bats-ubuntu-unmanaged-disks
       - lifecycle-managed-disks
       - bats-ubuntu-managed-disks
+      - bats-centos
       - promote-candidate
 jobs:
 - name: recreate-infrastructure-primary
@@ -277,7 +278,7 @@ jobs:
   serial: true
   plan:
   - aggregate:
-    - {trigger: false,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
+    - {trigger: true,  passed: [build-candidate], get: bosh-cpi-dev-artifacts}
     - {trigger: false,                            get: stemcell, resource: azure-centos-stemcell}
     - {trigger: false, passed: [build-candidate], get: bosh-cpi-src, resource: bosh-cpi-src-in}
     - {trigger: false,                            get: bats}
@@ -303,6 +304,8 @@ jobs:
         BAT_NETWORK_GATEWAY:            {{bat_network_gateway}}
         BOSH_DIRECTOR_USERNAME:         {{bosh_director_username}}
         BOSH_DIRECTOR_PASSWORD:         {{bosh_director_password}}
+        BOSH_DIRECTOR_SSL_CERT:         {{bosh_director_ssl_cert}}
+        BOSH_DIRECTOR_SSL_KEY:          {{bosh_director_ssl_key}}
         SSH_PUBLIC_KEY:                 {{ssh_public_key}}
         SSH_PRIVATE_KEY:                {{ssh_private_key}}
 
@@ -343,7 +346,7 @@ jobs:
 - name: promote-candidate
   plan:
   - aggregate:
-    - {trigger: false, get: bosh-cpi-release, resource: bosh-cpi-dev-artifacts, passed: [lifecycle-unmanaged-disks, bats-ubuntu-unmanaged-disks, lifecycle-managed-disks, bats-ubuntu-managed-disks]}
+    - {trigger: false, get: bosh-cpi-release, resource: bosh-cpi-dev-artifacts, passed: [lifecycle-unmanaged-disks, bats-ubuntu-unmanaged-disks, lifecycle-managed-disks, bats-ubuntu-managed-disks, bats-centos]}
     - {trigger: false, get: bosh-cpi-src, resource: bosh-cpi-src-out}
     - {trigger: false, get: release-version-semver, params: {bump: major}}
 
