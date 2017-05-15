@@ -105,6 +105,7 @@ module Bosh::AzureCloud
       root_disk = @resource_pool.fetch('root_disk', {})
       size = root_disk.fetch('size', nil)
       unless size.nil?
+        raise ArgumentError, "The disk size needs to be an integer. The current value is `#{size}'." unless size.kind_of?(Integer)
         cloud_error("root_disk.size `#{size}' is smaller than the default OS disk size `#{minimum_disk_size}' MiB") if size < minimum_disk_size
         disk_size = (size/1024.0).ceil
         validate_disk_size(disk_size*1024)

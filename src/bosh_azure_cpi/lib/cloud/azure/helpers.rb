@@ -261,7 +261,7 @@ module Bosh::AzureCloud
     end
 
     def validate_disk_size(size)
-      raise ArgumentError, 'disk size needs to be an integer' unless size.kind_of?(Integer)
+      raise ArgumentError, "The disk size needs to be an integer. The current value is `#{size}'." unless size.kind_of?(Integer)
 
       cloud_error('Azure CPI minimum disk size is 1 GiB') if size < 1024
       cloud_error('Azure CPI maximum disk size is 1023 GiB') if size > 1023 * 1024

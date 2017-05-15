@@ -324,7 +324,7 @@ describe Bosh::AzureCloud::Cloud do
               disk_locality,
               environment
             )
-          }.to raise_error
+          }.to raise_error StandardError
         end
       end
 
@@ -343,7 +343,7 @@ describe Bosh::AzureCloud::Cloud do
               disk_locality,
               environment
             )
-          }.to raise_error
+          }.to raise_error StandardError
         end
       end
 
@@ -576,10 +576,7 @@ describe Bosh::AzureCloud::Cloud do
       it 'should raise an error' do
         expect {
           cloud.create_disk(disk_size, cloud_properties, instance_id)
-        }.to raise_error(
-          ArgumentError,
-          'disk size needs to be an integer'
-        )
+        }.to raise_error ArgumentError, "The disk size needs to be an integer. The current value is `1024.42'."
       end
     end
 

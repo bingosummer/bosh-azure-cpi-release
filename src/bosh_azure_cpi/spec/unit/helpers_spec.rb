@@ -466,7 +466,7 @@ describe Bosh::AzureCloud::Helpers do
       it "should raise an error" do
         expect {
           helpers_tester.validate_disk_size(disk_size)
-        }.to raise_error "disk size needs to be an integer"
+        }.to raise_error "The disk size needs to be an integer. The current value is `fake-size'."
       end
     end
 
