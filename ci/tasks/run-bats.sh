@@ -250,5 +250,5 @@ EOF
 pushd bats > /dev/null
   ./write_gemfile
   bundle install
-  bundle exec rspec spec ${BAT_RSPEC_FLAGS}
+  bundle exec rspec spec ${BAT_RSPEC_FLAGS} -e "resolving DNS entries"
 popd > /dev/null
