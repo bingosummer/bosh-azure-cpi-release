@@ -51,11 +51,11 @@ Below are behavior changes with a new deployment:
 
 ### Before the Migration
 
-You should **NOT** migrate the deployment if any option in the following checklist is satisfied. You should still use the original storage account approach by keeping `use_managed_disks` as `false`.
+You should **NOT** migrate the deployment if any of the following conditions is true. You should leave `use_managed_disks` as `false` in the manifest file in this case.
 
-  * The region does not support managed disks. You can refer to [Azure Products by Region](https://azure.microsoft.com/en-us/regions/services/) to check the availability of Managed Disks.
+  * The region does not support managed disks. You can see [Azure Products by Region](https://azure.microsoft.com/en-us/regions/services/) for the availability of the Managed Disks feature.
 
-  * If Storage Service Encryption (SSE) is enabled once, it's not supported to migrate to managed disks. Even if SSE is disabled later, you still can't migrate to managed disks. Please see details [here](https://docs.microsoft.com/en-us/azure/storage/storage-managed-disks-overview#managed-disks-and-encryption).
+  * If Storage Service Encryption (SSE) is enabled once, migration to managed disks is not supported. Even if SSE is disabled later, you still can't migrate to managed disks. Please see details [here](https://docs.microsoft.com/en-us/azure/storage/storage-managed-disks-overview#managed-disks-and-encryption).
 
 You need to review the following checklist to prevent predictable migration failures.
 
