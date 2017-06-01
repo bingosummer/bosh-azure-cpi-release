@@ -43,15 +43,6 @@ describe Bosh::AzureCloud::AzureClient2 do
           :managed   => true
          }
       }
-      let(:disk) {
-        {
-          :name          => disk_name,
-          :lun           => 2,
-          :create_option => 'Attach',
-          :caching       => caching,
-          :managed_disk  => { :id => disk_id }
-         }
-      }
       let(:response_body) {
         {
           "id" => "fake-id",
@@ -125,7 +116,7 @@ describe Bosh::AzureCloud::AzureClient2 do
 
         expect(
           azure_client2.attach_disk_to_virtual_machine(vm_name, disk_params)
-        ).to eq(disk)
+        ).to eq("2")
       end
     end
 
@@ -227,7 +218,7 @@ describe Bosh::AzureCloud::AzureClient2 do
 
           expect(
             azure_client2.attach_disk_to_virtual_machine(vm_name, disk_params)
-          ).to eq(disk)
+          ).to eq("2")
         end
       end
 
@@ -287,7 +278,7 @@ describe Bosh::AzureCloud::AzureClient2 do
 
           expect(
             azure_client2.attach_disk_to_virtual_machine(vm_name, disk_params)
-          ).to eq(disk)
+          ).to eq("2")
         end
       end
 
