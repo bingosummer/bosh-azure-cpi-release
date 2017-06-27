@@ -254,6 +254,50 @@ describe Bosh::AzureCloud::StemcellManager do
           ).to be(true)
         end
       end
+
+      context "when copy_blob raises an error" do
+        let(:entity_create) {
+          {
+            :PartitionKey => stemcell_name,
+            :RowKey       => storage_account_name,
+            :Status       => 'pending'
+          }
+        }
+
+        let(:entities_query_before_insert) { [] }
+
+        let(:stemcell_table) { 'stemcells' }
+        let(:stemcell_container) { 'stemcell' }
+        let(:stemcell_blob_uri) { 'fake-blob-url' }
+
+        before do
+          allow(table_manager).to receive(:insert_entity).
+            with(stemcell_table, entity_create).
+            and_return(true)
+          allow(blob_manager).to receive(:get_blob_uri).
+            with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME, stemcell_container, "#{stemcell_name}.vhd").
+            and_return(stemcell_blob_uri)
+          allow(table_manager).to receive(:query_entities).
+            and_return(entities_query_before_insert)
+          allow(blob_manager).to receive(:prepare).
+            with(storage_account_name)
+          allow(blob_manager).to receive(:copy_blob).
+            with(storage_account_name, stemcell_container, "#{stemcell_name}.vhd", stemcell_blob_uri).
+            and_raise(StandardError)
+        end
+
+        it "should raise an error" do
+          expect(table_manager).not_to receive(:update_entity)
+          expect(table_manager).not_to receive(:delete_entity).
+            with(stemcell_container, "#{stemcell_name}.vhd", MOCK_DEFAULT_STORAGE_ACCOUNT_NAME)
+          expect(blob_manager).to receive(:delete_blob).
+            with(storage_account_name, stemcell_container, "#{stemcell_name}.vhd")
+
+          expect {
+            stemcell_manager.has_stemcell?(storage_account_name, stemcell_name)
+          }.to raise_error /Failed to copy the stemcell `#{stemcell_name}' to the storage account `#{storage_account_name}'/
+        end
+      end
     end
   end
 

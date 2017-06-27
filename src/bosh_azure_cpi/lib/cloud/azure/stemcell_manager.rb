@@ -131,7 +131,7 @@ module Bosh::AzureCloud
         rescue => e
           ignore_exception{ @table_manager.delete_entity(STEMCELL_TABLE, name, storage_account_name) }
           ignore_exception{ @blob_manager.delete_blob(storage_account_name, STEMCELL_CONTAINER, "#{name}.vhd") }
-          raise e
+          cloud_error("Failed to copy the stemcell `#{name}' to the storage account `#{storage_account_name}'", e)
         end
       end
     end
