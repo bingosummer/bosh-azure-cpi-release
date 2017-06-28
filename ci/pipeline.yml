@@ -433,3 +433,4 @@ resources:
   type: bosh-io-stemcell
   source:
     name: bosh-azure-hyperv-centos-7-go_agent
+    version_family: 3363.latest
