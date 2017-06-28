@@ -60,7 +60,7 @@ module Bosh::AzureCloud
         'resourceManagerEndpointUrl' => 'https://management.microsoftazure.de/',
         'activeDirectoryEndpointUrl' => 'https://login.microsoftonline.de',
         'apiVersion' => {
-          AZURE_RESOURCE_PROVIDER_COMPUTE          => '2015-06-15',
+          AZURE_RESOURCE_PROVIDER_COMPUTE          => '2016-04-30-preview',
           AZURE_RESOURCE_PROVIDER_NETWORK          => '2015-06-15',
           AZURE_RESOURCE_PROVIDER_STORAGE          => '2015-06-15',
           AZURE_RESOURCE_PROVIDER_GROUP            => '2016-06-01',
