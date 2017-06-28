@@ -215,7 +215,7 @@ describe Bosh::AzureCloud::Cloud do
   end
 
   context 'multiple nics' do
-    let(:instance_type) { 'Standard_D2' }
+    let(:instance_type) { 'Standard_D2_v2' }
     let(:network_spec) {
       {
         'network_a' => {
