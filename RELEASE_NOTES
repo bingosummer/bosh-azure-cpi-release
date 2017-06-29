@@ -2,11 +2,11 @@ V25
 
 New Features:
 
-  * For AzureStack, CPI uses the same SCSI host device ID as Azure so that it works correctly with the stemcell `v3232.5+`. #276
-
   * VM is created in the same location with the virtual network instead of the storage account. #274
 
 Fixes:
+
+  * For AzureStack, CPI uses the same SCSI host device ID as Azure so that it works correctly with the stemcell `v3232.5+`. #276
 
   * Handle the connection reset error to azure blob storage. #268
 
