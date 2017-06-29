@@ -1,0 +1,37 @@
+V25
+
+New Features:
+
+  * For AzureStack, CPI uses the same SCSI host device ID as Azure so that it works correctly with the stemcell `v3232.5+`. #276
+
+  * VM is created in the same location with the virtual network instead of the storage account. #274
+
+Fixes:
+
+  * Handle the connection reset error to azure blob storage. #268
+
+  * Retry once and only once if CPI receives AzureConflictError when deleting a managed disk. #269
+
+  * Specify the disk size when attaching an unmanaged disk. Otherwise, the disk size can't be shown by Azure Portal or Azure CLI. #275
+
+  * For AzureStack, CPI uses the same resource provider API versions as Azure.
+
+Improvements:
+
+  * Bump bosh_cpi version from 1.3262.4.0 to 2.1.1. #273
+
+  * Upgrade azure-storage-ruby to `v0.12.1-preview`. #268
+
+    * Please see the release notes of [v0.12.1-preview](https://github.com/Azure/azure-storage-ruby/releases/tag/v0.12.1) and [v0.12.0-preview](https://github.com/Azure/azure-storage-ruby/releases/tag/v0.12.0).
+
+Docs:
+
+  * Provide a checklist before migrating to managed disks. #271
+
+Development:
+
+  * Bump rake & spec & other gems. #279
+
+  * Add the integration test cases for azure_cpi. #273
+
+  * Seperate test cases for cloud.rb into different files, and increase coverage rate. #277
