@@ -14,7 +14,7 @@ Fixes:
 
   * Specify the disk size when attaching an unmanaged disk. Otherwise, the disk size can't be shown by Azure Portal or Azure CLI. #275
 
-  * For AzureStack, CPI uses the same resource provider API versions as Azure. #285
+  * Update resource provider API versions for AzureStack. #285
 
 Improvements:
 
