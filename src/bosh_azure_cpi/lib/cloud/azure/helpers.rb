@@ -128,6 +128,7 @@ module Bosh::AzureCloud
     BOSH_LOCK_COPY_STEMCELL_TIMEOUT    = 180 # seconds
     BOSH_LOCK_CREATE_USER_IMAGE        = "bosh-lock-create-user-image"
     BOSH_LOCK_PREFIX_AVAILABILITY_SET  = "bosh-lock-availability-set"
+    BOSH_LOCK_DELETE                   = "#{BOSH_LOCK_DIR}/DELETING"
 
     # REST Connection Errors
     ERROR_OPENSSL_RESET           = 'SSL_connect'
@@ -712,6 +713,10 @@ module Bosh::AzureCloud
         }
         counter
       end
+    end
+
+    def mark_deleting_locks
+      File.open(BOSH_LOCK_DELETE, 'wb') { |f| f.write("Deleting") }
     end
 
     def get_storage_account_type_by_instance_type(instance_type)

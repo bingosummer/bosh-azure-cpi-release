@@ -91,6 +91,7 @@ module Bosh::AzureCloud
           storage_account_name = storage_account[:name]
         rescue => e
           if e.message == BOSH_LOCK_EXCEPTION_TIMEOUT
+            mark_deleting_locks
             cloud_error("get_user_image: Failed to finish the creation of the storage account `#{storage_account_name}', `#{storage_account_type}' in location `#{location}' in #{mutex.expired} seconds.")
           end
           raise e
@@ -112,6 +113,7 @@ module Bosh::AzureCloud
           end
         rescue => e
           if e.message == BOSH_LOCK_EXCEPTION_TIMEOUT
+            mark_deleting_locks
             cloud_error("get_user_image: Failed to finish the copying process of the stemcell `#{stemcell_name}' from the default storage account `#{default_storage_account_name}' to the storage acccount `#{storage_account_name}' in `#{mutex.expired}' seconds.")
           end
           raise e
@@ -138,6 +140,7 @@ module Bosh::AzureCloud
       rescue => e
         if e.message == BOSH_LOCK_EXCEPTION_TIMEOUT
           cloud_error("get_user_image: Failed to create the user image `#{user_image_name}' in #{mutex.expired} seconds.")
+          mark_deleting_locks
         end
         raise e
       end

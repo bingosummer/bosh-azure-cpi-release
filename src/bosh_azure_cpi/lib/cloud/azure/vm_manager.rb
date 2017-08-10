@@ -375,7 +375,6 @@ module Bosh::AzureCloud
           :security_group      => security_group,
           :ipconfig_name       => "ipconfig#{index}"
         }
-
         subnet = get_network_subnet(network)
         tags = index == 0 ? primary_nic_tags : AZURE_TAGS
         @azure_client2.create_network_interface(resource_group_name, nic_params, subnet, tags, load_balancer)
@@ -447,7 +446,10 @@ module Bosh::AzureCloud
           mutex.wait
         end
       rescue => e
-        cloud_error("Failed to finish the creation of the availability set `#{availability_set_name}' in 60 seconds.") if e.message == BOSH_LOCK_EXCEPTION_TIMEOUT
+        if e.message == BOSH_LOCK_EXCEPTION_TIMEOUT
+          mark_deleting_locks
+          cloud_error("Failed to finish the creation of the availability set `#{availability_set_name}' in 60 seconds.")
+        end
         raise e
       end
 
