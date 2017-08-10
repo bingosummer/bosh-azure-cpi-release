@@ -122,11 +122,12 @@ module Bosh::AzureCloud
     # Lock
     BOSH_LOCK_EXCEPTION_TIMEOUT        = 'timeout'
     BOSH_LOCK_EXCEPTION_LOCK_NOT_FOUND = 'lock_not_found'
-    BOSH_LOCK_DIR                      = '/tmp'
-    BOSH_LOCK_CREATE_STORAGE_ACCOUNT   = "#{BOSH_LOCK_DIR}/bosh-lock-create-storage-account"
-    BOSH_LOCK_COPY_STEMCELL            = "#{BOSH_LOCK_DIR}/bosh-lock-copy-stemcell"
+    BOSH_LOCK_DIR                      = '/var/vcap/sys/run/azure_cpi'
+    BOSH_LOCK_CREATE_STORAGE_ACCOUNT   = "bosh-lock-create-storage-account"
+    BOSH_LOCK_COPY_STEMCELL            = "bosh-lock-copy-stemcell"
     BOSH_LOCK_COPY_STEMCELL_TIMEOUT    = 180 # seconds
-    BOSH_LOCK_CREATE_USER_IMAGE        = "#{BOSH_LOCK_DIR}/bosh-lock-create-user-image"
+    BOSH_LOCK_CREATE_USER_IMAGE        = "bosh-lock-create-user-image"
+    BOSH_LOCK_PREFIX_AVAILABILITY_SET  = "bosh-lock-availability-set"
 
     # REST Connection Errors
     ERROR_OPENSSL_RESET           = 'SSL_connect'
@@ -505,7 +506,7 @@ module Bosh::AzureCloud
     # Example codes:
     #
     # expired = 60 # seconds
-    # mutex = FileMutex.new('/tmp/bosh-lock-example', logger, expired)
+    # mutex = FileMutex.new('bosh-lock-example', logger, expired)
     #
     # begin
     #   if mutex.lock
@@ -529,8 +530,8 @@ module Bosh::AzureCloud
     class FileMutex
       attr_reader :expired
 
-      def initialize(file_path, logger, expired = 60)
-        @file_path = file_path
+      def initialize(lock_name, logger, expired = 60)
+        @file_path = "#{BOSH_LOCK_DIR}/#{lock_name}"
         @logger = logger
         @expired = expired
         @is_locked = false
@@ -596,6 +597,120 @@ module Bosh::AzureCloud
         rescue => e
           raise BOSH_LOCK_EXCEPTION_LOCK_NOT_FOUND
         end
+      end
+    end
+
+    # Readers-Writer Lock
+    #
+    # Example codes:
+    #
+    # expired = 300 # seconds
+    # lock = ReadersWriterLock.new("availability-set-${availability_set_name}", logger, expired)
+    #
+    # Readers operations:
+    # lock.acquire_read_lock
+    # begin
+    #   data.retrieve
+    # ensure
+    #   lock.release_read_lock
+    # end
+    #
+    # Writer operations:
+    # if lock.acquire_write_lock
+    #   begin
+    #     data.modify!
+    #   ensure
+    #     lock.release_write_lock
+    #   end
+    # end
+    #
+    # The ReadersWriterLock is based on the design using two mutexes.
+    # @See https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock#Using_two_mutexes
+    #
+    class ReadersWriterLock
+      def initialize(lock_name, logger, expired = 300)
+        @counter_file_path = "#{BOSH_LOCK_DIR}/#{lock_name}-counter"
+        @readers_mutex = FileMutex.new("#{lock_name}-readers", logger, expired)
+        @writer_mutex = FileMutex.new("#{lock_name}-writer", logger, expired)
+        @logger = logger
+      end
+
+      def acquire_read_lock
+        is_locked = false
+        loop do
+          is_locked = @readers_mutex.lock
+          break if is_locked
+          @readers_mutex.wait
+        end
+
+        is_counter_increased = false
+        counter = update_counter { |counter|
+          @logger.debug("The counter `#{@counter_file_path}' is updated from `#{counter}' to `#{counter + 1}'")
+          counter = counter + 1
+        }
+        is_counter_increased = true
+
+        if counter == 1
+          loop do
+            break if @writer_mutex.lock
+            @writer_mutex.wait
+          end
+        end
+      rescue => e
+        if is_counter_increased
+          counter = update_counter { |counter|
+            @logger.debug("The counter `#{@counter_file_path}' is updated from `#{counter}' to `#{counter - 1}'")
+            counter = counter - 1
+          }
+        end
+        raise e
+      ensure
+        @readers_mutex.unlock if is_locked
+      end
+
+      def release_read_lock
+        is_locked = false
+        loop do
+          is_locked = @readers_mutex.lock
+          break if is_locked
+          @readers_mutex.wait
+        end
+
+        counter = update_counter { |counter|
+          @logger.debug("The counter is `#{@counter_file_path}' updated from `#{counter}' to `#{counter - 1}'")
+          counter = counter - 1
+        }
+
+        if counter == 0
+          File.delete(@counter_file_path)
+          @writer_mutex.unlock
+        end
+      ensure
+        @readers_mutex.unlock if is_locked
+      end
+
+      def acquire_write_lock
+        @writer_mutex.lock
+      end
+
+      def release_write_lock
+        @writer_mutex.unlock
+      end
+
+      private
+
+      def update_counter
+        counter = 0
+        if File.exists?(@counter_file_path)
+          File.open(@counter_file_path, 'rb') { |f|
+            counter = f.read().to_i
+          }
+        end
+        File.open(@counter_file_path, 'wb') { |f|
+          counter = yield counter
+          f.write("#{counter}")
+        }
+        counter
       end
     end
 
