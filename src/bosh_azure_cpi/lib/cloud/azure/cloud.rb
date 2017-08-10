@@ -26,6 +26,7 @@ module Bosh::AzureCloud
 
       init_registry
       init_azure
+      init_cpi_dir
     end
 
     ##
@@ -556,6 +557,16 @@ module Bosh::AzureCloud
       @vm_manager              = Bosh::AzureCloud::VMManager.new(azure_properties, @registry.endpoint, @disk_manager, @disk_manager2, @azure_client2, @storage_account_manager)
     rescue Net::OpenTimeout => e
       cloud_error("Please make sure the CPI has proper network access to Azure. #{e.inspect}") # TODO: Will it throw the error when initializing the client and manager
+    end
+
+    def init_cpi_dir
+      if needs_deleting_locks?
+        @logger.info("init_cpi_dir: Cleaning up the locks")
+        Dir.glob("#{cpi_lock_dir}/*") { |file_name|
+          @logger.debug("init_cpi_dir: Deleting the lock `#{file_name}'")
+          File.delete(file_name)
+        }
+      end
     end
 
     # Generates initial agent settings. These settings will be read by agent
