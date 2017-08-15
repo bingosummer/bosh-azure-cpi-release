@@ -120,15 +120,16 @@ module Bosh::AzureCloud
     MINIMUM_REQUIRED_OS_DISK_SIZE_IN_GB_WINDOWS = 128
 
     # Lock
-    BOSH_LOCK_EXCEPTION_TIMEOUT        = 'timeout'
-    BOSH_LOCK_EXCEPTION_LOCK_NOT_FOUND = 'lock_not_found'
-    BOSH_LOCK_DIR                      = '/var/vcap/sys/run/azure_cpi'
-    BOSH_LOCK_CREATE_STORAGE_ACCOUNT   = "bosh-lock-create-storage-account"
-    BOSH_LOCK_COPY_STEMCELL            = "bosh-lock-copy-stemcell"
-    BOSH_LOCK_COPY_STEMCELL_TIMEOUT    = 180 # seconds
-    BOSH_LOCK_CREATE_USER_IMAGE        = "bosh-lock-create-user-image"
-    BOSH_LOCK_PREFIX_AVAILABILITY_SET  = "bosh-lock-availability-set"
-    BOSH_LOCK_DELETE                   = "#{BOSH_LOCK_DIR}/DELETING"
+    CPI_LOCK_DIR                      = '/var/vcap/sys/run/azure_cpi'
+    CPI_LOCK_CREATE_STORAGE_ACCOUNT   = "bosh-lock-create-storage-account"
+    CPI_LOCK_COPY_STEMCELL            = "bosh-lock-copy-stemcell"
+    CPI_LOCK_COPY_STEMCELL_TIMEOUT    = 180 # seconds
+    CPI_LOCK_CREATE_USER_IMAGE        = "bosh-lock-create-user-image"
+    CPI_LOCK_PREFIX_AVAILABILITY_SET  = "bosh-lock-availability-set"
+    CPI_LOCK_DELETE                   = "#{CPI_LOCK_DIR}/DELETING"
+    class LockError < StandardError; end
+    class LockTimeoutError < LockError; end
+    class LockNotFoundError < LockError; end
 
     # REST Connection Errors
     ERROR_OPENSSL_RESET           = 'SSL_connect'
@@ -522,7 +523,7 @@ module Bosh::AzureCloud
     #     mutex.wait
     #   end
     # rescue => e
-    #   if e.message == BOSH_LOCK_EXCEPTION_TIMEOUT
+    #   if e.instance_of?(LockTimeoutError)
     #     raise 'what action fails because of timeout'
     #   end
     #   raise e
@@ -532,7 +533,7 @@ module Bosh::AzureCloud
       attr_reader :expired
 
       def initialize(lock_name, logger, expired = 60)
-        @file_path = "#{BOSH_LOCK_DIR}/#{lock_name}"
+        @file_path = "#{CPI_LOCK_DIR}/#{lock_name}"
         @logger = logger
         @expired = expired
         @is_locked = false
@@ -560,7 +561,7 @@ module Bosh::AzureCloud
 
         if Time.new() - mtime > @expired
           @logger.debug("The lock `#{@file_path}' exists, but timeouts.")
-          raise BOSH_LOCK_EXCEPTION_TIMEOUT
+          raise LockTimeoutError
         end
 
         @logger.debug("The lock `#{@file_path}' exists")
@@ -575,7 +576,7 @@ module Bosh::AzureCloud
             @logger.debug("The lock `#{@file_path}' does not exist")
             return true
           end
-          raise BOSH_LOCK_EXCEPTION_TIMEOUT if Time.new() - mtime > @expired
+          raise LockTimeoutError if Time.new() - mtime > @expired
           sleep(1) # second
         end
       end
@@ -585,7 +586,7 @@ module Bosh::AzureCloud
         @logger.debug("The lock `#{@file_path}' is deleted by the process `#{Process.pid}'")
         @is_locked = false
       rescue => e
-        raise BOSH_LOCK_EXCEPTION_LOCK_NOT_FOUND
+        raise LockNotFoundError
       end
 
       def update()
@@ -596,7 +597,7 @@ module Bosh::AzureCloud
           }
           @logger.debug("The lock `#{@file_path}' is updated by the process `#{Process.pid}'")
         rescue => e
-          raise BOSH_LOCK_EXCEPTION_LOCK_NOT_FOUND
+          raise LockNotFoundError
         end
       end
     end
@@ -630,7 +631,7 @@ module Bosh::AzureCloud
     #
     class ReadersWriterLock
       def initialize(lock_name, logger, expired = 300)
-        @counter_file_path = "#{BOSH_LOCK_DIR}/#{lock_name}-counter"
+        @counter_file_path = "#{CPI_LOCK_DIR}/#{lock_name}-counter"
         @readers_mutex = FileMutex.new("#{lock_name}-readers", logger, expired)
         @writer_mutex = FileMutex.new("#{lock_name}-writer", logger, expired)
         @logger = logger
@@ -716,7 +717,7 @@ module Bosh::AzureCloud
     end
 
     def mark_deleting_locks
-      File.open(BOSH_LOCK_DELETE, 'wb') { |f| f.write("Deleting") }
+      File.open(CPI_LOCK_DELETE, 'wb') { |f| f.write("Deleting") }
     end
 
     def get_storage_account_type_by_instance_type(instance_type)

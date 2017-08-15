@@ -437,7 +437,7 @@ module Bosh::AzureCloud
         end
       end
 
-      mutex = FileMutex.new("#{BOSH_LOCK_PREFIX_AVAILABILITY_SET}-create-#{availability_set_name}", @logger)
+      mutex = FileMutex.new("#{CPI_LOCK_PREFIX_AVAILABILITY_SET}-create-#{availability_set_name}", @logger)
       begin
         if mutex.lock
           @azure_client2.create_availability_set(resource_group_name, availability_set_params)
@@ -446,7 +446,7 @@ module Bosh::AzureCloud
           mutex.wait
         end
       rescue => e
-        if e.message == BOSH_LOCK_EXCEPTION_TIMEOUT
+        if e.instance_of?(LockTimeoutError)
           mark_deleting_locks
           cloud_error("Failed to finish the creation of the availability set `#{availability_set_name}' in 60 seconds.")
         end
@@ -457,7 +457,7 @@ module Bosh::AzureCloud
     end
 
     def delete_empty_availability_set(resource_group_name, name)
-      availability_set_rw_lock = ReadersWriterLock.new("#{BOSH_LOCK_PREFIX_AVAILABILITY_SET}-#{name}", @logger)
+      availability_set_rw_lock = ReadersWriterLock.new("#{CPI_LOCK_PREFIX_AVAILABILITY_SET}-#{name}", @logger)
       if availability_set_rw_lock.acquire_write_lock
         begin
           availability_set = @azure_client2.get_availability_set_by_name(resource_group_name, name)
@@ -486,7 +486,7 @@ module Bosh::AzureCloud
           #      that only one task is creating/updating the availability set.
           #   2. create the VM in the availability set. Before releasing the lock, CPI needs to make sure the VM is added into the availability set.
           # If a task acquires the writer lock, it can delete the availability set if no VMs are in it.
-          availability_set_rw_lock = ReadersWriterLock.new("#{BOSH_LOCK_PREFIX_AVAILABILITY_SET}-#{availability_set_name}", @logger)
+          availability_set_rw_lock = ReadersWriterLock.new("#{CPI_LOCK_PREFIX_AVAILABILITY_SET}-#{availability_set_name}", @logger)
           availability_set_rw_lock.acquire_read_lock
           begin
             availability_set = create_availability_set(resource_group_name, availability_set_params)
@@ -498,6 +498,11 @@ module Bosh::AzureCloud
           @azure_client2.create_virtual_machine(resource_group_name, vm_params, network_interfaces, nil)
         end
       rescue => e
+        if e.is_a?(LockError)
+          @logger.error("create_virtual_machine - Lock error: #{e.inspect}\n#{e.backtrace.join("\n")}")
+          raise e
+        end
+
         retry_create = false
         if e.instance_of?(AzureAsynchronousError) && e.status == PROVISIONING_STATE_FAILED
           if (retry_count += 1) <= provisioning_fail_retries
