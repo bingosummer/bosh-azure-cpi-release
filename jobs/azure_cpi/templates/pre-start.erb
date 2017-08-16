@@ -1,9 +1,5 @@
 #!/bin/bash
 
-RUN_DIR=/var/vcap/sys/run
-if [ -d ${RUN_DIR} ]; then
-  mkdir -p ${RUN_DIR}/azure_cpi
-  chown -R vcap:vcap ${RUN_DIR}/azure_cpi
-else
-  mkdir -p /tmp/azure_cpi
-fi
+RUN_DIR=/var/vcap/sys/run/azure_cpi
+mkdir -p ${RUN_DIR}
+chown -R vcap:vcap ${RUN_DIR}

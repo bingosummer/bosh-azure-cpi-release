@@ -263,7 +263,7 @@ describe Bosh::AzureCloud::StemcellManager2 do
                 it "should raise a timeout error" do
                   expect(blob_manager).not_to receive(:get_blob_uri)
                   expect(blob_manager).not_to receive(:copy_blob)
-                  expect(File).to receive(:open).with(Bosh::AzureCloud::Helpers::CPI_LOCK_DELETE, "wb")
+                  expect(File).to receive(:open).with("/var/vcap/sys/run/azure_cpi/#{Bosh::AzureCloud::Helpers::CPI_LOCK_DELETE}", "wb")
                   expect {
                     stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
                   }.to raise_error /get_user_image: Failed to finish the copying process of the stemcell/
@@ -388,7 +388,7 @@ describe Bosh::AzureCloud::StemcellManager2 do
 
                 it "raise an error" do
                   expect(lock_creating_storage_account).not_to receive(:unlock)
-                  expect(File).to receive(:open).with(Bosh::AzureCloud::Helpers::CPI_LOCK_DELETE, "wb")
+                  expect(File).to receive(:open).with("/var/vcap/sys/run/azure_cpi/#{Bosh::AzureCloud::Helpers::CPI_LOCK_DELETE}", "wb")
                   expect {
                     stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
                   }.to raise_error /Failed to finish the creation of the storage account/

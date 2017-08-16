@@ -560,6 +560,7 @@ module Bosh::AzureCloud
     end
 
     def init_cpi_dir
+      Dir.mkdir(cpi_lock_dir) unless Dir.exist?(cpi_lock_dir)
       if needs_deleting_locks?
         @logger.info("init_cpi_dir: Cleaning up the locks")
         Dir.glob("#{cpi_lock_dir}/*") { |file_name|
