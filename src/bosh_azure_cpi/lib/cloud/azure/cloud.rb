@@ -26,7 +26,7 @@ module Bosh::AzureCloud
 
       init_registry
       init_azure
-      init_cpi_dir
+      init_cpi_lock_dir
     end
 
     ##
@@ -559,14 +559,18 @@ module Bosh::AzureCloud
       cloud_error("Please make sure the CPI has proper network access to Azure. #{e.inspect}") # TODO: Will it throw the error when initializing the client and manager
     end
 
-    def init_cpi_dir
-      Dir.mkdir(cpi_lock_dir) unless Dir.exist?(cpi_lock_dir)
+    def init_cpi_lock_dir
+      @logger.info("init_cpi_lock_dir: Initializing the CPI lock directory")
+      unless Dir.exist?(CPI_LOCK_DIR)
+        ignore_exception(Errno::EEXIST) { Dir.mkdir(CPI_LOCK_DIR) }
+      end
       if needs_deleting_locks?
-        @logger.info("init_cpi_dir: Cleaning up the locks")
-        Dir.glob("#{cpi_lock_dir}/*") { |file_name|
-          @logger.debug("init_cpi_dir: Deleting the lock `#{file_name}'")
-          File.delete(file_name)
+        @logger.info("init_cpi_lock_dir: Cleaning up the locks")
+        Dir.glob("#{CPI_LOCK_DIR}/#{CPI_LOCK_PREFIX}*") { |file_name|
+          @logger.debug("init_cpi_lock_dir: Deleting the lock `#{file_name}'")
+          ignore_exception(Errno::ENOENT) { File.delete(file_name) }
         }
+        ignore_exception(Errno::ENOENT) { remove_deleting_mark }
       end
     end
 

@@ -48,9 +48,6 @@ azure storage blob upload --quiet --blobtype PAGE --file /tmp/root.vhd --contain
 source /etc/profile.d/chruby.sh
 chruby ${RUBY_VERSION}
 
-# For CPI locks
-mkdir -p /var/vcap/sys/run/azure_cpi/
-
 export BOSH_AZURE_USE_MANAGED_DISKS=${AZURE_USE_MANAGED_DISKS}
 pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null
   bundle install
@@ -74,5 +71,3 @@ if [ "${AZURE_USE_MANAGED_DISKS}" == "true" ]; then
     bundle exec rspec spec/integration/azure_cpi_spec.rb
   popd > /dev/null
 fi
-
-rm -rf /var/vcap/sys/run/azure_cpi/

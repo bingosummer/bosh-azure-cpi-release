@@ -61,13 +61,8 @@ metadata=$(ruby -r yaml -r json -e '
   puts metadata' < /tmp/stemcell.MF)
 azure storage blob upload --quiet --blobtype PAGE --file /tmp/root.vhd --container stemcell --blob ${BOSH_AZURE_STEMCELL_ID}.vhd --metadata "$metadata"
 
-# For CPI locks
-mkdir -p /var/vcap/sys/run/azure_cpi/
-
 export BOSH_AZURE_USE_MANAGED_DISKS=${AZURE_USE_MANAGED_DISKS}
 pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null
   bundle install
   bundle exec rspec spec/integration/lifecycle_spec.rb
 popd > /dev/null
-
-rm -rf /var/vcap/sys/run/azure_cpi/

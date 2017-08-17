@@ -120,17 +120,18 @@ module Bosh::AzureCloud
     MINIMUM_REQUIRED_OS_DISK_SIZE_IN_GB_WINDOWS = 128
 
     # Lock
-    CPI_LOCK_DIR_UNDER_BOSH_RUN_DIR   = "/var/vcap/sys/run/azure_cpi"
-    CPI_LOCK_DIR_UNDER_TMP_DIR        = "/tmp/azure_cpi"
-    CPI_LOCK_CREATE_STORAGE_ACCOUNT   = "bosh-lock-create-storage-account"
-    CPI_LOCK_COPY_STEMCELL            = "bosh-lock-copy-stemcell"
+    CPI_LOCK_DIR                      = "/tmp/azure_cpi"
+    CPI_LOCK_PREFIX                   = "bosh-lock"
+    CPI_LOCK_CREATE_STORAGE_ACCOUNT   = "#{CPI_LOCK_PREFIX}-create-storage-account"
+    CPI_LOCK_COPY_STEMCELL            = "#{CPI_LOCK_PREFIX}-copy-stemcell"
     CPI_LOCK_COPY_STEMCELL_TIMEOUT    = 180 # seconds
-    CPI_LOCK_CREATE_USER_IMAGE        = "bosh-lock-create-user-image"
-    CPI_LOCK_PREFIX_AVAILABILITY_SET  = "bosh-lock-availability-set"
-    CPI_LOCK_DELETE                   = "DELETING-LOCK"
-    class LockError < StandardError; end
+    CPI_LOCK_CREATE_USER_IMAGE        = "#{CPI_LOCK_PREFIX}-create-user-image"
+    CPI_LOCK_PREFIX_AVAILABILITY_SET  = "#{CPI_LOCK_PREFIX}-availability-set"
+    CPI_LOCK_DELETE                   = "#{CPI_LOCK_DIR}/DELETING-LOCKS"
+    class LockError < Bosh::Clouds::CloudError; end
     class LockTimeoutError < LockError; end
     class LockNotFoundError < LockError; end
+    class LockNotOwnedError < LockError; end
 
     # REST Connection Errors
     ERROR_OPENSSL_RESET           = 'SSL_connect'
@@ -178,10 +179,10 @@ module Bosh::AzureCloud
       end
     end
 
-    def ignore_exception
+    def ignore_exception(error = Exception)
       begin
         yield
-      rescue
+      rescue error
       end
     end
 
@@ -523,10 +524,13 @@ module Bosh::AzureCloud
     #   else
     #     mutex.wait
     #   end
+    # rescue LockTimeoutError => e
+    #   mark_deleting_locks
+    #   raise 'what action fails because of the lock timeouts'
+    # rescue LockError => e
+    #   mark_deleting_locks
+    #   raise 'what action fails because of the lock error'
     # rescue => e
-    #   if e.instance_of?(LockTimeoutError)
-    #     raise 'what action fails because of timeout'
-    #   end
     #   raise e
     # end
     #
@@ -534,8 +538,7 @@ module Bosh::AzureCloud
       attr_reader :expired
 
       def initialize(lock_name, logger, expired = 60)
-        @cpi_lock_dir = Dir.exists?("#{CPI_LOCK_DIR_UNDER_BOSH_RUN_DIR}") ? "#{CPI_LOCK_DIR_UNDER_BOSH_RUN_DIR}" : "#{CPI_LOCK_DIR_UNDER_TMP_DIR}"
-        @file_path = "#{@cpi_lock_dir}/#{lock_name}"
+        @file_path = "#{CPI_LOCK_DIR}/#{lock_name}"
         @logger = logger
         @expired = expired
         @is_locked = false
@@ -592,7 +595,7 @@ module Bosh::AzureCloud
       end
 
       def update()
-        raise "The lock is not owned by the process `#{Process.pid}'" unless @is_locked
+        raise LockNotOwnedError unless @is_locked
         begin
           File.open(@file_path, 'wb') { |f|
             f.write("#{Process.pid}")
@@ -632,9 +635,10 @@ module Bosh::AzureCloud
     # @See https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock#Using_two_mutexes
     #
     class ReadersWriterLock
+      include Helpers
+
       def initialize(lock_name, logger, expired = 300)
-        @cpi_lock_dir = Dir.exists?("#{CPI_LOCK_DIR_UNDER_BOSH_RUN_DIR}") ? "#{CPI_LOCK_DIR_UNDER_BOSH_RUN_DIR}" : "#{CPI_LOCK_DIR_UNDER_TMP_DIR}"
-        @counter_file_path = "#{@cpi_lock_dir}/#{lock_name}-counter"
+        @counter_file_path = "#{CPI_LOCK_DIR}/#{lock_name}-counter"
         @readers_mutex = FileMutex.new("#{lock_name}-readers", logger, expired)
         @writer_mutex = FileMutex.new("#{lock_name}-writer", logger, expired)
         @logger = logger
@@ -719,16 +723,16 @@ module Bosh::AzureCloud
       end
     end
 
-    def cpi_lock_dir
-      Dir.exists?("#{CPI_LOCK_DIR_UNDER_BOSH_RUN_DIR}") ? "#{CPI_LOCK_DIR_UNDER_BOSH_RUN_DIR}" : "#{CPI_LOCK_DIR_UNDER_TMP_DIR}"
-    end
-
     def mark_deleting_locks
-      File.open("#{cpi_lock_dir}/#{CPI_LOCK_DELETE}", 'wb') { |f| f.write("Some errors happen. Will delete the locks when CPI starts next time.") }
+      File.open(CPI_LOCK_DELETE, 'wb') { |f| f.write("Some errors happen. Will delete the locks when CPI starts next time.") }
     end
 
     def needs_deleting_locks?
-      File.exists?("#{cpi_lock_dir}/#{CPI_LOCK_DELETE}")
+      File.exists?(CPI_LOCK_DELETE)
+    end
+
+    def remove_deleting_mark
+      File.delete(CPI_LOCK_DELETE)
     end
 
     def get_storage_account_type_by_instance_type(instance_type)

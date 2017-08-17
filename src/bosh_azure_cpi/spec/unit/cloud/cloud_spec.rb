@@ -5,6 +5,9 @@ describe Bosh::AzureCloud::Cloud do
   include_context "shared stuff"
 
   describe "#initialize" do
+    let(:cpi_lock_dir) { Bosh::AzureCloud::Helpers::CPI_LOCK_DIR }
+    let(:cpi_lock_delete) { Bosh::AzureCloud::Helpers::CPI_LOCK_DELETE }
+
     context "when there is no proper network access to Azure" do
       before do
         allow(Bosh::AzureCloud::TableManager).to receive(:new).and_raise(Net::OpenTimeout, "execution expired")
@@ -17,15 +20,18 @@ describe Bosh::AzureCloud::Cloud do
       end
     end
 
-    context "when /var/vcap/sys/run/azure_cpi exists" do
-      let(:cpi_lock_dir) { "/var/vcap/sys/run/azure_cpi" }
+    context "when the lock dir exists" do
       before do
-        allow(Dir).to receive(:exists?).with(cpi_lock_dir).and_return(true)
+        Dir.mkdir(cpi_lock_dir) unless Dir.exists?(cpi_lock_dir)
+      end
+
+      after do
+        Dir.delete(cpi_lock_dir) if Dir.exists?(cpi_lock_dir)
       end
 
       context "when CPI doesn't need to cleanup locks" do
         before do
-          allow(File).to receive(:exists?).with("#{cpi_lock_dir}/#{Bosh::AzureCloud::Helpers::CPI_LOCK_DELETE}").and_return(false)
+          allow(File).to receive(:exists?).with(cpi_lock_delete).and_return(false)
         end
 
         it "should not create the cpi lock dir and cleanup the locks" do
@@ -39,51 +45,81 @@ describe Bosh::AzureCloud::Cloud do
 
       context "when CPI needs to cleanup locks" do
         before do
-          allow(File).to receive(:exists?).with("#{cpi_lock_dir}/#{Bosh::AzureCloud::Helpers::CPI_LOCK_DELETE}").and_return(true)
+          allow(File).to receive(:exists?).with(cpi_lock_delete).and_return(true)
         end
 
-        it "should not create the cpi lock dir, but should cleanup the locks" do
+        it "should not create the cpi lock dir, but should cleanup the locks and the deleting mark" do
           expect(Dir).not_to receive(:mkdir)
-          expect(Dir).to receive(:glob).and_yield("fake-lock")
-          expect(File).to receive(:delete).with("fake-lock")
+          expect(Dir).to receive(:glob).
+            and_yield("#{Bosh::AzureCloud::Helpers::CPI_LOCK_PREFIX}-fake-lock-1").
+            and_yield("#{Bosh::AzureCloud::Helpers::CPI_LOCK_PREFIX}-fake-lock-2")
+          expect(File).to receive(:delete).with("#{Bosh::AzureCloud::Helpers::CPI_LOCK_PREFIX}-fake-lock-1").once
+          expect(File).to receive(:delete).with("#{Bosh::AzureCloud::Helpers::CPI_LOCK_PREFIX}-fake-lock-2").once
+          expect(File).to receive(:delete).with(cpi_lock_delete).once
           expect {
             cloud
           }.not_to raise_error
         end
+
+        context "when the locks have been deleted by other processes" do
+          it "should not create the cpi lock dir, but should cleanup the locks and the deleting mark, and ignore the errors of non-existent locks" do
+            expect(Dir).not_to receive(:mkdir)
+            expect(Dir).to receive(:glob).
+              and_yield("#{Bosh::AzureCloud::Helpers::CPI_LOCK_PREFIX}-fake-lock-1").
+              and_yield("#{Bosh::AzureCloud::Helpers::CPI_LOCK_PREFIX}-fake-lock-2")
+            expect(File).to receive(:delete).with("#{Bosh::AzureCloud::Helpers::CPI_LOCK_PREFIX}-fake-lock-1").once.and_raise(Errno::ENOENT)
+            expect(File).to receive(:delete).with("#{Bosh::AzureCloud::Helpers::CPI_LOCK_PREFIX}-fake-lock-2").once.and_raise(Errno::ENOENT)
+            expect(File).to receive(:delete).with(cpi_lock_delete).and_raise(Errno::ENOENT)
+            expect {
+              cloud
+            }.not_to raise_error
+          end
+        end
       end
     end
 
-    context "when /var/vcap/sys/run/azure_cpi and /tmp/azure_cpi doesn't exist" do
-      let(:cpi_lock_dir_under_bosh_run_dir) { "/var/vcap/sys/run/azure_cpi" }
-      let(:cpi_lock_dir) { "/tmp/azure_cpi" }
+    context "when the lock dir doesn't exist" do
       before do
-        allow(Dir).to receive(:exists?).with(cpi_lock_dir_under_bosh_run_dir).and_return(false)
-        allow(Dir).to receive(:exists?).with(cpi_lock_dir).and_return(false)
+        Dir.delete(cpi_lock_dir) if Dir.exists?(cpi_lock_dir)
       end
 
       context "when CPI doesn't need to cleanup locks" do
         before do
-          allow(File).to receive(:exists?).with("#{cpi_lock_dir}/#{Bosh::AzureCloud::Helpers::CPI_LOCK_DELETE}").and_return(false)
+          allow(File).to receive(:exists?).with(cpi_lock_delete).and_return(false)
         end
 
-        it "should create the cpi lock dir /tmp/azure_cpi, but not clean the locks" do
+        it "should create the cpi lock dir, but not clean the locks" do
           expect(Dir).to receive(:mkdir).with(cpi_lock_dir)
           expect(Dir).not_to receive(:glob)
           expect {
             cloud
           }.not_to raise_error
         end
+
+        context "when the lock dir is created by other processes" do
+          it "should create the lock dir and ignore the error of exising directory, but not clean the locks" do
+            expect(Dir).to receive(:mkdir).with(cpi_lock_dir).and_return(Errno::EEXIST)
+            expect(Dir).not_to receive(:glob)
+            expect {
+              cloud
+            }.not_to raise_error
+          end
+        end
       end
 
       context "when CPI needs to cleanup locks" do
         before do
-          allow(File).to receive(:exists?).with("#{cpi_lock_dir}/#{Bosh::AzureCloud::Helpers::CPI_LOCK_DELETE}").and_return(true)
+          allow(File).to receive(:exists?).with(cpi_lock_delete).and_return(true)
         end
 
-        it "should create the cpi lock dir /tmp/azure_cpi and cleanup the locks" do
+        it "should create the cpi lock dir and cleanup the locks and the deleting mark" do
           expect(Dir).to receive(:mkdir).with(cpi_lock_dir)
-          expect(Dir).to receive(:glob).and_yield("fake-lock")
-          expect(File).to receive(:delete).with("fake-lock")
+          expect(Dir).to receive(:glob).
+            and_yield("#{Bosh::AzureCloud::Helpers::CPI_LOCK_PREFIX}-fake-lock-1").
+            and_yield("#{Bosh::AzureCloud::Helpers::CPI_LOCK_PREFIX}-fake-lock-2")
+          expect(File).to receive(:delete).with("#{Bosh::AzureCloud::Helpers::CPI_LOCK_PREFIX}-fake-lock-1").once
+          expect(File).to receive(:delete).with("#{Bosh::AzureCloud::Helpers::CPI_LOCK_PREFIX}-fake-lock-2").once
+          expect(File).to receive(:delete).with(cpi_lock_delete).once
           expect {
             cloud
           }.not_to raise_error

@@ -32,19 +32,15 @@ describe Bosh::AzureCloud::VMManager do
             {
               'instance_type' => 'Standard_D1',
               'availability_set' => availability_set_name,
-              'platform_update_domain_count' => 5,
-              'platform_fault_domain_count' => 3,
             }
           }
 
           before do
-            allow(client2).to receive(:get_availability_set_by_name).
-              with(resource_group_name, availability_set_name).
-              and_return(nil)
             allow(rwlock).to receive(:acquire_read_lock).and_raise(Bosh::AzureCloud::Helpers::LockTimeoutError)
           end
 
           it "should not delete VM and then raise an error" do
+            expect(File).to receive(:open).with("/tmp/azure_cpi/DELETING-LOCKS", "wb")
             expect(client2).not_to receive(:delete_virtual_machine)
             expect(client2).to receive(:delete_network_interface).exactly(2).times
 

@@ -99,12 +99,29 @@ describe Bosh::AzureCloud::Helpers do
   end
 
   describe "#ignore_exception" do
-    it "should return ignore the exception" do
-      expect{
-        helpers_tester.ignore_exception do
-          raise StandardError
-        end
-      }.not_to raise_error
+    context "when no exception type is specified" do
+      it "should ignore any exception" do
+        expect{
+          helpers_tester.ignore_exception do
+            raise Exception
+          end
+        }.not_to raise_error
+      end
+    end
+
+    context "when the exception type is specified" do
+      it "should ignore the specified exception and raise other exception" do
+        expect{
+          helpers_tester.ignore_exception(Errno::EEXIST) do
+            raise Errno::EEXIST
+          end
+        }.not_to raise_error
+        expect{
+          helpers_tester.ignore_exception(Errno::EEXIST) do
+            raise Errno::ENOENT
+          end
+        }.to raise_error(Errno::ENOENT)
+      end
     end
   end
 
@@ -773,7 +790,7 @@ describe Bosh::AzureCloud::Helpers do
 
   describe "#FileMutex" do
     let(:logger) { Logger.new('/dev/null') }
-    let(:lock_dir) { '/var/vcap/sys/run/azure_cpi' }
+    let(:lock_dir) { '/tmp/azure_cpi' }
     let(:lock_name) { "fake-lock-name" }
     let(:file_path) { "#{lock_dir}/#{lock_name}" }
     let(:expired) { 5 }
@@ -922,7 +939,7 @@ describe Bosh::AzureCloud::Helpers do
         it "should raise an error" do
           expect {
             mutex.update
-          }.to raise_error /The lock is not owned by the process/
+          }.to raise_error(Bosh::AzureCloud::Helpers::LockNotOwnedError)
         end
       end
 
@@ -1088,7 +1105,7 @@ describe Bosh::AzureCloud::Helpers do
     let(:writer_lock_name)     { "#{lock_name}-writer" }
     let(:readers_mutex)        { instance_double(Bosh::AzureCloud::Helpers::FileMutex) }
     let(:writer_mutex)         { instance_double(Bosh::AzureCloud::Helpers::FileMutex) }
-    let(:counter_file)         { "/var/vcap/sys/run/azure_cpi/#{lock_name}-counter" }
+    let(:counter_file)         { "/tmp/azure_cpi/#{lock_name}-counter" }
     let(:counter_file_handler) { instance_double(File) }
 
     before do

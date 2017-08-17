@@ -89,11 +89,13 @@ module Bosh::AzureCloud
             s[:location] == location && is_stemcell_storage_account?(s[:tags])
           }
           storage_account_name = storage_account[:name]
+        rescue LockTimeoutError
+          mark_deleting_locks
+          cloud_error("get_user_image: Failed to finish the creation of the storage account `#{storage_account_name}', `#{storage_account_type}' in location `#{location}' in #{mutex.expired} seconds")
+        rescue LockError => e
+          mark_deleting_locks
+          cloud_error("get_user_image: Failed to finish the creation of the storage account `#{storage_account_name}', `#{storage_account_type}' in location `#{location}' due to the lock error `#{e.inspect}'")
         rescue => e
-          if e.instance_of?(LockTimeoutError)
-            mark_deleting_locks
-            cloud_error("get_user_image: Failed to finish the creation of the storage account `#{storage_account_name}', `#{storage_account_type}' in location `#{location}' in #{mutex.expired} seconds.")
-          end
           raise e
         end
 
@@ -111,11 +113,13 @@ module Bosh::AzureCloud
           else
             mutex.wait
           end
+        rescue LockTimeoutError
+          mark_deleting_locks
+          cloud_error("get_user_image: Failed to finish the copying process of the stemcell `#{stemcell_name}' from the default storage account `#{default_storage_account_name}' to the storage acccount `#{storage_account_name}' in `#{mutex.expired}' seconds")
         rescue => e
-          if e.instance_of?(LockTimeoutError)
-            mark_deleting_locks
-            cloud_error("get_user_image: Failed to finish the copying process of the stemcell `#{stemcell_name}' from the default storage account `#{default_storage_account_name}' to the storage acccount `#{storage_account_name}' in `#{mutex.expired}' seconds.")
-          end
+          mark_deleting_locks
+          cloud_error("get_user_image: Failed to finish the copying process of the stemcell `#{stemcell_name}' from the default storage account `#{default_storage_account_name}' to the storage acccount `#{storage_account_name}' due to the lock error `#{e.inspect}'")
+        rescue => e
           raise e
         end
       end
@@ -137,11 +141,13 @@ module Bosh::AzureCloud
         else
           mutex.wait
         end
+      rescue LockTimeoutError
+        mark_deleting_locks
+        cloud_error("get_user_image: Failed to create the user image `#{user_image_name}' in #{mutex.expired} seconds")
+      rescue LockError
+        mark_deleting_locks
+        cloud_error("get_user_image: Failed to create the user image `#{user_image_name}' due to the lock error `#{e.inspect}'")
       rescue => e
-        if e.instance_of?(LockTimeoutError)
-          cloud_error("get_user_image: Failed to create the user image `#{user_image_name}' in #{mutex.expired} seconds.")
-          mark_deleting_locks
-        end
         raise e
       end
 

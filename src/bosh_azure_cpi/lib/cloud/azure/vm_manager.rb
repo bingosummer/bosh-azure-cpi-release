@@ -475,6 +475,7 @@ module Bosh::AzureCloud
       retry_count = 0
       begin
         @keep_failed_vm = false
+        is_vm_created = false
         availability_set = nil
         availability_set_name = availability_set_params[:name]
         if !availability_set_name.nil?
@@ -491,6 +492,7 @@ module Bosh::AzureCloud
           begin
             availability_set = create_availability_set(resource_group_name, availability_set_params)
             @azure_client2.create_virtual_machine(resource_group_name, vm_params, network_interfaces, availability_set)
+            is_vm_created = true
           ensure
             availability_set_rw_lock.release_read_lock
           end
@@ -499,8 +501,8 @@ module Bosh::AzureCloud
         end
       rescue => e
         if e.is_a?(LockError)
-          @logger.error("create_virtual_machine - Lock error: #{e.inspect}\n#{e.backtrace.join("\n")}")
-          raise e
+          mark_deleting_locks
+          cloud_error("create_virtual_machine - Lock error: #{e.inspect}\n#{e.backtrace.join("\n")}") unless is_vm_created
         end
 
         retry_create = false
