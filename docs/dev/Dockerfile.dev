@@ -1,0 +1,44 @@
+FROM ubuntu:14.04
+
+RUN apt-get update \
+  && apt-get install -y \
+  ca-certificates \
+  wget \
+  git \
+  gcc \
+  make \
+  libssl-dev \
+  libreadline-dev \
+  zlib1g-dev \
+  && apt-get clean
+
+ENV GOLANG_VERSION 1.9
+
+RUN wget -q -O go.tar.gz https://storage.googleapis.com/golang/go$GOLANG_VERSION.linux-amd64.tar.gz \
+  && tar -C /usr/local -xzf go.tar.gz \
+  && echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc \
+  && echo 'export GOPATH=$(go env GOPATH)' >> ~/.bashrc
+
+RUN mkdir -p $GOPATH/src/github.com/direnv \
+  && git clone https://github.com/direnv/direnv.git $GOPATH/src/github.com/direnv/direnv \
+  && cd $GOPATH/src/github.com/direnv/direnv \
+  && make \
+  && make install \
+  && echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
+
+# Install ruby 2.2.4 with chruby
+RUN wget -O chruby-0.3.9.tar.gz https://github.com/postmodern/chruby/archive/v0.3.9.tar.gz \
+  && tar -xzf chruby-0.3.9.tar.gz \
+  && cd chruby-0.3.9/ \
+  && make install \
+  && echo 'source /usr/local/share/chruby/chruby.sh' >> ~/.bashrc
+
+RUN wget -O ruby-install-0.6.1.tar.gz https://github.com/postmodern/ruby-install/archive/v0.6.1.tar.gz \
+  && tar -xzf ruby-install-0.6.1.tar.gz \
+  && cd ruby-install-0.6.1/ \
+  && make install
+
+RUN ruby-install ruby 2.2.4
+RUN chruby 2.2.4
+
+WORKDIR /workspace/bosh-azure-cpi-release
