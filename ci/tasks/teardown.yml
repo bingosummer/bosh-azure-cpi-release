@@ -5,12 +5,10 @@ image_resource:
   source: {repository: boshcpi/azure-cpi-release}
 
 inputs:
+  - name: pipelines
   - name: bosh-cpi-src
   - name: director-state
-  - name: bosh-init
+  - name: bosh-cli
 
 run:
-  path: bosh-cpi-src/ci/tasks/teardown-director.sh
-
-params:
-  BOSH_INIT_LOG_LEVEL: debug
+  path: bosh-cpi-src/ci/tasks/teardown.sh

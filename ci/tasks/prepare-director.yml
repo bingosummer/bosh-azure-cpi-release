@@ -1,0 +1,35 @@
+---
+platform: linux
+image_resource:
+  type: docker-image
+  source: {repository: boshcpi/azure-cpi-release}
+
+inputs:
+  - name: pipelines
+  - name: bosh-deployment
+  - name: bosh-cli
+  - name: bosh-release
+  - name: cpi-release
+  - name: bosh-cpi-src
+  - name: stemcell
+
+outputs:
+  - name: director-config
+
+run:
+  path: bosh-cpi-src/ci/tasks/prepare-director.sh
+
+params:
+  AZURE_ENVIRONMENT:            ""
+  AZURE_SUBSCRIPTION_ID:        ""
+  AZURE_CLIENT_ID:              ""
+  AZURE_CLIENT_SECRET:          ""
+  AZURE_TENANT_ID:              ""
+  AZURE_DEFAULT_GROUP_NAME:     ""
+  AZURE_ADDITIONAL_GROUP_NAME:  ""
+  AZURE_VNET_NAME_FOR_BATS:     ""
+  AZURE_BOSH_SUBNET_NAME:       ""
+  AZURE_DEFAULT_SECURITY_GROUP: ""
+  AZURE_USE_MANAGED_DISKS:      true
+  AZURE_STORAGE_ACCOUNT_NAME:   ""
+  OPTIONAL_OPS_FILE:            ""

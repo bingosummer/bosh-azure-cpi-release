@@ -2,6 +2,7 @@
 
 set -e
 
+source bosh-cpi-src/ci/utils.sh
 source /etc/profile.d/chruby.sh
 chruby ${RUBY_VERSION}
 
@@ -18,13 +19,8 @@ pushd bosh-cpi-src > /dev/null
     AZURE_STORAGE_ACCOUNT="foo" AZURE_STORAGE_ACCESS_KEY="YmFyCg==" bundle exec rspec spec/unit/*
   popd > /dev/null
 
-  echo "using bosh CLI version..."
-  bosh version
-
   cpi_release_name="bosh-azure-cpi"
 
   echo "building CPI release..."
-  bosh create release --name ${cpi_release_name} --version ${semver} --with-tarball
+  bosh2 create-release --name $cpi_release_name --version $semver --tarball ../candidate/$cpi_release_name-$semver.tgz
 popd > /dev/null
-
-mv bosh-cpi-src/dev_releases/${cpi_release_name}/${cpi_release_name}-${semver}.tgz candidate/

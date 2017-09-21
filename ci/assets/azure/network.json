@@ -9,11 +9,11 @@
         "description": "name of the virtual network for BATs"
       }
     },
-    "virtualNetworkNameForLifecycle": {
+    "virtualNetworkNameForIntegration": {
       "type": "string",
-      "defaultValue": "boshvnet-lifecycle",
+      "defaultValue": "boshvnet-integration",
       "metadata": {
-        "description": "name of the virtual network for lifecycle"
+        "description": "name of the virtual network for integration"
       }
     },
     "virtualNetworkPrefix": {
@@ -194,7 +194,7 @@
     {
       "apiVersion": "[variables('apiVersion')]",
       "type": "Microsoft.Network/virtualNetworks",
-      "name": "[parameters('virtualNetworkNameForLifecycle')]",
+      "name": "[parameters('virtualNetworkNameForIntegration')]",
       "location": "[variables('location')]",
       "properties": {
         "addressSpace": {
@@ -233,7 +233,7 @@
     {
       "apiVersion": "[variables('apiVersion')]",		
       "type": "Microsoft.Network/publicIPAddresses",		
-      "name": "AzureCPICI-cf-lifecycle",
+      "name": "AzureCPICI-cf-integration",
       "location": "[variables('location')]",		
       "properties": {		
         "publicIPAllocationMethod": "static"		

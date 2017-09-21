@@ -1,0 +1,8 @@
+- type: replace
+  path: /networks/name=default/subnets/0/cloud_properties/resource_group_name?
+  value: ((additional_resource_group_name))
+
+- type: replace
+  path: /networks/name=public/cloud_properties?
+  value:
+    resource_group_name: ((additional_resource_group_name))

@@ -10,8 +10,6 @@ set -e
 : ${AZURE_ADDITIONAL_GROUP_NAME:?}
 : ${AZURE_DEFAULT_GROUP_NAME_MANAGED_DISKS:?}
 : ${AZURE_ADDITIONAL_GROUP_NAME_MANAGED_DISKS:?}
-: ${AZURE_DEFAULT_GROUP_NAME_CENTOS:?}
-: ${AZURE_ADDITIONAL_GROUP_NAME_CENTOS:?}
 : ${AZURE_DEFAULT_GROUP_NAME_WINDOWS:?}
 : ${AZURE_ADDITIONAL_GROUP_NAME_WINDOWS:?}
 : ${AZURE_DEFAULT_GROUP_NAME_WINDOWS_MANAGED_DISKS:?}
@@ -23,7 +21,7 @@ set -e
 : ${AZURE_STORAGE_ACCOUNT_NAME_WINDOWS:?}
 : ${AZURE_STORAGE_ACCOUNT_NAME_WINDOWS_MANAGED_DISKS:?}
 : ${AZURE_VNET_NAME_FOR_BATS:?}
-: ${AZURE_VNET_NAME_FOR_LIFECYCLE:?}
+: ${AZURE_VNET_NAME_FOR_INTEGRATION:?}
 : ${AZURE_BOSH_SUBNET_NAME:?}
 : ${AZURE_BOSH_SECOND_SUBNET_NAME:?}
 : ${AZURE_CF_SUBNET_NAME:?}
@@ -73,8 +71,8 @@ do
     "virtualNetworkNameForBats": {
       "value": "${AZURE_VNET_NAME_FOR_BATS}"
     },
-    "virtualNetworkNameForLifecycle": {
-      "value": "${AZURE_VNET_NAME_FOR_LIFECYCLE}"
+    "virtualNetworkNameForIntegration": {
+      "value": "${AZURE_VNET_NAME_FOR_INTEGRATION}"
     },
     "subnetNameForBosh": {
       "value": "${AZURE_BOSH_SUBNET_NAME}"
@@ -104,7 +102,7 @@ cat > application-gateway-parameters.json << EOF
       "value": "${AZURE_APPLICATION_GATEWAY_NAME}"
     },
     "virtualNetworkName": {
-      "value": "${AZURE_VNET_NAME_FOR_LIFECYCLE}"
+      "value": "${AZURE_VNET_NAME_FOR_INTEGRATION}"
     },
     "systemDomain": {
       "value": "fake.domain"
