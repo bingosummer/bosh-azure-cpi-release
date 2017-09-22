@@ -51,17 +51,30 @@ do
   # Check if the resource group already exists
   echo "azure group show --name ${resource_group_name}"
   azure group show --name ${resource_group_name} > /dev/null 2>&1
-  
   if [ $? -eq 0 ]
   then
     echo "azure group delete ${resource_group_name}"
-    azure group delete ${resource_group_name} --quiet
+    azure group delete ${resource_group_name} --quiet --nowait
   fi
+done
+for resource_group_name in ${resource_group_names}
+do
+  echo "Check whether the resource group ${resource_group_name} is deleted"
+  while [ 1 ]
+  do
+    azure group show --name ${resource_group_name} > /dev/null 2>&1
+    if [ $? -eq 1 ]
+    then
+      break
+    fi
+    sleep 5
+  done
 done
 
 set -e
 
 # Create the virtual networks, subnets, and the security groups
+deployment_name="create-network"
 for resource_group_name in ${resource_group_names}
 do
   echo azure group create ${resource_group_name} ${AZURE_REGION_SHORT_NAME}
@@ -88,7 +101,24 @@ do
     }
   }
 EOF
-  azure group deployment create ${resource_group_name} --template-file ./bosh-cpi-src/ci/assets/azure/network.json --parameters-file ./network-parameters.json
+  azure group deployment create --resource-group ${resource_group_name} --name ${deployment_name} --template-file ./bosh-cpi-src/ci/assets/azure/network.json --parameters-file ./network-parameters.json --nowait
+done
+for resource_group_name in ${resource_group_names}
+do
+  echo "Check whether the deployment ${deployment_name} in the resource group ${resource_group_name} succeeds"
+  while [ 1 ]
+  do
+    provisioning_state=$(azure group deployment show --resource-group ${resource_group_name} --name ${deployment_name} --json | jq .properties.provisioningState -r)
+    if [[ "${provisioning_state}" == "Succeeded" ]]
+    then
+      break
+    elif [[ "${provisioning_state}" == "Failed" ]]
+    then
+      echo "The deployment ${deployment_name} in the resource group ${resource_group_name} failed"
+      exit 1
+    fi
+    sleep 5
+  done
 done
 
 # Create application gateway
@@ -115,25 +145,33 @@ cat > application-gateway-parameters.json << EOF
     }
   }
 EOF
-pids=""
 resource_group_names="${AZURE_DEFAULT_GROUP_NAME} ${AZURE_DEFAULT_GROUP_NAME_MANAGED_DISKS} \
   ${AZURE_DEFAULT_GROUP_NAME_WINDOWS} ${AZURE_DEFAULT_GROUP_NAME_WINDOWS_MANAGED_DISKS}"
+deployment_name="create-application-gateway"
 for resource_group_name in ${resource_group_names}
 do
-  {
-    azure group deployment create ${resource_group_name} --template-file ./bosh-cpi-src/ci/assets/azure/application-gateway.json --parameters-file ./application-gateway-parameters.json
-  } &
-  pids="$pids $!"
+  azure group deployment create --resource-group ${resource_group_name} --name ${deployment_name} --template-file ./bosh-cpi-src/ci/assets/azure/application-gateway.json --parameters-file ./application-gateway-parameters.json --nowait
+done
+for resource_group_name in ${resource_group_names}
+do
+  echo "Check whether the deployment ${deployment_name} in the resource group ${resource_group_name} succeeds"
+  while [ 1 ]
+  do
+    provisioning_state=$(azure group deployment show --resource-group ${resource_group_name} --name ${deployment_name} --json | jq .properties.provisioningState -r)
+    if [[ "${provisioning_state}" == "Succeeded" ]]
+    then
+      break
+    elif [[ "${provisioning_state}" == "Failed" ]]
+    then
+      echo "The deployment ${deployment_name} in the resource group ${resource_group_name} failed"
+      exit 1
+    fi
+    sleep 30
+  done
 done
 rm fake.domain.key
 rm fake.domain.crt
 rm fake.domain.pfx
-
-failed=false
-wait $pids || failed=true
-if [ $failed = true ]; then
-  exit 1
-fi
 
 # The public IP AzureCPICI-bosh and AzureCPICI-cf-bats are needed only in the additional resource groups
 resource_group_names="${AZURE_ADDITIONAL_GROUP_NAME} ${AZURE_ADDITIONAL_GROUP_NAME_MANAGED_DISKS} \
