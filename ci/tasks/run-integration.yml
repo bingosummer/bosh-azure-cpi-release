@@ -5,6 +5,7 @@ image_resource:
   source: {repository: boshcpi/azure-cpi-release}
 
 inputs:
+  - name: environment
   - name: bosh-cpi-src
   - name: stemcell
 
@@ -17,13 +18,6 @@ params:
   AZURE_CLIENT_ID:                            ""
   AZURE_CLIENT_SECRET:                        ""
   AZURE_TENANT_ID:                            ""
-  AZURE_VNET_NAME_FOR_INTEGRATION:            ""
-  AZURE_BOSH_SUBNET_NAME:                     ""
-  AZURE_BOSH_SECOND_SUBNET_NAME:              ""
-  AZURE_DEFAULT_SECURITY_GROUP:               ""
   SSH_PUBLIC_KEY:                             ""
   AZURE_APPLICATION_GATEWAY_NAME:             ""
-  AZURE_DEFAULT_GROUP_NAME:                   ""
-  AZURE_ADDITIONAL_GROUP_NAME:                ""
-  AZURE_STORAGE_ACCOUNT_NAME:                 ""
   AZURE_USE_MANAGED_DISKS:                    false
