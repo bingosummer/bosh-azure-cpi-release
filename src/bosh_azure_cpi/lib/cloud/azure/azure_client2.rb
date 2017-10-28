@@ -1270,10 +1270,6 @@ module Bosh::AzureCloud
     #
     # @param [String] resource_group_name - Name of resource group.
     # @param [Hash] nic_params            - Parameters for creating the network interface.
-    # @param [Hash] subnet                - The subnet which the network interface is bound to.
-    # @param [Hash] tags                  - The tags of the network interface.
-    # @param [Hash] load_balancer         - The load balancer which the network interface is bound to.
-    # @param [Hash] application_gateway   - The application gateway which the network interface is bound to.
     #
     #  ==== Params
     #
@@ -1285,6 +1281,10 @@ module Bosh::AzureCloud
     # * +:dns_servers                 - Array. DNS servers.
     # * +:public_ip                   - Hash. The public IP which the network interface is bound to.
     # * +:network_security_group      - Hash. The network security group which the network interface is bound to.
+    # * +:subnet                      - Hash. The subnet which the network interface is bound to.
+    # * +:tags                        - Hash. The tags of the network interface.
+    # * +:load_balancer               - Hash. The load balancer which the network interface is bound to.
+    # * +:application_gateway         - Hash. The application gateway which the network interface is bound to.
     # * +:application_security_groups - Array. The application security groups which the network interface is bound to.
     #
     # @return [Boolean]
@@ -1325,6 +1325,9 @@ module Bosh::AzureCloud
       asg_params = nic_params.fetch(:application_security_groups, [])
       for asg_param in asg_params
         application_security_groups.push({'id' => asg_param[:id]})
+      end
+      unless application_security_groups.empty?
+        interface['properties']['ipConfigurations'][0]['properties']['applicationSecurityGroups'] = application_security_groups
       end
 
       load_balancer = nic_params[:load_balancer]
