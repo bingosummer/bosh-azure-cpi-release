@@ -8,7 +8,6 @@ set -e
 : ${AZURE_CLIENT_ID:?}
 : ${AZURE_CLIENT_SECRET:?}
 : ${SSH_PUBLIC_KEY:?}
-: ${AZURE_APPLICATION_GATEWAY_NAME:?}
 : ${AZURE_APPLICATION_SECURITY_GROUP_NAME:?}
 : ${AZURE_APPLICATION_SECURITY_GROUP_TESTS_ENABLED:?}
 
@@ -22,6 +21,7 @@ export BOSH_AZURE_TENANT_ID=${AZURE_TENANT_ID}
 export BOSH_AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
 export BOSH_AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
 export BOSH_AZURE_LOCATION=$(echo ${metadata} | jq -e --raw-output ".location")
+export BOSH_AZURE_SSH_PUBLIC_KEY=${SSH_PUBLIC_KEY}
 export BOSH_AZURE_DEFAULT_RESOURCE_GROUP_NAME=$(echo ${metadata} | jq -e --raw-output ".default_resource_group_name")
 export BOSH_AZURE_ADDITIONAL_RESOURCE_GROUP_NAME=$(echo ${metadata} | jq -e --raw-output ".additional_resource_group_name")
 export BOSH_AZURE_STORAGE_ACCOUNT_NAME=$(echo ${metadata} | jq -e --raw-output ".storage_account_name")
@@ -32,8 +32,7 @@ export BOSH_AZURE_SECOND_SUBNET_NAME=$(echo ${metadata} | jq -e --raw-output ".s
 export BOSH_AZURE_DEFAULT_SECURITY_GROUP=$(echo ${metadata} | jq -e --raw-output ".default_security_group")
 export BOSH_AZURE_PRIMARY_PUBLIC_IP=$(echo ${metadata} | jq -e --raw-output ".public_ip_in_default_rg")
 export BOSH_AZURE_SECONDARY_PUBLIC_IP=$(echo ${metadata} | jq -e --raw-output ".public_ip_in_additional_rg")
-export BOSH_AZURE_SSH_PUBLIC_KEY=${SSH_PUBLIC_KEY}
-export BOSH_AZURE_APPLICATION_GATEWAY_NAME=${AZURE_APPLICATION_GATEWAY_NAME}
+export BOSH_AZURE_APPLICATION_GATEWAY_NAME=$(echo ${metadata} | jq -e --raw-output ".application_gateway_name")
 export BOSH_AZURE_APPLICATION_SECURITY_GROUP=${AZURE_APPLICATION_SECURITY_GROUP_NAME}
 
 az cloud set --name ${AZURE_ENVIRONMENT}

@@ -82,7 +82,6 @@ shared:
     params: &run-integration-params
       <<: *azure-environment-params
       SSH_PUBLIC_KEY:                                 {{ssh_public_key}}
-      AZURE_APPLICATION_GATEWAY_NAME:                 {{azure_application_gateway_name}}
       AZURE_APPLICATION_SECURITY_GROUP_NAME:          {{azure_application_security_group_name}}
       AZURE_APPLICATION_SECURITY_GROUP_TESTS_ENABLED: {{azure_application_security_group_tests_enabled}}
 
@@ -91,20 +90,6 @@ shared:
     file: bosh-cpi-src/ci/tasks/run-integration-windows.yml
     params: &run-integration-windows-params
       <<: *run-integration-params
-
-  - &create-application-gateway
-    task: create-application-gateway
-    file: bosh-cpi-src/ci/tasks/create-application-gateway.yml
-    params:
-      <<: *azure-environment-params
-      AZURE_APPLICATION_GATEWAY_NAME: {{azure_application_gateway_name}}
-
-  - &delete-application-gateway
-    task: delete-application-gateway
-    file: bosh-cpi-src/ci/tasks/delete-application-gateway.yml
-    params:
-      <<: *azure-environment-params
-      AZURE_APPLICATION_GATEWAY_NAME: {{azure_application_gateway_name}}
 
   - &create-application-security-group
     task: create-application-security-group
@@ -180,13 +165,11 @@ jobs:
         - {get: stemcell,         trigger: false, resource: azure-ubuntu-stemcell}
       - <<: *create-integration-environment
       - <<: *create-application-security-group
-      - <<: *create-application-gateway
       - <<: *run-integration
         params:
           <<: *run-integration-params
           AZURE_USE_MANAGED_DISKS: false
       - do:
-        - <<: *delete-application-gateway
         - <<: *delete-application-security-group
         - <<: *destroy-integration-environment
         ensure:
@@ -202,13 +185,11 @@ jobs:
         - {get: stemcell,         trigger: false, resource: azure-ubuntu-stemcell}
       - <<: *create-integration-environment
       - <<: *create-application-security-group
-      - <<: *create-application-gateway
       - <<: *run-integration
         params:
           <<: *run-integration-params
           AZURE_USE_MANAGED_DISKS: true
       - do:
-        - <<: *delete-application-gateway
         - <<: *delete-application-security-group
         - <<: *destroy-integration-environment
         ensure:
@@ -224,13 +205,11 @@ jobs:
         - {get: stemcell,         trigger: false, resource: azure-windows-stemcell}
       - <<: *create-integration-environment
       - <<: *create-application-security-group
-      - <<: *create-application-gateway
       - <<: *run-integration-windows
         params:
           <<: *run-integration-windows-params
           AZURE_USE_MANAGED_DISKS: false
       - do:
-        - <<: *delete-application-gateway
         - <<: *delete-application-security-group
         - <<: *destroy-integration-environment
         ensure:
@@ -246,13 +225,11 @@ jobs:
         - {get: stemcell,         trigger: false, resource: azure-windows-stemcell}
       - <<: *create-integration-environment
       - <<: *create-application-security-group
-      - <<: *create-application-gateway
       - <<: *run-integration-windows
         params:
           <<: *run-integration-windows-params
           AZURE_USE_MANAGED_DISKS: true
       - do:
-        - <<: *delete-application-gateway
         - <<: *delete-application-security-group
         - <<: *destroy-integration-environment
         ensure:
