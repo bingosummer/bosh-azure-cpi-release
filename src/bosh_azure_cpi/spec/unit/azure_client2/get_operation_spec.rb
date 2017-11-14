@@ -15,6 +15,7 @@ describe Bosh::AzureCloud::AzureClient2 do
   let(:tenant_id) { mock_azure_properties['tenant_id'] }
   let(:api_version) { AZURE_API_VERSION }
   let(:api_version_network) { AZURE_RESOURCE_PROVIDER_NETWORK }
+  let(:api_version_storage) { AZURE_RESOURCE_PROVIDER_STORAGE }
   let(:default_resource_group_name) { mock_azure_properties['resource_group_name'] }
   let(:resource_group_name) { "fake-resource-group-name" }
   let(:request_id) { "fake-request-id" }
@@ -811,7 +812,7 @@ describe Bosh::AzureCloud::AzureClient2 do
   end
 
   describe "#get_storage_account_by_name" do
-    let(:storage_account_uri) { "https://management.azure.com//subscriptions/#{subscription_id}/resourceGroups/#{default_resource_group_name}/providers/Microsoft.Storage/storageAccounts/#{storage_account_name}?api-version=#{api_version}" }
+    let(:storage_account_uri) { "https://management.azure.com//subscriptions/#{subscription_id}/resourceGroups/#{default_resource_group_name}/providers/Microsoft.Storage/storageAccounts/#{storage_account_name}?api-version=#{api_version_storage}" }
 
     context "if get operation returns retryable error code (returns 429)" do
       it "should raise error if it always returns 429" do
@@ -1182,7 +1183,7 @@ describe Bosh::AzureCloud::AzureClient2 do
   end
 
   describe "#list_storage_accounts" do
-    let(:storage_accounts_uri) { "https://management.azure.com//subscriptions/#{subscription_id}/resourceGroups/#{default_resource_group_name}/providers/Microsoft.Storage/storageAccounts?api-version=#{api_version}" }
+    let(:storage_accounts_uri) { "https://management.azure.com//subscriptions/#{subscription_id}/resourceGroups/#{default_resource_group_name}/providers/Microsoft.Storage/storageAccounts?api-version=#{api_version_storage}" }
 
     context "when token is valid, getting response succeeds" do
       context "if response body is null" do
@@ -1289,10 +1290,10 @@ describe Bosh::AzureCloud::AzureClient2 do
   end
 
   describe "#get_virtual_machine_by_name" do
-    let(:api_version) { AZURE_API_VERSION }
-    let(:api_version_compute) { AZURE_RESOURCE_PROVIDER_COMPUTE }
+    let(:api_version_storage) { AZURE_API_VERSION }
+    let(:api_version_storage_compute) { AZURE_RESOURCE_PROVIDER_COMPUTE }
     let(:vm_name) { "fake-vm-name" }
-    let(:vm_uri) { "https://management.azure.com//subscriptions/#{subscription_id}/resourceGroups/#{resource_group_name}/providers/Microsoft.Compute/virtualMachines/#{vm_name}?api-version=#{api_version_compute}" }
+    let(:vm_uri) { "https://management.azure.com//subscriptions/#{subscription_id}/resourceGroups/#{resource_group_name}/providers/Microsoft.Compute/virtualMachines/#{vm_name}?api-version=#{api_version_storage_compute}" }
 
     context "when the response body is null" do
       it "should return null" do
@@ -1837,7 +1838,7 @@ describe Bosh::AzureCloud::AzureClient2 do
   end
 
   describe "#get_storage_account_keys_by_name" do
-    let(:storage_account_list_keys_uri) { "https://management.azure.com//subscriptions/#{subscription_id}/resourceGroups/#{default_resource_group_name}/providers/Microsoft.Storage/storageAccounts/#{storage_account_name}/listKeys?api-version=#{api_version}" }
+    let(:storage_account_list_keys_uri) { "https://management.azure.com//subscriptions/#{subscription_id}/resourceGroups/#{default_resource_group_name}/providers/Microsoft.Storage/storageAccounts/#{storage_account_name}/listKeys?api-version=#{api_version_storage}" }
     let(:storage_account_list_keys_response_body) {
       {
         "key1" => "fake-key-1",
