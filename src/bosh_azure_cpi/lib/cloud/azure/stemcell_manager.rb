@@ -147,7 +147,7 @@ module Bosh::AzureCloud
 
         return true if entities[0]['Status'] == STEMCELL_STATUS_SUCCESS
 
-        start_time   = Time.parse(entities[0]['Timestamp'])
+        start_time   = entities[0]['Timestamp']
         current_time = Time.now
         if (current_time - start_time) > timeout
           @logger.info("The timestamp of the record is #{start_time}, current time is #{current_time}")
