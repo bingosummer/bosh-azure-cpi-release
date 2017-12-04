@@ -104,6 +104,7 @@ module Bosh::AzureCloud
     EPHEMERAL_DISK_POSTFIX          = 'ephemeral-disk'
     STEMCELL_PREFIX                 = 'bosh-stemcell'
     LIGHT_STEMCELL_PREFIX           = 'bosh-light-stemcell'
+    USER_IMAGE_PREFIX               = 'bosh-user-image'
     DISK_ID_TAG_PREFIX              = 'disk-id'
     LIGHT_STEMCELL_PROPERTY         = 'image'
     AZURE_SCSI_HOST_DEVICE_ID       = '{f8b3781b-1e82-4818-a1c3-63d806ec15bb}'

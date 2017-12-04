@@ -1989,6 +1989,8 @@ module Bosh::AzureCloud
         user_image[:tags]     = result['tags']
         properties = result['properties']
         user_image[:provisioning_state] = properties['provisioningState']
+        user_image[:source_uri] = properties['storageProfile']['osDisk']['blobUri']
+        user_image[:storage_account_type] = properties['storageProfile']['osDisk']['storageAccountType']
       end
       user_image
     end

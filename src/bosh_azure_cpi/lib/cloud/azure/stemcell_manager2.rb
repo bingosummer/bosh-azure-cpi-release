@@ -11,7 +11,7 @@ module Bosh::AzureCloud
     def delete_stemcell(name)
       @logger.info("delete_stemcell(#{name})")
 
-      user_images = @azure_client2.list_user_images().select{ |item| item[:name] =~ /^#{name}/ }
+      user_images = @azure_client2.list_user_images().select{ |user_image| user_image[:source_uri].end_with?("#{name}.vhd") }
       user_images.each do |user_image|
         user_image_name = user_image[:name]
         @logger.info("Delete user image `#{user_image_name}'")
@@ -56,9 +56,11 @@ module Bosh::AzureCloud
 
     def get_user_image(stemcell_name, storage_account_type, location)
       @logger.info("get_user_image(#{stemcell_name}, #{storage_account_type}, #{location})")
-      user_image_name = "#{stemcell_name}-#{storage_account_type}-#{location}"
-      user_image = @azure_client2.get_user_image_by_name(user_image_name)
-      return user_image unless user_image.nil?
+      user_images = @azure_client2.list_user_images().select{ |user_image|
+        user_image[:location] == location && user_image[:storage_account_type] == storage_account_type && user_image[:source_uri].end_with?("#{stemcell_name}.vhd")
+      }
+      cloud_error("get_user_image: There are more than one user image whose location, storage_account_type and source_uri are same") if user_images.size > 1
+      return user_images[0] unless user_images.empty?
 
       default_storage_account = @storage_account_manager.default_storage_account
       default_storage_account_name = default_storage_account[:name]
@@ -114,18 +116,19 @@ module Bosh::AzureCloud
         end
       end
 
-      stemcell_info = get_stemcell_info(storage_account_name, stemcell_name)
-      user_image_params = {
-        :name                => user_image_name,
-        :location            => location,
-        :tags                => stemcell_info.metadata,
-        :os_type             => stemcell_info.os_type,
-        :source_uri          => stemcell_info.uri,
-        :account_type        => storage_account_type
-      }
       begin
-        mutex = FileMutex.new("#{CPI_LOCK_CREATE_USER_IMAGE}-#{user_image_name}", @logger)
+        mutex = FileMutex.new("#{CPI_LOCK_CREATE_USER_IMAGE}-#{stemcell_name}-#{storage_account_type}-#{location}", @logger)
         if mutex.lock
+          user_image_name = "#{USER_IMAGE_PREFIX}-#{SecureRandom.uuid}"
+          stemcell_info = get_stemcell_info(storage_account_name, stemcell_name)
+          user_image_params = {
+            :name                => user_image_name,
+            :location            => location,
+            :tags                => stemcell_info.metadata,
+            :os_type             => stemcell_info.os_type,
+            :source_uri          => stemcell_info.uri,
+            :account_type        => storage_account_type
+          }
           @azure_client2.create_user_image(user_image_params)
           mutex.unlock
         else
@@ -133,12 +136,14 @@ module Bosh::AzureCloud
         end
       rescue => e
         mark_deleting_locks
-        cloud_error("get_user_image: Failed to create the user image `#{user_image_name}': #{e.inspect}\n#{e.backtrace.join("\n")}")
+        cloud_error("get_user_image: Failed to create the user image in the location `#{location}' for the stemcell `#{stemcell_name}' with the storage account type `#{storage_account_type}': #{e.inspect}\n#{e.backtrace.join("\n")}")
       end
 
-      user_image = @azure_client2.get_user_image_by_name(user_image_name)
-      cloud_error("get_user_image: Can not find a user image with the name `#{user_image_name}'") if user_image.nil?
-      user_image
+      user_images = @azure_client2.list_user_images().select{ |user_image|
+        user_image[:location] == location && user_image[:storage_account_type] == storage_account_type && user_image[:source_uri].end_with?("#{stemcell_name}.vhd")
+      }
+      cloud_error("get_user_image: Can not find a user image in the location `#{location}' for the stemcell `#{stemcell_name}' with the storage account type `#{storage_account_type}'") if user_images.empty?
+      user_images[0]
     end
   end
 end
