@@ -244,6 +244,11 @@ module Bosh::AzureCloud
       return url, api_version
     end
 
+    # https://docs.microsoft.com/en-us/azure/active-directory/managed-service-identity/tutorial-linux-vm-access-arm
+    def get_msi_endpoint(azure_properties)
+      return "http://169.254.169.254/metadata/identity/oauth2/token", "2018-02-01"
+    end
+
     def get_service_principal_certificate_path
       "#{bosh_jobs_dir}/#{SERVICE_PRINCIPAL_CERTIFICATE_RELATIVE_PATH}"
     end

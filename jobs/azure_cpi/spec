@@ -67,6 +67,9 @@ properties:
   azure.enable_vm_boot_diagnostics:
     description: Enable VM boot diagnostics
     default: true
+  azure.managed_service_identity.enabled:
+    description: "Experimental: Use managed service identity (MSI) to get tokens"
+    default: false
   azure.azure_stack.domain:
     description: The domain for your AzureStack deployment
     default: local.azurestack.external
