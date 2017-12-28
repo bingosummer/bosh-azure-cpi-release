@@ -2135,9 +2135,9 @@ module Bosh::AzureCloud
       body
     end
 
-    def http(uri)
+    def http(uri, use_ssl = true)
       http = Net::HTTP.new(uri.host, uri.port)
-      http.use_ssl = true
+      http.use_ssl = true && use_ssl
       if @azure_properties['environment'] == ENVIRONMENT_AZURESTACK
         # The CA cert is only specified for the requests to AzureStack domain. If specified for other domains, the request will fail.
         http.ca_file = get_ca_cert_path if uri.host.include?(@azure_properties['azure_stack']['domain'])
@@ -2152,43 +2152,56 @@ module Bosh::AzureCloud
     # https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-protocols-oauth-service-to-service
     def get_token(force_refresh = false)
       if @token.nil? || (Time.at(@token['expires_on'].to_i) - Time.now) <= 0 || force_refresh
+        use_msi = @azure_properties['managed_service_identity']['enabled']
         @logger.info("get_token - trying to get/refresh Azure authentication token")
-        endpoint, api_version = get_azure_authentication_endpoint_and_api_version(@azure_properties)
-        params = {}
-        params['api-version'] = api_version
+        unless use_msi
+          endpoint, api_version = get_azure_authentication_endpoint_and_api_version(@azure_properties)
+          params = {}
+          params['api-version'] = api_version
 
-        uri = URI(endpoint)
-        uri.query = URI.encode_www_form(params)
+          uri = URI(endpoint)
+          uri.query = URI.encode_www_form(params)
 
-        client_id = @azure_properties['client_id']
-        params = {
-          'grant_type' => 'client_credentials',
-          'client_id'  => client_id,
-          'resource'   => get_token_resource(@azure_properties),
-          'scope'      => 'user_impersonation'
-        }
+          client_id = @azure_properties['client_id']
+          params = {
+            'grant_type' => 'client_credentials',
+            'client_id'  => client_id,
+            'resource'   => get_token_resource(@azure_properties),
+            'scope'      => 'user_impersonation'
+          }
 
-        if @azure_properties.has_key?('client_secret')
-          params['client_secret'] = @azure_properties['client_secret']
+          if @azure_properties.has_key?('client_secret')
+            params['client_secret'] = @azure_properties['client_secret']
+          else
+            params['client_assertion_type'] = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
+            params['client_assertion']      = get_jwt_assertion(endpoint, client_id)
+          end
         else
-          params['client_assertion_type'] = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
-          params['client_assertion']      = get_jwt_assertion(endpoint, client_id)
+          endpoint = get_msi_endpoint(@azure_properties)
+          uri = URI(endpoint)
+          params = {
+            'resource' => get_token_resource(@azure_properties)
+          }
         end
+
+        @logger.debug("get_token - authentication_endpoint: #{uri}")
+        request = Net::HTTP::Post.new(uri.request_uri)
+        if use_msi
+          request['Metadata'] = true
+        else
+          request['Content-Type'] = 'application/x-www-form-urlencoded'
+        end
+        request = merge_http_common_headers(request)
+        @logger.debug("get_token - request.header:")
+        request.each_header { |k,v| @logger.debug("\t#{k} = #{v}") }
+        @logger.debug("get_token - request body:\n#{redact_credentials_in_request_body(params)}")
+        request.body = URI.encode_www_form(params)
 
         retry_count = 0
         retry_after = 5
 
         begin
-          @logger.debug("get_token - authentication_endpoint: #{uri}")
-          request = Net::HTTP::Post.new(uri.request_uri)
-          request['Content-Type'] = 'application/x-www-form-urlencoded'
-          request = merge_http_common_headers(request)
-          request.body = URI.encode_www_form(params)
-          @logger.debug("get_token - request.header:")
-          request.each_header { |k,v| @logger.debug("\t#{k} = #{v}") }
-          @logger.debug("get_token - request body:\n#{redact_credentials_in_request_body(params)}")
-
-          response = http(uri).request(request)
+          response = http(uri, !use_msi).request(request)
         rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNRESET => e
           if retry_count < AZURE_MAX_RETRY_COUNT
             @logger.warn("get_token - Fail for an error #{e.class.name}. Will retry after #{retry_after} seconds.")
@@ -2228,9 +2241,9 @@ module Bosh::AzureCloud
         if response.code.to_i == HTTP_CODE_OK
           @token = JSON(response.body)
         elsif response.code.to_i == HTTP_CODE_UNAUTHORIZED
-          raise AzureError, "get_token - http code: #{response.code}. Azure authentication failed: Invalid tenant id, client id or client secret. Error message: #{response.body}"
+          raise AzureError, "get_token - http code: #{response.code}. Azure authentication failed: Invalid tenant id, client id or client secret/certificate. Error message: #{response.body}"
         elsif response.code.to_i == HTTP_CODE_BADREQUEST
-          raise AzureError, "get_token - http code: #{response.code}. Azure authentication failed: Bad request. Please assure no typo in values of tenant id, client id or client secret. Error message: #{response.body}"
+          raise AzureError, "get_token - http code: #{response.code}. Azure authentication failed: Bad request. Please assure no typo in values of tenant id, client id or client secret/certificate. Error message: #{response.body}"
         else
           raise AzureError, "get_token - http code: #{response.code}. Error message: #{response.body}"
         end

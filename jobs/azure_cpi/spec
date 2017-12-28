@@ -61,6 +61,12 @@ properties:
   azure.keep_failed_vms:
     description: Enable keeping the VM which failed in provisioning for troubleshooting
     default: false
+  azure.managed_service_identity.enabled:
+    description: "Experimental: Use managed service identity (MSI) to get tokens"
+    default: false
+  azure.managed_service_identity.port:
+    description: The port to retrieve MSI tokens
+    default: 50342
   azure.azure_stack.domain:
     description: The domain for your AzureStack deployment
     default: local.azurestack.external

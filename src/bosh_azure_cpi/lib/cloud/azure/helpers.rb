@@ -233,6 +233,14 @@ module Bosh::AzureCloud
       return url, api_version
     end
 
+    def get_msi_endpoint(azure_properties)
+      url = nil
+      if azure_properties['managed_service_identity']['enabled']
+        url = "http://localhost:#{azure_properties['managed_service_identity']['port']}/oauth2/token"
+      end
+      url
+    end
+
     def get_service_principal_certificate_path
       "#{bosh_jobs_dir}/#{SERVICE_PRINCIPAL_CERTIFICATE_RELATIVE_PATH}"
     end
