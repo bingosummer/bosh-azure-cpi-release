@@ -19,11 +19,6 @@ require 'open3'
 require 'etc'
 require 'fcntl'
 require 'jwt'
-# Use resolv-replace.rb to replace the libc resolver
-# Reference:
-#  https://makandracards.com/ninjaconcept/30815-fixing-socketerror-getaddrinfo-name-or-service-not-known-with-ruby-s-resolv-replace-rb
-#  http://www.subelsky.com/2014/05/fixing-socketerror-getaddrinfo-name-or.html
-require "resolv-replace.rb"
 require 'net/http'
 
 # Load Azure Libs before cloud/azure/* in case they are used by the latter
