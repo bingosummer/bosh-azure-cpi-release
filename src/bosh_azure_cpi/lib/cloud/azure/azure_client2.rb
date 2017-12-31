@@ -1309,14 +1309,15 @@ module Bosh::AzureCloud
     end
 
     # Get a load balancer's information
-    # @param [String] name - Name of load balancer.
+    # @param [String] resource_group_name - Name of resource group.
+    # @param [String] name                - Name of load balancer.
     #
     # @return [Hash]
     #
     # @See https://docs.microsoft.com/en-us/rest/api/loadbalancer/get-information-about-a-load-balancer
     #
-    def get_load_balancer_by_name(name)
-      url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_LOAD_BALANCERS, name: name)
+    def get_load_balancer_by_name(resource_group_name, name)
+      url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_LOAD_BALANCERS, resource_group_name: resource_group_name, name: name)
       get_load_balancer(url)
     end
 
@@ -1604,14 +1605,15 @@ module Bosh::AzureCloud
     # Network/Application Gateway
 
     # Get an application gateway's information
-    # @param [String] name - Name of application gateway.
+    # @param [String] resource_group_name - Name of resource group.
+    # @param [String] name                - Name of application gateway.
     #
     # @return [Hash]
     #
     # @See https://docs.microsoft.com/en-us/rest/api/application-gateway/applicationgateways/get
     #
-    def get_application_gateway_by_name(name)
-      url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_APPLICATION_GATEWAYS, name: name)
+    def get_application_gateway_by_name(resource_group_name, name)
+      url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_APPLICATION_GATEWAYS, resource_group_name: resource_group_name, name: name)
       get_application_gateway(url)
     end
 

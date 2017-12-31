@@ -380,21 +380,37 @@ module Bosh::AzureCloud
       public_ip
     end
 
-    def get_load_balancer(resource_pool)
+    def get_load_balancer(resource_pool, network)
       load_balancer = nil
       unless resource_pool['load_balancer'].nil?
         load_balancer_name = resource_pool['load_balancer']
-        load_balancer = @azure_client2.get_load_balancer_by_name(load_balancer_name)
+        # The resource group which the load balancer belongs to can be specified in networks and global configuration (ordered by priority)
+        resource_group_name = network.resource_group_name
+        load_balancer = @azure_client2.get_load_balancer_by_name(resource_group_name, load_balancer_name)
+        # network.resource_group_name may return the default resource group name in global configurations. See network.rb.
+        default_resource_group_name = @azure_properties['resource_group_name']
+        if load_balancer.nil? && resource_group_name != default_resource_group_name
+          @logger.info("Cannot find the load balancer `#{load_balancer_name}' in the resource group `#{resource_group_name}', trying to search it in the default resource group `#{default_resource_group_name}'")
+          load_balancer = @azure_client2.get_load_balancer_by_name(default_resource_group_name, load_balancer_name)
+        end
         cloud_error("Cannot find the load balancer `#{load_balancer_name}'") if load_balancer.nil?
       end
       load_balancer
     end
 
-    def get_application_gateway(resource_pool)
+    def get_application_gateway(resource_pool, network)
       application_gateway = nil
       unless resource_pool['application_gateway'].nil?
         application_gateway_name = resource_pool['application_gateway']
-        application_gateway = @azure_client2.get_application_gateway_by_name(application_gateway_name)
+        # The resource group which the application gateway belongs to can be specified in networks and global configuration (ordered by priority)
+        resource_group_name = network.resource_group_name
+        application_gateway = @azure_client2.get_application_gateway_by_name(resource_group_name, application_gateway_name)
+        # network.resource_group_name may return the default resource group name in global configurations. See network.rb.
+        default_resource_group_name = @azure_properties['resource_group_name']
+        if application_gateway.nil? && resource_group_name != default_resource_group_name
+          @logger.info("Cannot find the application gateway `#{application_gateway_name}' in the resource group `#{resource_group_name}', trying to search it in the default resource group `#{default_resource_group_name}'")
+          application_gateway = @azure_client2.get_application_gateway_by_name(default_resource_group_name, application_gateway_name)
+        end
         cloud_error("Cannot find the application gateway `#{application_gateway_name}'") if application_gateway.nil?
       end
       application_gateway
@@ -434,8 +450,8 @@ module Bosh::AzureCloud
         if index == 0
           nic_params[:public_ip] = public_ip
           nic_params[:tags] = primary_nic_tags
-          nic_params[:load_balancer] = get_load_balancer(resource_pool)
-          nic_params[:application_gateway] = get_application_gateway(resource_pool)
+          nic_params[:load_balancer] = get_load_balancer(resource_pool, network)
+          nic_params[:application_gateway] = get_application_gateway(resource_pool, network)
         else
           nic_params[:public_ip] = nil
           nic_params[:tags] = AZURE_TAGS
