@@ -97,6 +97,12 @@
       update_blobstore_options(options_params, 's3_port', 'port')
       update_blobstore_options(options_params, 'host')
       update_blobstore_options(options_params, 's3_force_path_style')
+    elsif p('blobstore.provider') == 'azureblob'
+      options_params = {
+        'container_name' => p('blobstore.bucket_name'),
+        'storage_account_name' => p(['agent.blobstore.storage_account_name', 'blobstore.storage_account_name']),
+        'storage_account_access_key' => p(['agent.blobstore.storage_account_access_key', 'blobstore.storage_account_access_key'])
+      }
     elsif p('blobstore.provider') == 'local'
       options_params = {
         'blobstore_path' => p('blobstore.path')
@@ -111,6 +117,7 @@
     blobstore_params['options'] = options_params
     params['cloud']['properties']['agent']['blobstore'] = blobstore_params
   end
+
   if_p('agent.mbus') do |mbus|
     params['cloud']['properties']['agent']['mbus'] = mbus
   end.else_if_p('nats') do
