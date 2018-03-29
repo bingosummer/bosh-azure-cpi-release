@@ -289,8 +289,8 @@ module Bosh::AzureCloud
     #
     # @param  [Hash] vm_resources requested cpu, ram, and ephemeral_disk_size
     # @return [Hash] Azure specific cloud_properties describing instance (e.g. instance_type)
-    def calculate_vm_cloud_properties(vm_resources)
-      @logger.info("calculate_vm_cloud_properties(#{vm_resources})")
+    def calculate_vm_cloud_properties(vm_resources, instance_id = nil)
+      @logger.info("calculate_vm_cloud_properties(#{vm_resources}, #{instance_id})")
       location = azure_properties['location']
       cloud_error("Missing the property `location' in the global configuration") if location.nil?
 
@@ -301,7 +301,18 @@ module Bosh::AzureCloud
         raise "Missing VM cloud properties: #{missing_keys.join(', ')}"
       end
 
-      available_vm_sizes = @azure_client2.list_available_virtual_machine_sizes(location)
+      resource_group_name = nil
+      vm_name = nil
+      availability_set_name = nil
+      unless instance_id.nil?
+        instance_id = InstanceId.parse(instance_id, azure_properties)
+        resource_group_name = instance_id.resource_group_name()
+        vm_name = instance_id.vm_name()
+        vm = @azure_client2.get_virtual_machine_by_name(resource_group_name, vm_name)
+        availability_set = vm[:availability_set]
+        availability_set_name = availability_set[:name] unless availability_set.nil?
+      end
+      available_vm_sizes = @azure_client2.list_available_virtual_machine_sizes(location, resource_group_name, vm_name, availability_set_name)
       instance_type = @instance_type_mapper.map(vm_resources, available_vm_sizes)
       {
         'instance_type' => instance_type,

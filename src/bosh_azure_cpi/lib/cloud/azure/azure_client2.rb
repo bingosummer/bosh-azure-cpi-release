@@ -380,22 +380,54 @@ module Bosh::AzureCloud
     #
     # @return [Array]
     #
-    # @See https://docs.microsoft.com/en-us/rest/api/compute/virtualmachines/virtualmachines-list-sizes-region
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/preview/2016-04-30-preview/compute.json
     #
-    def list_available_virtual_machine_sizes(location)
+    def list_available_virtual_machine_sizes(location, resource_group_name = nil, vm_name = nil, availability_set_name = nil)
       vm_sizes = []
+
+      vm_sizes_by_location = []
       url =  "/subscriptions/#{URI.escape(@azure_properties['subscription_id'])}"
       url += "/providers/#{REST_API_PROVIDER_COMPUTE}"
       url += "/locations/#{location}"
       url += "/#{REST_API_VM_SIZES}"
       result = get_resource_by_id(url)
-
       unless result.nil? || result["value"].nil?
         result["value"].each do |value|
           vm_size = parse_vm_size(value)
-          vm_sizes << vm_size
+          vm_sizes_by_location << vm_size
+        end
+        @logger.info("list_available_virtual_machine_sizes: vm_sizes_by_location: #{vm_sizes_by_location}")
+        vm_sizes = vm_sizes_by_location
+      end
+
+      unless vm_name.nil?
+        vm_sizes_by_vm_name = []
+        url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_VIRTUAL_MACHINES, resource_group_name: resource_group_name, name: vm_name, others: REST_API_VM_SIZES)
+        result = get_resource_by_id(url)
+        unless result.nil? || result["value"].nil?
+          result["value"].each do |value|
+            vm_size = parse_vm_size(value)
+            vm_sizes_by_vm_name << vm_size
+          end
+          @logger.info("list_available_virtual_machine_sizes: vm_sizes_by_vm_name: #{vm_sizes_by_vm_name}")
+          vm_sizes = vm_sizes & vm_sizes_by_vm_name
         end
       end
+
+      unless availability_set_name.nil?
+        vm_sizes_by_availability_set_name = []
+        url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_AVAILABILITY_SETS, resource_group_name: resource_group_name, name: availability_set_name, others: REST_API_VM_SIZES)
+        result = get_resource_by_id(url)
+        unless result.nil? || result["value"].nil?
+          result["value"].each do |value|
+            vm_size = parse_vm_size(value)
+            vm_sizes_by_availability_set_name << vm_size
+          end
+          @logger.info("list_available_virtual_machine_sizes: vm_sizes_by_availability_set_name: #{vm_sizes_by_availability_set_name}")
+          vm_sizes = vm_sizes & vm_sizes_by_availability_set_name
+        end
+      end
+
       vm_sizes
     end
 
