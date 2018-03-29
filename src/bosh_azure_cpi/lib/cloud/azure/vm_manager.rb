@@ -105,7 +105,7 @@ module Bosh::AzureCloud
 
       # When availability_zone is specified, VM won't be in any availability set;
       # Otherwise, VM can be in an availability set specified by availability_set or env['bosh']['group']
-      availability_set_name = resource_pool['availability_zone'].nil? ? get_availability_set_name(resource_pool, env) : nil
+      availability_set_name = resource_pool['availability_zone'].nil? ? get_availability_set_name(resource_pool, env, resource_group_name) : nil
 
       # Store the availability set name in the tags of the NIC
       primary_nic_tags.merge!({'availability_set' => availability_set_name}) unless availability_set_name.nil?
@@ -450,7 +450,7 @@ module Bosh::AzureCloud
       end
     end
 
-    def get_availability_set_name(resource_pool, env)
+    def get_availability_set_name(resource_pool, env, resource_group_name)
       availability_set_name = resource_pool.fetch('availability_set', nil)
       if availability_set_name.nil?
         unless env.nil? || env['bosh'].nil? || env['bosh']['group'].nil?
@@ -467,7 +467,24 @@ module Bosh::AzureCloud
           end
         end
       end
+      return nil if availability_set_name.nil?
 
+      availability_set = @azure_client2.get_availability_set_by_name(resource_group_name, availability_set_name)
+      return availability_set_name if availability_set.nil?
+
+      available_vm_sizes = @azure_client2.list_available_virtual_machine_sizes_by_availability_set(resource_group_name, availability_set_name)
+      vm_size = resource_pool['instance_type']
+      unless available_vm_sizes.include?(vm_size)
+        if resource_pool.has_key?('load_balancer') # How about Application Gateway?
+          load_balancer = @azure_client2.get_load_balancer_by_name(resource_pool['load_balancer'])
+          if load_balancer['sku'] == 'Basic'
+            cloud_error("The virtual machine size `#{vm_size}' can NOT be used to create a new virtual machine in an existing availability set `#{availability_set_name}'.")
+          end
+        end
+        md = Digest::MD5.hexdigest(availability_set_name)
+        index = 0 - (availability_set_name.length < 40 ? availability_set_name.length : 40)
+        availability_set_name = "az-#{md}-#{availability_set_name[index..-1]}"
+      end
       availability_set_name
     end
 

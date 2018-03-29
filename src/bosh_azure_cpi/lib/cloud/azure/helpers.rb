@@ -13,6 +13,10 @@ module Bosh::AzureCloud
     ENVIRONMENT_AZURESTACK        = 'AzureStack'
     ENVIRONMENT_AZUREGermanCloud  = 'AzureGermanCloud'
 
+    # The Azure Rest API Specs
+    # COMPUTE: https://github.com/Azure/azure-rest-api-specs/tree/master/specification/compute/resource-manager/Microsoft.Compute
+    # NETWORK: https://github.com/Azure/azure-rest-api-specs/tree/master/specification/network/resource-manager/Microsoft.Network
+    # STORAGE: https://github.com/Azure/azure-rest-api-specs/tree/master/specification/storage/resource-manager/Microsoft.Storage
     AZURE_ENVIRONMENTS = {
       ENVIRONMENT_AZURECLOUD => {
         'resourceManagerEndpointUrl' => 'https://management.azure.com/',
@@ -30,7 +34,7 @@ module Bosh::AzureCloud
         'activeDirectoryEndpointUrl' => 'https://login.chinacloudapi.cn',
         'apiVersion' => {
           AZURE_RESOURCE_PROVIDER_COMPUTE          => '2016-04-30-preview',
-          AZURE_RESOURCE_PROVIDER_NETWORK          => '2015-06-15',
+          AZURE_RESOURCE_PROVIDER_NETWORK          => '2017-09-01',
           AZURE_RESOURCE_PROVIDER_STORAGE          => '2015-06-15',
           AZURE_RESOURCE_PROVIDER_GROUP            => '2016-06-01',
           AZURE_RESOURCE_PROVIDER_ACTIVEDIRECTORY  => '2015-06-15'
@@ -41,16 +45,7 @@ module Bosh::AzureCloud
         'activeDirectoryEndpointUrl' => 'https://login.microsoftonline.com',
         'apiVersion' => {
           AZURE_RESOURCE_PROVIDER_COMPUTE          => '2016-04-30-preview',
-          AZURE_RESOURCE_PROVIDER_NETWORK          => '2015-06-15',
-          AZURE_RESOURCE_PROVIDER_STORAGE          => '2015-06-15',
-          AZURE_RESOURCE_PROVIDER_GROUP            => '2016-06-01',
-          AZURE_RESOURCE_PROVIDER_ACTIVEDIRECTORY  => '2015-06-15'
-        }
-      },
-      ENVIRONMENT_AZURESTACK => {
-        'apiVersion' => {
-          AZURE_RESOURCE_PROVIDER_COMPUTE          => '2015-06-15',
-          AZURE_RESOURCE_PROVIDER_NETWORK          => '2015-06-15',
+          AZURE_RESOURCE_PROVIDER_NETWORK          => '2017-09-01',
           AZURE_RESOURCE_PROVIDER_STORAGE          => '2015-06-15',
           AZURE_RESOURCE_PROVIDER_GROUP            => '2016-06-01',
           AZURE_RESOURCE_PROVIDER_ACTIVEDIRECTORY  => '2015-06-15'
@@ -61,6 +56,15 @@ module Bosh::AzureCloud
         'activeDirectoryEndpointUrl' => 'https://login.microsoftonline.de',
         'apiVersion' => {
           AZURE_RESOURCE_PROVIDER_COMPUTE          => '2016-04-30-preview',
+          AZURE_RESOURCE_PROVIDER_NETWORK          => '2017-09-01',
+          AZURE_RESOURCE_PROVIDER_STORAGE          => '2015-06-15',
+          AZURE_RESOURCE_PROVIDER_GROUP            => '2016-06-01',
+          AZURE_RESOURCE_PROVIDER_ACTIVEDIRECTORY  => '2015-06-15'
+        }
+      },
+      ENVIRONMENT_AZURESTACK => {
+        'apiVersion' => {
+          AZURE_RESOURCE_PROVIDER_COMPUTE          => '2015-06-15',
           AZURE_RESOURCE_PROVIDER_NETWORK          => '2015-06-15',
           AZURE_RESOURCE_PROVIDER_STORAGE          => '2015-06-15',
           AZURE_RESOURCE_PROVIDER_GROUP            => '2016-06-01',

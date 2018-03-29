@@ -375,10 +375,10 @@ describe Bosh::AzureCloud::AzureClient2 do
       :headers => {})
   end
 
-  describe "#list_available_virtual_machine_sizes" do
+  describe "#list_available_virtual_machine_sizes_by_location" do
     let(:location) { "fake-location" }
-    let(:list_available_virtual_machine_sizes_uri) { "https://management.azure.com//subscriptions/#{subscription_id}/providers/Microsoft.Compute/locations/#{location}/vmSizes?api-version=#{AZURE_RESOURCE_PROVIDER_COMPUTE}" }
-    let(:list_available_virtual_machine_sizes_response_body) {
+    let(:list_available_virtual_machine_sizes_by_location_uri) { "https://management.azure.com//subscriptions/#{subscription_id}/providers/Microsoft.Compute/locations/#{location}/vmSizes?api-version=#{AZURE_RESOURCE_PROVIDER_COMPUTE}" }
+    let(:list_available_virtual_machine_sizes_by_location_response_body) {
       {
         "value" => [
           {
@@ -416,22 +416,22 @@ describe Bosh::AzureCloud::AzureClient2 do
     }
     context "when token is valid, getting response succeeds" do
       it "should return null if response body is null" do
-        stub_request(:get, list_available_virtual_machine_sizes_uri).to_return(
+        stub_request(:get, list_available_virtual_machine_sizes_by_location_uri).to_return(
           :status => 200,
           :body => '',
           :headers => {})
         expect(
-          azure_client2.list_available_virtual_machine_sizes(location)
+          azure_client2.list_available_virtual_machine_sizes_by_location(location)
         ).to eq([])
       end
 
       it "should return the resource if response body is not null" do
-        stub_request(:get, list_available_virtual_machine_sizes_uri).to_return(
+        stub_request(:get, list_available_virtual_machine_sizes_by_location_uri).to_return(
           :status => 200,
-          :body => list_available_virtual_machine_sizes_response_body.to_json,
+          :body => list_available_virtual_machine_sizes_by_location_response_body.to_json,
           :headers => {})
         expect(
-          azure_client2.list_available_virtual_machine_sizes(location)
+          azure_client2.list_available_virtual_machine_sizes_by_location(location)
         ).to eq(fake_vm_size_list)
       end
     end
