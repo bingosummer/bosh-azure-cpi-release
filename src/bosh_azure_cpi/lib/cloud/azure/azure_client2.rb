@@ -36,9 +36,8 @@ module Bosh::AzureCloud
     HTTP_CODE_LENGTHREQUIRED      = 411
     HTTP_CODE_PRECONDITIONFAILED  = 412
 
-    # https://azure.microsoft.com/en-us/documentation/articles/best-practices-retry-service-specific/#more-information-6
-    # Error code 429 is not documented in the url above, but it is a code for throttling error. Add it for issue https://github.com/cloudfoundry-incubator/bosh-azure-cpi-release/issues/179
-    AZURE_RETRY_ERROR_CODES       = [408, 429, 500, 502, 503, 504]
+    # https://docs.microsoft.com/en-us/azure/architecture/best-practices/retry-service-specific#general-rest-and-retry-guidelines
+    AZURE_RETRY_ERROR_CODES_REST  = [408, 429, 500, 502, 503, 504]
 
     REST_API_PROVIDER_COMPUTE            = 'Microsoft.Compute'
     REST_API_VIRTUAL_MACHINES            = 'virtualMachines'
@@ -2117,9 +2116,13 @@ module Bosh::AzureCloud
           request.each_header { |k,v| @logger.debug("\t#{k} = #{v}") }
         end
 
+        # https://docs.microsoft.com/en-us/azure/architecture/best-practices/retry-service-specific#azure-active-directory
+        # https://docs.microsoft.com/en-us/azure/active-directory/managed-service-identity/how-to-use-vm-token#retry-guidance
+        max_retry = 5
+        slots = [0, 2, 6, 14, 30]
+
         retry_count = 0
         retry_after = 5
-
         begin
           response = http(uri, !use_msi).request(request)
         rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNRESET, EOFError => e
@@ -2158,6 +2161,21 @@ module Bosh::AzureCloud
 
         message = get_http_common_headers(response)
         @logger.debug("get_token - #{message}")
+
+          status_code = response.code.to_i
+          if status_code == 429 || (status_code > 499 && status_code < 600)
+            raise AzureInternalError
+          end
+        rescue AzureInternalError => e
+          if retry_count < max_retry
+            retry_count += 1
+            retry_after = slots[retry_count]
+            @logger.warn("get_token - Fail for an error #{e.class.name}. The status code is #{response.code}. Will retry after #{retry_after} seconds.")
+            sleep(retry_after)
+            retry
+          end
+          raise e
+
         if response.code.to_i == HTTP_CODE_OK
           @token = JSON(response.body)
         elsif response.code.to_i == HTTP_CODE_UNAUTHORIZED
