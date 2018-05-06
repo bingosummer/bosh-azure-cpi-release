@@ -168,14 +168,12 @@ module Bosh::AzureCloud
           if @use_managed_disks
             instance_id = InstanceId.create(resource_group_name, agent_id)
 
-            storage_account_type = resource_pool['storage_account_type']
-            storage_account_type = get_storage_account_type_by_instance_type(resource_pool['instance_type']) if storage_account_type.nil?
-
             if is_light_stemcell_id?(stemcell_id)
               raise Bosh::Clouds::VMCreationFailed.new(false), "Given stemcell `#{stemcell_id}' does not exist" unless @light_stemcell_manager.has_stemcell?(location, stemcell_id)
               stemcell_info = @light_stemcell_manager.get_stemcell_info(stemcell_id)
             else
               begin
+                storage_account_type = get_root_disk_type(resource_pool)
                 # Treat user_image_info as stemcell_info
                 stemcell_info = @stemcell_manager2.get_user_image_info(stemcell_id, storage_account_type, location)
               rescue => e
@@ -647,15 +645,15 @@ module Bosh::AzureCloud
       raise Bosh::Clouds::NotImplemented
     end
 
-   # Information about the CPI
-   # @return [Hash] CPI properties
-   def info
-     @telemetry_manager.monitor("info") do
-       {
-         'stemcell_formats' => %w(azure-vhd azure-light)
-       }
-     end
-   end
+    # Information about the CPI
+    # @return [Hash] CPI properties
+    def info
+      @telemetry_manager.monitor("info") do
+        {
+          'stemcell_formats' => %w(azure-vhd azure-light)
+        }
+      end
+    end
 
     private
 
@@ -773,6 +771,13 @@ module Bosh::AzureCloud
       else
         "/dev/sd#{('a'.ord + (lun + 2 - 26) / 26).chr}#{('a'.ord + (lun + 2) % 26).chr}"
       end
+    end
+
+    def get_root_disk_type(resource_pool)
+      storage_account_type = get_storage_account_type_by_instance_type(resource_pool['instance_type'])
+      storage_account_type = resource_pool.fetch('storage_account_type', storage_account_type)
+      storage_account_type = resource_pool['root_disk'].fetch('type', storage_account_type) if resource_pool.has_key?('root_disk')
+      storage_account_type
     end
   end
 end
