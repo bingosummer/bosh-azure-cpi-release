@@ -199,6 +199,7 @@ module Bosh::AzureCloud
     # *   +:disk_name+          - String. The name of the ephemeral disk.
     # *   +:disk_caching+       - String. The caching option of the ephemeral disk. Possible values: None, ReadOnly or ReadWrite.
     # *   +:disk_size+          - Integer. The size in GiB of the ephemeral disk.
+    # *   +:disk_type+          - String. The disk type of the ephemeral disk.
     #
     #   When managed is false or nil, below parameters are required
     # * +:image_uri+            - String. The URI of the image.
@@ -344,6 +345,12 @@ module Bosh::AzureCloud
           vm['properties']['storageProfile']['dataDisks'][0]['vhd'] = {
             'uri' => vm_params[:ephemeral_disk][:disk_uri]
           }
+        else
+          if vm_params[:ephemeral_disk][:disk_type]
+            vm['properties']['storageProfile']['dataDisks'][0]['managedDisk'] = {
+              'storageAccountType' => vm_params[:ephemeral_disk][:disk_type]
+            }
+          end
         end
       end
 

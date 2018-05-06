@@ -645,7 +645,8 @@ describe Bosh::AzureCloud::DiskManager2 do
           ).to eq(
             disk_name: disk_name,
             disk_size: default_ephemeral_disk_size,
-            disk_caching: 'ReadWrite'
+            disk_caching: 'ReadWrite',
+            disk_type: nil
           )
         end
       end
@@ -665,7 +666,8 @@ describe Bosh::AzureCloud::DiskManager2 do
           ).to eq(
             disk_name: disk_name,
             disk_size: 30,
-            disk_caching: 'ReadWrite'
+            disk_caching: 'ReadWrite',
+            disk_type: nil
           )
         end
       end
@@ -691,7 +693,8 @@ describe Bosh::AzureCloud::DiskManager2 do
             ).to eq(
               disk_name: disk_name,
               disk_size: default_ephemeral_disk_size,
-              disk_caching: 'ReadWrite'
+              disk_caching: 'ReadWrite',
+              disk_type: nil
             )
           end
         end
@@ -717,6 +720,30 @@ describe Bosh::AzureCloud::DiskManager2 do
       end
 
       context 'without use_root_disk' do
+        context 'with type' do
+          let(:resource_pool) {
+            {
+              'instance_type' => 'STANDARD_A1',
+              'ephemeral_disk' => {
+                'type' => 'Premium_LRS'
+              }
+            }
+          }
+
+          it "should return correct values" do
+            disk_manager2.resource_pool = resource_pool
+
+            expect(
+              disk_manager2.ephemeral_disk(vm_name)
+            ).to eq(
+              disk_name: disk_name,
+              disk_size: default_ephemeral_disk_size,
+              disk_caching: 'ReadWrite',
+              disk_type: 'Premium_LRS'
+            )
+          end
+        end
+
         context 'without size' do
           let(:resource_pool) do
             {
@@ -733,7 +760,8 @@ describe Bosh::AzureCloud::DiskManager2 do
             ).to eq(
               disk_name: disk_name,
               disk_size: default_ephemeral_disk_size,
-              disk_caching: 'ReadWrite'
+              disk_caching: 'ReadWrite',
+              disk_type: nil
             )
           end
         end
@@ -757,7 +785,8 @@ describe Bosh::AzureCloud::DiskManager2 do
               ).to eq(
                 disk_name: disk_name,
                 disk_size: 30,
-                disk_caching: 'ReadWrite'
+                disk_caching: 'ReadWrite',
+                disk_type: nil
               )
             end
           end

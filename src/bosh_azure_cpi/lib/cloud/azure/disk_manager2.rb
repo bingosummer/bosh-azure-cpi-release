@@ -183,10 +183,12 @@ module Bosh::AzureCloud
         disk_size = size / 1024
       end
 
+      disk_type = ephemeral_disk.fetch('type', nil)
       {
         disk_name: generate_ephemeral_disk_name(vm_name),
         disk_size: disk_size,
-        disk_caching: 'ReadWrite'
+        disk_caching: 'ReadWrite',
+        disk_type: disk_type
       }
     end
 

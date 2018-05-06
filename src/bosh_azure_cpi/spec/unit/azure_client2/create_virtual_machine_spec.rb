@@ -221,7 +221,8 @@ describe Bosh::AzureCloud::AzureClient2 do
               ephemeral_disk: {
                 disk_name: 'l',
                 disk_caching: 'n',
-                disk_size: 'o'
+                disk_size: 'o',
+                disk_type: "p"
               },
               os_type: 'linux',
               managed: true
@@ -288,7 +289,10 @@ describe Bosh::AzureCloud::AzureClient2 do
                       lun: 0,
                       createOption: 'Empty',
                       diskSizeGB: 'o',
-                      caching: 'n'
+                      caching: 'n',
+                      managedDisk: {
+                        storageAccountType: 'p'
+                      }
                     }
                   ]
                 }

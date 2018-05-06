@@ -481,6 +481,203 @@ describe Bosh::AzureCloud::Cloud do
           ).to eq(instance_id_string)
         end
       end
+
+      context '#root_disk_type' do
+        context 'when only instance_type is specified' do
+          context 'when instance_type does not support SSD disks' do
+            let(:resource_pool) {
+              {
+                'instance_type' => 'Standard_F1'
+              }
+            }
+
+            before do
+              allow(telemetry_manager).to receive(:monitor).
+                with('create_vm', id: agent_id, extras: {'instance_type' => 'Standard_F1'}).
+                and_call_original
+            end
+
+            it 'should create the VM whose root disk type is Standard_LRS' do
+              expect(Bosh::AzureCloud::InstanceId).to receive(:create).
+                with(default_resource_group_name, agent_id).
+                and_return(instance_id)
+              expect(stemcell_manager2).to receive(:get_user_image_info).with(stemcell_id, 'Standard_LRS', location).
+                and_return(stemcell_info)
+              expect(vm_manager).to receive(:create).
+                with(instance_id, location, stemcell_info, resource_pool, network_configurator, environment).
+                and_return(vm_params)
+              expect(registry).to receive(:update_settings)
+
+              expect(
+                managed_cloud.create_vm(
+                  agent_id,
+                  stemcell_id,
+                  resource_pool,
+                  networks_spec,
+                  disk_locality,
+                  environment
+                )
+              ).to eq(instance_id_string)
+            end
+          end
+
+          context 'when instance_type supports SSD disks' do
+            let(:resource_pool) {
+              {
+                'instance_type' => 'Standard_B1s'
+              }
+            }
+
+            before do
+              allow(telemetry_manager).to receive(:monitor).
+                with('create_vm', id: agent_id, extras: {'instance_type' => 'Standard_B1s'}).
+                and_call_original
+            end
+
+            it 'should create the VM whose root disk type is Premium_LRS' do
+              expect(Bosh::AzureCloud::InstanceId).to receive(:create).
+                with(default_resource_group_name, agent_id).
+                and_return(instance_id)
+              expect(stemcell_manager2).to receive(:get_user_image_info).with(stemcell_id, 'Premium_LRS', location).
+                and_return(stemcell_info)
+              expect(vm_manager).to receive(:create).
+                with(instance_id, location, stemcell_info, resource_pool, network_configurator, environment).
+                and_return(vm_params)
+              expect(registry).to receive(:update_settings)
+
+              expect(
+                managed_cloud.create_vm(
+                  agent_id,
+                  stemcell_id,
+                  resource_pool,
+                  networks_spec,
+                  disk_locality,
+                  environment
+                )
+              ).to eq(instance_id_string)
+            end
+          end
+        end
+
+        context 'when instance_type and storage_account_type are specified' do
+          let(:resource_pool) {
+            {
+              'instance_type' => 'Standard_F1',
+              'storage_account_type' => 'Premium_LRS'
+            }
+          }
+
+          before do
+            allow(telemetry_manager).to receive(:monitor).
+              with('create_vm', id: agent_id, extras: {'instance_type' => 'Standard_F1'}).
+              and_call_original
+          end
+
+          it 'should create the VM whose root disk type is Premium_LRS' do
+            expect(Bosh::AzureCloud::InstanceId).to receive(:create).
+              with(default_resource_group_name, agent_id).
+              and_return(instance_id)
+            expect(stemcell_manager2).to receive(:get_user_image_info).with(stemcell_id, 'Premium_LRS', location).
+              and_return(stemcell_info)
+            expect(vm_manager).to receive(:create).
+              with(instance_id, location, stemcell_info, resource_pool, network_configurator, environment).
+              and_return(vm_params)
+            expect(registry).to receive(:update_settings)
+
+            expect(
+              managed_cloud.create_vm(
+                agent_id,
+                stemcell_id,
+                resource_pool,
+                networks_spec,
+                disk_locality,
+                environment
+              )
+            ).to eq(instance_id_string)
+          end
+        end
+
+        context 'when instance_type and root_disk.type are specified' do
+          let(:resource_pool) {
+            {
+              'instance_type' => 'Standard_F1',
+              'root_disk' => {
+                'type' => 'Premium_LRS'
+              }
+            }
+          }
+
+          before do
+            allow(telemetry_manager).to receive(:monitor).
+              with('create_vm', id: agent_id, extras: {'instance_type' => 'Standard_F1'}).
+              and_call_original
+          end
+
+          it 'should create the VM whose root disk type is Premium_LRS' do
+            expect(Bosh::AzureCloud::InstanceId).to receive(:create).
+              with(default_resource_group_name, agent_id).
+              and_return(instance_id)
+            expect(stemcell_manager2).to receive(:get_user_image_info).with(stemcell_id, 'Premium_LRS', location).
+              and_return(stemcell_info)
+            expect(vm_manager).to receive(:create).
+              with(instance_id, location, stemcell_info, resource_pool, network_configurator, environment).
+              and_return(vm_params)
+            expect(registry).to receive(:update_settings)
+
+            expect(
+              managed_cloud.create_vm(
+                agent_id,
+                stemcell_id,
+                resource_pool,
+                networks_spec,
+                disk_locality,
+                environment
+              )
+            ).to eq(instance_id_string)
+          end
+        end
+
+        context 'when instance_type, storage_account_type and root_disk.type are specified' do
+          let(:resource_pool) {
+            {
+              'instance_type' => 'Standard_F1',
+              'storage_account_type' => 'Standard_LRS',
+              'root_disk' => {
+                'type' => 'Premium_LRS'
+              }
+            }
+          }
+
+          before do
+            allow(telemetry_manager).to receive(:monitor).
+              with('create_vm', id: agent_id, extras: {'instance_type' => 'Standard_F1'}).
+              and_call_original
+          end
+
+          it 'should create the VM whose root disk type is Premium_LRS' do
+            expect(Bosh::AzureCloud::InstanceId).to receive(:create).
+              with(default_resource_group_name, agent_id).
+              and_return(instance_id)
+            expect(stemcell_manager2).to receive(:get_user_image_info).with(stemcell_id, 'Premium_LRS', location).
+              and_return(stemcell_info)
+            expect(vm_manager).to receive(:create).
+              with(instance_id, location, stemcell_info, resource_pool, network_configurator, environment).
+              and_return(vm_params)
+            expect(registry).to receive(:update_settings)
+
+            expect(
+              managed_cloud.create_vm(
+                agent_id,
+                stemcell_id,
+                resource_pool,
+                networks_spec,
+                disk_locality,
+                environment
+              )
+            ).to eq(instance_id_string)
+          end
+        end
+      end
     end
   end
 end
