@@ -2225,7 +2225,7 @@ module Bosh::AzureCloud
             retry
           end
         end
-        cloud_error("http_get_response_with_retry - #{e.inspect}\n#{e.backtrace.join("\n")}")
+        raise e
       end
     end
 
