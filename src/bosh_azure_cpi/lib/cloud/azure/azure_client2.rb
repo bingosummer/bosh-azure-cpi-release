@@ -49,6 +49,7 @@ module Bosh::AzureCloud
     REST_API_SNAPSHOTS                   = 'snapshots'
     REST_API_VM_IMAGE                    = 'vmimage'
     REST_API_VM_SIZES                    = 'vmSizes'
+    REST_API_GALLERIES                   = 'galleries'
 
     REST_API_PROVIDER_NETWORK            = 'Microsoft.Network'
     REST_API_PUBLIC_IP_ADDRESSES         = 'publicIPAddresses'
@@ -1120,6 +1121,36 @@ module Bosh::AzureCloud
         images << image
       end
       images
+    end
+
+    # Compute/Gallery
+    # Create a gallery
+    #
+    # ==== Attributes
+    #
+    # @param [String] resource_group_name  - Name of resource group.
+    # @param [Hash] params                 - Parameters for creating a gallery.
+    #
+    # ==== params
+    #
+    # Accepted key/value pairs are:
+    # * +:name+                         - String. Name of the gallery.
+    # * +:location+                     - String. Location where the gallery will be created.
+    #
+    # @return [Boolean]
+    #
+    # @See 
+    #
+    def create_gallery(resource_group_name, params)
+      gallery_name = params[:name]
+      gallery_url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_GALLERIES, resource_group_name: resource_group_name, name: gallery_name)
+      gallery = {
+        'location'   => params[:location],
+        'properties' => {
+        }
+      }
+
+      http_put(gallery_url, gallery)
     end
 
     # Network/Public IP
