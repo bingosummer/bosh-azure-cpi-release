@@ -4,9 +4,9 @@ groups:
     jobs:
       - build-candidate
       - integration-unmanaged-disks
-      - integration-managed-disks
-      - integration-windows-unmanaged-disks
-      - integration-windows-managed-disks
+      #- integration-managed-disks
+      #- integration-windows-unmanaged-disks
+      #- integration-windows-managed-disks
       - bats-unmanaged-disks
       - bats-managed-disks
       - promote-candidate-major
@@ -22,35 +22,19 @@ shared:
     AZURE_CLIENT_SECRET:                  {{azure_client_secret}}
     AZURE_CERTIFICATE:                    {{azure_certificate}}
 
-  - &create-bats-environment
+  - &create-environment
     put: environment
-    params:
+    params: &create-environment-params
       delete_on_failure: true
       generate_random_name: true
-      terraform_source: pipelines/azure/assets/terraform
+      terraform_source: bosh-cpi-src/ci/assets/terraform
 
-  - &create-az-bats-environment
-    put: environment
-    params:
-      delete_on_failure: true
-      generate_random_name: true
-      terraform_source: bosh-cpi-src/ci/assets/terraform/az_bats
-
-  - &destroy-bats-environment
+  - &destroy-environment
     put: environment
     params:
       action: destroy
       env_name_file: environment/name
-      terraform_source: pipelines/azure/assets/terraform
-    get_params:
-      action: destroy
-
-  - &destroy-az-bats-environment
-    put: environment
-    params:
-      action: destroy
-      env_name_file: environment/name
-      terraform_source: bosh-cpi-src/ci/assets/terraform/az_bats
+      terraform_source: bosh-cpi-src/ci/assets/terraform
     get_params:
       action: destroy
 
@@ -75,6 +59,17 @@ shared:
       BAT_NETWORKING:                     manual
       BAT_RSPEC_FLAGS:                    "--tag ~raw_ephemeral_storage"
 
+  - &run-az-bats
+    task: run-az-bats
+    file: bosh-cpi-src/ci/tasks/run-az-bats.yml
+    params: &run-az-bats-params
+      INFRASTRUCTURE:                     azure
+      STEMCELL_NAME:                      bosh-azure-hyperv-ubuntu-trusty-go_agent
+      BAT_INFRASTRUCTURE:                 azure
+      BAT_NETWORKING:                     manual
+      BAT_RSPEC_FLAGS:                    "--tag ~raw_ephemeral_storage"
+      AZURE_BATS_ZONE:                    {{azure_bats_zone}}
+
   - &teardown
     task: teardown
     file: pipelines/shared/tasks/teardown.yml
@@ -84,16 +79,13 @@ shared:
     params:
       delete_on_failure: true
       generate_random_name: true
-      terraform_source: bosh-cpi-src/ci/assets/terraform/integration
+      terraform_source: bosh-cpi-src/ci/assets/terraform
 
-  - &destroy-integration-environment
-    put: environment
-    params:
-      action: destroy
-      env_name_file: environment/name
-      terraform_source: bosh-cpi-src/ci/assets/terraform/integration
-    get_params:
-      action: destroy
+  - &upload-stemcell
+    task: upload-stemcell
+    file: bosh-cpi-src/ci/tasks/upload-stemcell.yml
+    params: &upload-stemcell-params
+      <<: *azure-environment-params
 
   - &run-integration
     task: run-integration
@@ -129,176 +121,280 @@ shared:
     params:
       <<: *azure-environment-params
 
-  - &run-az-bats
-    task: run-az-bats
-    file: bosh-cpi-src/ci/tasks/run-az-bats.yml
-    params: &run-az-bats-params
-      INFRASTRUCTURE:                     azure
-      STEMCELL_NAME:                      bosh-azure-hyperv-ubuntu-trusty-go_agent
-      BAT_INFRASTRUCTURE:                 azure
-      BAT_NETWORKING:                     manual
-      BAT_RSPEC_FLAGS:                    "--tag ~raw_ephemeral_storage"
-      AZURE_BATS_ZONE:                    {{azure_bats_zone}}
-
 jobs:
   - name: build-candidate
     serial: true
     plan:
       - aggregate:
-        - {trigger: false, get: bosh-cpi-src, resource: bosh-cpi-src-in}
-        - {trigger: false, get: version-semver, params: {bump: patch}}
-        - {trigger: false, get: bosh-cli}
+        - get: bosh-cpi-src
+          resource: bosh-cpi-src-in
+          trigger: false
+        - get: version-semver
+          params:
+            bump: patch
+          trigger: false
+        - get: bosh-cli
+          trigger: false
       - put: version-semver
-        params: {file: version-semver/number}
+        params:
+          file: version-semver/number
       - task: build
         file: bosh-cpi-src/ci/tasks/build-candidate.yml
       - put: bosh-cpi-dev-artifacts
-        params: {file: candidate/*.tgz}
+        params:
+          file: candidate/*.tgz
 
   - name: integration-unmanaged-disks
     serial: true
     plan:
       - aggregate:
-        - {get: bosh-cpi-release, trigger: true,  resource: bosh-cpi-dev-artifacts, passed: [build-candidate]}
-        - {get: bosh-cpi-src,     trigger: false, resource: bosh-cpi-src-in,        passed: [build-candidate]}
-        - {get: stemcell,         trigger: false, resource: azure-ubuntu-stemcell}
-      - <<: *create-integration-environment
-      - <<: *create-application-gateway
-      - <<: *run-integration
+        - get: bosh-cpi-release
+          resource: bosh-cpi-dev-artifacts
+          passed: [build-candidate]
+          trigger: true
+        - get: bosh-cpi-src
+          resource: bosh-cpi-src-in
+          passed: [build-candidate]
+          trigger: false
+        - get: stemcell
+          resource: azure-ubuntu-stemcell
+          trigger: false
+      - <<: *create-environment
         params:
-          <<: *run-integration-params
-          AZURE_USE_MANAGED_DISKS: false
+          <<: *create-environment-params
+          override_files:
+          - bosh-cpi-src/ci/assets/terraform/integration/public_ip.tf
+          - bosh-cpi-src/ci/assets/terraform/integration/asg.tf
       - do:
-        - <<: *delete-application-gateway
-        - <<: *destroy-integration-environment
+        - <<: *upload-stemcell
+        - aggregate:
+          - <<: *create-application-gateway
+          - <<: *run-integration
+            params:
+              <<: *run-integration-params
+              AZURE_USE_MANAGED_DISKS: false
         ensure:
           do:
-            - <<: *ensure-cleanup
+          - <<: *delete-application-gateway
+          - <<: *destroy-environment
+          - <<: *ensure-cleanup
 
-  - name: integration-managed-disks
-    serial: true
-    plan:
-      - aggregate:
-        - {get: bosh-cpi-release, trigger: true,  resource: bosh-cpi-dev-artifacts, passed: [build-candidate]}
-        - {get: bosh-cpi-src,     trigger: false, resource: bosh-cpi-src-in,        passed: [build-candidate]}
-        - {get: stemcell,         trigger: false, resource: azure-ubuntu-stemcell}
-      - <<: *create-integration-environment
-      - <<: *create-application-gateway
-      - <<: *run-integration
-        params:
-          <<: *run-integration-params
-          AZURE_USE_MANAGED_DISKS: true
-      - do:
-        - <<: *delete-application-gateway
-        - <<: *destroy-integration-environment
-        ensure:
-          do:
-            - <<: *ensure-cleanup
+  #- name: integration-managed-disks
+  #  serial: true
+  #  plan:
+  #    - aggregate:
+  #      - get: bosh-cpi-release
+  #        resource: bosh-cpi-dev-artifacts
+  #        passed: [build-candidate]
+  #        trigger: true
+  #      - get: bosh-cpi-src
+  #        resource: bosh-cpi-src-in
+  #        passed: [build-candidate]
+  #        trigger: false
+  #      - get: stemcell
+  #        resource: azure-ubuntu-stemcell
+  #        trigger: false
+  #    - <<: *create-environment
+  #      params:
+  #        <<: *create-environment-params
+  #        override_files:
+  #        - bosh-cpi-src/ci/assets/terraform/integration/public_ip.tf
+  #    - do:
+  #      - <<: *create-application-gateway
+  #      - <<: *run-integration
+  #        params:
+  #          <<: *run-integration-params
+  #          AZURE_USE_MANAGED_DISKS: true
+  #      ensure:
+  #        do:
+  #        - <<: *delete-application-gateway
+  #        - <<: *destroy-environment
+  #        - <<: *ensure-cleanup
 
-  - name: integration-windows-unmanaged-disks
-    serial: true
-    plan:
-      - aggregate:
-        - {get: bosh-cpi-release, trigger: true,  resource: bosh-cpi-dev-artifacts, passed: [build-candidate]}
-        - {get: bosh-cpi-src,     trigger: false, resource: bosh-cpi-src-in,        passed: [build-candidate]}
-        - {get: stemcell,         trigger: false, resource: azure-windows-stemcell}
-      - <<: *create-integration-environment
-      - <<: *create-application-gateway
-      - <<: *run-integration-windows
-        params:
-          <<: *run-integration-windows-params
-          AZURE_USE_MANAGED_DISKS: false
-      - do:
-        - <<: *delete-application-gateway
-        - <<: *destroy-integration-environment
-        ensure:
-          do:
-            - <<: *ensure-cleanup
+  #- name: integration-windows-unmanaged-disks
+  #  serial: true
+  #  plan:
+  #    - aggregate:
+  #      - get: bosh-cpi-release
+  #        resource: bosh-cpi-dev-artifacts
+  #        passed: [build-candidate]
+  #        trigger: true
+  #      - get: bosh-cpi-src
+  #        resource: bosh-cpi-src-in
+  #        passed: [build-candidate]
+  #        trigger: false
+  #      - get: stemcell
+  #        resource: azure-windows-stemcell
+  #        trigger: false
+  #    - <<: *create-environment
+  #      params:
+  #        <<: *create-environment-params
+  #        override_files:
+  #        - bosh-cpi-src/ci/assets/terraform/integration/public_ip.tf
+  #    - do:
+  #      - <<: *create-application-gateway
+  #      - <<: *run-integration-windows
+  #        params:
+  #          <<: *run-integration-windows-params
+  #          AZURE_USE_MANAGED_DISKS: false
+  #      ensure:
+  #        do:
+  #        - <<: *delete-application-gateway
+  #        - <<: *destroy-environment
+  #        - <<: *ensure-cleanup
 
-  - name: integration-windows-managed-disks
-    serial: true
-    plan:
-      - aggregate:
-        - {get: bosh-cpi-release, trigger: true,  resource: bosh-cpi-dev-artifacts, passed: [build-candidate]}
-        - {get: bosh-cpi-src,     trigger: false, resource: bosh-cpi-src-in,        passed: [build-candidate]}
-        - {get: stemcell,         trigger: false, resource: azure-windows-stemcell}
-      - <<: *create-integration-environment
-      - <<: *create-application-gateway
-      - <<: *run-integration-windows
-        params:
-          <<: *run-integration-windows-params
-          AZURE_USE_MANAGED_DISKS: true
-      - do:
-        - <<: *delete-application-gateway
-        - <<: *destroy-integration-environment
-        ensure:
-          do:
-            - <<: *ensure-cleanup
+  #- name: integration-windows-managed-disks
+  #  serial: true
+  #  plan:
+  #    - aggregate:
+  #      - get: bosh-cpi-release
+  #        resource: bosh-cpi-dev-artifacts
+  #        passed: [build-candidate]
+  #        trigger: true
+  #      - get: bosh-cpi-src
+  #        resource: bosh-cpi-src-in
+  #        passed: [build-candidate]
+  #        trigger: false
+  #      - get: stemcell
+  #        resource: azure-windows-stemcell
+  #        trigger: false
+  #    - <<: *create-environment
+  #      params:
+  #        <<: *create-environment-params
+  #        override_files:
+  #        - bosh-cpi-src/ci/assets/terraform/integration/public_ip.tf
+  #    - do:
+  #      - <<: *create-application-gateway
+  #      - <<: *run-integration-windows
+  #        params:
+  #          <<: *run-integration-windows-params
+  #          AZURE_USE_MANAGED_DISKS: true
+  #      ensure:
+  #        do:
+  #        - <<: *delete-application-gateway
+  #        - <<: *destroy-environment
+  #        - <<: *ensure-cleanup
 
   - name: bats-unmanaged-disks
     serial: true
     plan:
       - aggregate:
-        - {get: cpi-release,     trigger: true,  resource: bosh-cpi-dev-artifacts, passed: [build-candidate]}
-        - {get: bosh-release,    trigger: false, resource: bosh-release}
-        - {get: bosh-cpi-src,    trigger: false, resource: bosh-cpi-src-in,        passed: [build-candidate]}
-        - {get: stemcell,        trigger: false, resource: azure-ubuntu-stemcell}
-        - {get: bosh-deployment, trigger: false}
-        - {get: pipelines,       trigger: false}
-        - {get: bosh-cli,        trigger: false}
-        - {get: bats,            trigger: false}
-      - <<: *create-bats-environment
-      - <<: *prepare-director
+        - get: cpi-release
+          resource: bosh-cpi-dev-artifacts
+          passed: [build-candidate]
+          trigger: true 
+        - get: bosh-release
+          resource: bosh-release
+          trigger: false 
+        - get: bosh-cpi-src
+          resource: bosh-cpi-src-in
+          passed: [build-candidate]
+          trigger: false
+        - get: stemcell
+          resource: azure-ubuntu-stemcell
+          trigger: false
+        - get: bosh-deployment
+          trigger: false
+        - get: pipelines
+          trigger: false
+        - get: bosh-cli
+          trigger: false
+        - get: bats
+          trigger: false
+      - <<: *create-environment
         params:
-          <<: *prepare-director-params
-          OPTIONAL_OPS_FILE: |
-            -o pipelines/shared/assets/ops/remove-hm.yml
-            -o bosh-deployment/external-ip-with-registry-not-recommended.yml
-      - <<: *deploy-director
-      - <<: *run-bats
+          <<: *create-environment-params
+          override_files:
+          - bosh-cpi-src/ci/assets/terraform/bats/basic_public_ip.tf
       - do:
-        - <<: *teardown
-        - <<: *destroy-bats-environment
+        - <<: *prepare-director
+          params:
+            <<: *prepare-director-params
+            OPTIONAL_OPS_FILE: |
+              -o pipelines/shared/assets/ops/remove-hm.yml
+              -o bosh-deployment/external-ip-with-registry-not-recommended.yml
+        - do:
+          - <<: *deploy-director
+          - <<: *run-bats
+          ensure:
+            do:
+            - <<: *teardown
         ensure:
           do:
-            - <<: *ensure-cleanup
+          - <<: *destroy-environment
+          - <<: *ensure-cleanup
 
   - name: bats-managed-disks
     serial: true
     plan:
       - aggregate:
-        - {get: cpi-release,     trigger: true,  resource: bosh-cpi-dev-artifacts, passed: [build-candidate]}
-        - {get: bosh-release,    trigger: false, resource: bosh-release}
-        - {get: bosh-cpi-src,    trigger: false, resource: bosh-cpi-src-in,        passed: [build-candidate]}
-        - {get: stemcell,        trigger: false, resource: azure-ubuntu-stemcell}
-        - {get: bosh-deployment, trigger: false}
-        - {get: pipelines,       trigger: false}
-        - {get: bosh-cli,        trigger: false}
-        - {get: bats,            trigger: false}
-      - <<: *create-az-bats-environment
-      - <<: *prepare-director
+        - get: cpi-release
+          resource: bosh-cpi-dev-artifacts
+          passed: [build-candidate]
+          trigger: true 
+        - get: bosh-release
+          resource: bosh-release
+          trigger: false 
+        - get: bosh-cpi-src
+          resource: bosh-cpi-src-in
+          passed: [build-candidate]
+          trigger: false
+        - get: stemcell
+          resource: azure-ubuntu-stemcell
+          trigger: false
+        - get: bosh-deployment
+          trigger: false
+        - get: pipelines
+          trigger: false
+        - get: bosh-cli
+          trigger: false
+        - get: bats
+          trigger: false
+      - <<: *create-environment
         params:
-          <<: *prepare-director-params
-          OPTIONAL_OPS_FILE: |
-            -o pipelines/shared/assets/ops/remove-hm.yml
-            -o bosh-deployment/external-ip-with-registry-not-recommended.yml
-            -o bosh-deployment/azure/use-managed-disks.yml
-      - <<: *deploy-director
-      - <<: *run-az-bats
+          <<: *create-environment-params
+          override_files:
+          - bosh-cpi-src/ci/assets/terraform/bats/standard_public_ip.tf
       - do:
-        - <<: *teardown
-        - <<: *destroy-az-bats-environment
+        - <<: *prepare-director
+          params:
+            <<: *prepare-director-params
+            OPTIONAL_OPS_FILE: |
+              -o pipelines/shared/assets/ops/remove-hm.yml
+              -o bosh-deployment/external-ip-with-registry-not-recommended.yml
+              -o bosh-deployment/azure/use-managed-disks.yml
+        - do:
+          - <<: *deploy-director
+          - <<: *run-az-bats
+          ensure:
+            do:
+            - <<: *teardown
         ensure:
           do:
-            - <<: *ensure-cleanup
+          - <<: *destroy-environment
+          - <<: *ensure-cleanup
 
   - name: promote-candidate-major
     plan:
       - aggregate:
-        - {trigger: false, get: bosh-cpi-release, resource: bosh-cpi-dev-artifacts, passed: [integration-unmanaged-disks, integration-managed-disks, integration-windows-unmanaged-disks, integration-windows-managed-disks, bats-unmanaged-disks, bats-managed-disks]}
-        - {trigger: false, get: bosh-cpi-src, resource: bosh-cpi-src-out}
-        - {trigger: false, get: release-version-semver, params: {bump: major}}
-        - {trigger: false, get: bosh-cli}
+        - get: bosh-cpi-release
+          resource: bosh-cpi-dev-artifacts
+          passed:
+            - integration-unmanaged-disks
+            #- integration-managed-disks
+            #- integration-windows-unmanaged-disks
+            #- integration-windows-managed-disks
+            - bats-unmanaged-disks
+            - bats-managed-disks
+          trigger: false
+        - get: bosh-cpi-src
+          resource: bosh-cpi-src-out
+          trigger: false
+        - get: release-version-semver
+          params: {bump: major}
+          trigger: false
+        - get: bosh-cli
+          trigger: false
       - task: promote
         file: bosh-cpi-src/ci/tasks/promote-candidate.yml
         params:
@@ -313,10 +409,24 @@ jobs:
   - name: promote-candidate-minor
     plan:
       - aggregate:
-        - {trigger: false, get: bosh-cpi-release, resource: bosh-cpi-dev-artifacts, passed: [integration-unmanaged-disks, integration-managed-disks, integration-windows-unmanaged-disks, integration-windows-managed-disks, bats-unmanaged-disks, bats-managed-disks]}
-        - {trigger: false, get: bosh-cpi-src, resource: bosh-cpi-src-out}
-        - {trigger: false, get: release-version-semver, params: {bump: minor}}
-        - {trigger: false, get: bosh-cli}
+        - get: bosh-cpi-release
+          resource: bosh-cpi-dev-artifacts
+          passed:
+            - integration-unmanaged-disks
+            #- integration-managed-disks
+            #- integration-windows-unmanaged-disks
+            #- integration-windows-managed-disks
+            - bats-unmanaged-disks
+            - bats-managed-disks
+          trigger: false
+        - get: bosh-cpi-src
+          resource: bosh-cpi-src-out
+          trigger: false
+        - get: release-version-semver
+          params: {bump: minor}
+          trigger: false
+        - get: bosh-cli
+          trigger: false
       - task: promote
         file: bosh-cpi-src/ci/tasks/promote-candidate.yml
         params:
@@ -331,10 +441,24 @@ jobs:
   - name: promote-candidate-patch
     plan:
       - aggregate:
-        - {trigger: false, get: bosh-cpi-release, resource: bosh-cpi-dev-artifacts, passed: [integration-unmanaged-disks, integration-managed-disks, integration-windows-unmanaged-disks, integration-windows-managed-disks, bats-unmanaged-disks, bats-managed-disks]}
-        - {trigger: false, get: bosh-cpi-src, resource: bosh-cpi-src-out}
-        - {trigger: false, get: release-version-semver, params: {bump: patch}}
-        - {trigger: false, get: bosh-cli}
+        - get: bosh-cpi-release
+          resource: bosh-cpi-dev-artifacts
+          passed:
+            - integration-unmanaged-disks
+            #- integration-managed-disks
+            #- integration-windows-unmanaged-disks
+            #- integration-windows-managed-disks
+            - bats-unmanaged-disks
+            - bats-managed-disks
+          trigger: false
+        - get: bosh-cpi-src
+          resource: bosh-cpi-src-out
+          trigger: false
+        - get: release-version-semver
+          params: {bump: patch}
+          trigger: false
+        - get: bosh-cli
+          trigger: false
       - task: promote
         file: bosh-cpi-src/ci/tasks/promote-candidate.yml
         params:
@@ -400,11 +524,11 @@ resources:
         bucket_path:       terraform-state
       vars:
         location:              {{azure_location}}
-        azure_environment:     {{azure_environment}}
-        azure_subscription_id: {{azure_subscription_id}}
-        azure_client_id:       {{azure_client_id}}
-        azure_client_secret:   {{azure_client_secret}}
-        azure_tenant_id:       {{azure_tenant_id}}
+        cloud_name:            {{azure_environment}}
+        subscription_id:       {{azure_subscription_id}}
+        client_id:             {{azure_client_id}}
+        client_secret:         {{azure_client_secret}}
+        tenant_id:             {{azure_tenant_id}}
         resource_group_prefix: {{resource_group_prefix}}
   - name: bosh-cli
     type: s3
@@ -425,10 +549,10 @@ resources:
     type: bosh-io-stemcell
     source:
       name: bosh-azure-hyperv-ubuntu-trusty-go_agent
-  - name: azure-windows-stemcell
-    type: bosh-io-stemcell
-    source:
-      name: bosh-azure-hyperv-windows2012R2-go_agent
+  #- name: azure-windows-stemcell
+  #  type: bosh-io-stemcell
+  #  source:
+  #    name: bosh-azure-hyperv-windows2012R2-go_agent
   - name: bats
     type: git
     source:

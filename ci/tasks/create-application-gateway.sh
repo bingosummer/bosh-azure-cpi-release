@@ -25,6 +25,7 @@ cert_data=`base64 fake.domain.pfx | tr -d '\n'`
 
 rg_name=$(echo ${metadata} | jq -e --raw-output ".default_resource_group_name")
 vnet_name=$(echo ${metadata} | jq -e --raw-output ".vnet_name")
+subnet_name=$(echo ${metadata} | jq -e --raw-output ".application_gateway_subnet_name")
 cat > application-gateway-parameters.json << EOF
   {
     "applicationGatewayName": {
@@ -32,6 +33,9 @@ cat > application-gateway-parameters.json << EOF
     },
     "virtualNetworkName": {
       "value": "${vnet_name}"
+    },
+    "subnetName": {
+      "value": "${subnet_name}"
     },
     "systemDomain": {
       "value": "fake.domain"
