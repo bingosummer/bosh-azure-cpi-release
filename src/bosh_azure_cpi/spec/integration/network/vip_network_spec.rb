@@ -18,6 +18,9 @@ describe Bosh::AzureCloud::Cloud do
     @default_resource_group_name     = ENV['BOSH_AZURE_DEFAULT_RESOURCE_GROUP_NAME']     || raise('Missing BOSH_AZURE_DEFAULT_RESOURCE_GROUP_NAME')
     @additional_resource_group_name  = ENV['BOSH_AZURE_ADDITIONAL_RESOURCE_GROUP_NAME']  || raise('Missing BOSH_AZURE_ADDITIONAL_RESOURCE_GROUP_NAME')
     @primary_public_ip               = ENV['BOSH_AZURE_PRIMARY_PUBLIC_IP']               || raise('Missing BOSH_AZURE_PRIMARY_PUBLIC_IP')
+    @secondary_public_ip             = ENV['BOSH_AZURE_SECONDARY_PUBLIC_IP']             || raise('Missing BOSH_AZURE_SECONDARY_PUBLIC_IP')
+    @application_gateway_name        = ENV['BOSH_AZURE_APPLICATION_GATEWAY_NAME']        || raise('Missing BOSH_AZURE_APPLICATION_GATEWAY_NAME')
+    @application_security_group      = ENV['BOSH_AZURE_APPLICATION_SECURITY_GROUP']      || raise('Missing BOSH_AZURE_APPLICATION_SECURITY_GROUP')
   end
 
   let(:azure_environment)          { ENV.fetch('BOSH_AZURE_ENVIRONMENT', 'AzureCloud') }
@@ -27,7 +30,6 @@ describe Bosh::AzureCloud::Cloud do
   let(:use_managed_disks)          { ENV.fetch('BOSH_AZURE_USE_MANAGED_DISKS', false).to_s == 'true' }
   let(:vnet_name)                  { ENV.fetch('BOSH_AZURE_VNET_NAME', 'boshvnet-crp') }
   let(:subnet_name)                { ENV.fetch('BOSH_AZURE_DYNAMIC_SUBNET_NAME', 'BOSH1') }
-  let(:second_subnet_name)         { ENV.fetch('BOSH_AZURE_MANUAL_SUBNET_2_NAME', 'BOSH2') }
   let(:instance_type)              { ENV.fetch('BOSH_AZURE_INSTANCE_TYPE', 'Standard_D1_v2') }
   let(:vm_metadata)                { { deployment: 'deployment', job: 'cpi_spec', index: '0', delete_me: 'please' } }
   let(:network_spec)               { {} }
@@ -69,22 +71,6 @@ describe Bosh::AzureCloud::Cloud do
     described_class.new(cloud_options)
   end
 
-  subject(:cpi_with_location) do
-    cloud_options_with_location = cloud_options.dup
-    cloud_options_with_location['azure']['storage_account_name'] = storage_account_name unless storage_account_name.nil?
-    cloud_options_with_location['azure']['use_managed_disks'] = use_managed_disks
-    cloud_options_with_location['azure']['location'] = location
-    described_class.new(cloud_options_with_location)
-  end
-
-  subject(:cpi_without_default_nsg) do
-    cloud_options_without_default_nsg = cloud_options.dup
-    cloud_options_without_default_nsg['azure']['storage_account_name'] = storage_account_name unless storage_account_name.nil?
-    cloud_options_without_default_nsg['azure']['use_managed_disks'] = use_managed_disks
-    cloud_options_without_default_nsg['azure']['default_security_group'] = nil
-    described_class.new(cloud_options_without_default_nsg)
-  end
-
   before do
     Bosh::Clouds::Config.configure(double('delegate', task_checkpoint: nil))
   end
@@ -94,87 +80,17 @@ describe Bosh::AzureCloud::Cloud do
 
   before { allow(Bosh::Cpi::RegistryClient).to receive_messages(new: double('registry').as_null_object) }
 
-  before { @disk_id_pool = [] }
-  after do
-    @disk_id_pool.each do |disk_id|
-      logger.info("Cleanup: Deleting the disk '#{disk_id}'")
-      cpi.delete_disk(disk_id) if disk_id
-    end
-  end
-
-  context '#calculate_vm_cloud_properties' do
-    let(:vm_resources) do
-      {
-        'cpu' => 2,
-        'ram' => 4096,
-        'ephemeral_disk_size' => 32 * 1024
-      }
-    end
-    it 'should return Azure specific cloud properties' do
-      expect(cpi_with_location.calculate_vm_cloud_properties(vm_resources)).to eq(
-        'instance_type' => 'Standard_F2',
-        'ephemeral_disk' => {
-          'size' => 32 * 1024
-        }
-      )
-    end
-  end
-
-  context 'when default_security_group is not specified' do
+  context 'vip networking' do
     let(:network_spec) do
       {
         'network_a' => {
           'type' => 'dynamic',
-          'cloud_properties' => {
-            'virtual_network_name' => vnet_name,
-            'subnet_name' => subnet_name
-          }
-        }
-      }
-    end
-
-    it 'should exercise the vm lifecycle' do
-      begin
-        logger.info("Creating VM with stemcell_id='#{@stemcell_id}'")
-        instance_id = cpi_without_default_nsg.create_vm(
-          SecureRandom.uuid,
-          @stemcell_id,
-          vm_properties,
-          network_spec
-        )
-        expect(instance_id).to be
-
-        instance_id_obj = Bosh::AzureCloud::InstanceId.parse(instance_id, azure_config)
-        network_interface = cpi_without_default_nsg.azure_client.get_network_interface_by_name(@default_resource_group_name, "#{instance_id_obj.vm_name}-0")
-        nsg = network_interface[:network_security_group]
-        expect(nsg).to be_nil
-      ensure
-        cpi_without_default_nsg.delete_vm(instance_id) unless instance_id.nil?
-      end
-    end
-  end
-
-  context 'multiple nics' do
-    let(:instance_type) { 'Standard_D2_v2' }
-    let(:network_spec) do
-      {
-        'network_a' => {
-          'type' => 'dynamic',
-          'default' => %w[dns gateway],
           'cloud_properties' => {
             'virtual_network_name' => vnet_name,
             'subnet_name' => subnet_name
           }
         },
         'network_b' => {
-          'type' => 'manual',
-          'ip' => "10.0.1.#{Random.rand(10..99)}",
-          'cloud_properties' => {
-            'virtual_network_name' => vnet_name,
-            'subnet_name' => second_subnet_name
-          }
-        },
-        'network_c' => {
           'type' => 'vip',
           'ip' => @primary_public_ip
         }
@@ -183,60 +99,6 @@ describe Bosh::AzureCloud::Cloud do
 
     it 'should exercise the vm lifecycle' do
       vm_lifecycle
-    end
-  end
-
-  context 'when assigning dynamic public IP to VM' do
-    let(:network_spec) do
-      {
-        'network_a' => {
-          'type' => 'dynamic',
-          'cloud_properties' => {
-            'virtual_network_name' => vnet_name,
-            'subnet_name' => subnet_name
-          }
-        }
-      }
-    end
-    let(:vm_properties) do
-      {
-        'instance_type' => instance_type,
-        'assign_dynamic_public_ip' => true
-      }
-    end
-
-    it 'should exercise the vm lifecycle' do
-      vm_lifecycle
-    end
-  end
-
-  context 'when assigning a different storage account to VM', unmanaged_disks: true do
-    let(:network_spec) do
-      {
-        'network_a' => {
-          'type' => 'dynamic',
-          'cloud_properties' => {
-            'virtual_network_name' => vnet_name,
-            'subnet_name' => subnet_name
-          }
-        }
-      }
-    end
-    let(:vm_properties) do
-      {
-        'instance_type' => instance_type,
-        'storage_account_name' => extra_storage_account_name
-      }
-    end
-
-    it 'should exercise the vm lifecycle' do
-      lifecycles = []
-      3.times do |i|
-        lifecycles[i] = Thread.new do
-          vm_lifecycle
-        end
-      end
-      lifecycles.each(&:join)
     end
   end
 
