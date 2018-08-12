@@ -9,6 +9,7 @@ set -e
 : ${AZURE_CLIENT_SECRET:?}
 : ${AZURE_CERTIFICATE:?}
 : ${SSH_PUBLIC_KEY:?}
+: ${SPECS:?}
 
 : ${METADATA_FILE:=environment/metadata}
 
@@ -35,6 +36,7 @@ export BOSH_AZURE_SECONDARY_PUBLIC_IP=$(echo ${metadata} | jq -e --raw-output ".
 export BOSH_AZURE_APPLICATION_SECURITY_GROUP=$(echo ${metadata} | jq -e --raw-output ".asg_name")
 export BOSH_AZURE_APPLICATION_GATEWAY_NAME=$(echo ${metadata} | jq -e --raw-output ".application_gateway_name")
 export BOSH_AZURE_SSH_PUBLIC_KEY=${SSH_PUBLIC_KEY}
+export BOSH_AZURE_USE_MANAGED_DISKS=${AZURE_USE_MANAGED_DISKS}
 
 source stemcell-state/stemcell.env
 source /etc/profile.d/chruby.sh
@@ -42,33 +44,5 @@ chruby ${RUBY_VERSION}
 
 pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null
   bundle install
-
-  tags="--tag ~light_stemcell"
-  export BOSH_AZURE_USE_MANAGED_DISKS=${AZURE_USE_MANAGED_DISKS}
-  if [ "${AZURE_USE_MANAGED_DISKS}" == "true" ]; then
-    tags+=" --tag ~unmanaged_disks"
-  else
-    tags+=" --tag ~availability_zone"
-  fi
-  bundle exec rspec spec/integration/lifecycle_spec.rb ${tags}
-
-  # migration: unmanged disk -> managed disk
-  # Only run migration test when AZURE_USE_MANAGED_DISKS is set to false initially
-  if [ "${AZURE_USE_MANAGED_DISKS}" == "false" ]; then
-    unset BOSH_AZURE_USE_MANAGED_DISKS
-    bundle exec rspec spec/integration/managed_disks_migration_spec.rb
-  fi
-
-  # migration: regional resource -> zonal resource
-  # Only run migration test when AZURE_USE_MANAGED_DISKS is set to true initially
-  if [ "${AZURE_USE_MANAGED_DISKS}" == "true" ]; then
-    export BOSH_AZURE_USE_MANAGED_DISKS=true
-    bundle exec rspec spec/integration/availability_zone_migration_spec.rb
-  fi
-  
-  # The azure_cpi test doesn't care whether managed disks are used. Only run it when AZURE_USE_MANAGED_DISKS is set to true
-  if [ "${AZURE_USE_MANAGED_DISKS}" == "true" ]; then
-    export BOSH_AZURE_USE_MANAGED_DISKS=true
-    bundle exec rspec spec/integration/azure_cpi_spec.rb
-  fi
+  bundle exec rspec ${SPECS} ${TAGS}
 popd > /dev/null

@@ -29,8 +29,10 @@ resource_group_names="${integration_additional_resource_group_name} ${integratio
 for resource_group_name  in ${resource_group_names}
 do
   exists=$(az group exists --name ${resource_group_name})
+  echo "Checking whether resource group ${resource_group_name} exists: $exists"
   if [ "$exists" = "true" ]
   then
+    echo "Deleting resource group ${resource_group_name}"
     az group delete --name ${resource_group_name} --yes
   fi
 done

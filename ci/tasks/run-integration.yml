@@ -21,3 +21,5 @@ params:
   AZURE_CERTIFICATE:                              ""
   SSH_PUBLIC_KEY:                                 ""
   AZURE_USE_MANAGED_DISKS:                        false
+  SPECS:                                          ""
+  TAGS:                                           ""

@@ -109,19 +109,6 @@ shared:
     params: &upload-stemcell-params
       <<: *azure-environment-params
 
-  - &run-integration
-    task: run-integration
-    file: bosh-cpi-src/ci/tasks/run-integration.yml
-    params: &run-integration-params
-      <<: *azure-environment-params
-      SSH_PUBLIC_KEY:                                 {{ssh_public_key}}
-
-  - &run-integration-windows
-    task: run-integration-windows
-    file: bosh-cpi-src/ci/tasks/run-integration-windows.yml
-    params: &run-integration-windows-params
-      <<: *run-integration-params
-
   - &ensure-cleanup
     task: ensure-cleanup
     file: bosh-cpi-src/ci/tasks/ensure-cleanup.yml
@@ -154,10 +141,37 @@ jobs:
       - <<: *create-integration-environment
       - do:
         - <<: *upload-stemcell
-        - <<: *run-integration
-          params:
-            <<: *run-integration-params
-            AZURE_USE_MANAGED_DISKS: false
+        - aggregate:
+          - task: run-integration-stemcell
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: false
+              SPECS: "spec/integration/stemcell_spec.rb"
+              TAGS: "--tag ~light_stemcell"
+          - task: run-integration-lifecycle
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: false
+              SPECS: "spec/integration/lifecycle_spec.rb"
+          - task: run-integration-network
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: false
+              SPECS: "spec/integration/network/"
+          - task: run-integration-resources
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: false
+              SPECS: "spec/integration/resources/"
+              TAGS: "--tag ~availability_zone"
         ensure:
           do:
             - <<: *destroy-integration-environment
@@ -175,10 +189,51 @@ jobs:
       - <<: *create-integration-environment
       - do:
         - <<: *upload-stemcell
-        - <<: *run-integration
-          params:
-            <<: *run-integration-params
-            AZURE_USE_MANAGED_DISKS: true
+        - aggregate:
+          - task: run-integration-stemcell
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: true
+              SPECS: "spec/integration/stemcell_spec.rb"
+              TAGS: "--tag ~light_stemcell"
+          - task: run-integration-lifecycle
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: true
+              SPECS: "spec/integration/lifecycle_spec.rb"
+              TAGS: "--tag ~unmanaged_disks"
+          - task: run-integration-network
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: true
+              SPECS: "spec/integration/network/"
+          - task: run-integration-resources
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: true
+              SPECS: "spec/integration/resources/"
+          - task: run-integration-migrations
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: true
+              SPECS: "spec/integration/migrations/"
+          - task: run-integration-azure-cpi
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: true
+              SPECS: "spec/integration/azure_cpi_spec.rb"
         ensure:
           do:
             - <<: *destroy-integration-environment
@@ -199,10 +254,37 @@ jobs:
           params:
             <<: *azure-environment-params
             IS_HEAVY_STEMCELL: false
-        - <<: *run-integration-windows
-          params:
-            <<: *run-integration-windows-params
-            AZURE_USE_MANAGED_DISKS: false
+        - aggregate:
+          - task: run-integration-stemcell
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: false
+              SPECS: "spec/integration/stemcell_spec.rb"
+              TAGS: "--tag ~heavy_stemcell"
+          - task: run-integration-lifecycle
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: false
+              SPECS: "spec/integration/lifecycle_spec.rb"
+          - task: run-integration-network
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: false
+              SPECS: "spec/integration/network/"
+          - task: run-integration-resources
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: false
+              SPECS: "spec/integration/resources/"
+              TAGS: "--tag ~availability_zone"
         ensure:
           do:
             - <<: *destroy-integration-environment
@@ -223,10 +305,37 @@ jobs:
           params:
             <<: *azure-environment-params
             IS_HEAVY_STEMCELL: false
-        - <<: *run-integration-windows
-          params:
-            <<: *run-integration-windows-params
-            AZURE_USE_MANAGED_DISKS: true
+        - aggregate:
+          - task: run-integration-stemcell
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: true
+              SPECS: "spec/integration/stemcell_spec.rb"
+              TAGS: "--tag ~heavy_stemcell"
+          - task: run-integration-lifecycle
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: true
+              SPECS: "spec/integration/lifecycle_spec.rb"
+              TAGS: "--tag ~unmanaged_disks"
+          - task: run-integration-network
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: true
+              SPECS: "spec/integration/network/"
+          - task: run-integration-resources
+            file: bosh-cpi-src/ci/tasks/run-integration.yml
+            params:
+              <<: *azure-environment-params
+              SSH_PUBLIC_KEY: {{ssh_public_key}}
+              AZURE_USE_MANAGED_DISKS: true
+              SPECS: "spec/integration/resources/"
         ensure:
           do:
             - <<: *destroy-integration-environment
