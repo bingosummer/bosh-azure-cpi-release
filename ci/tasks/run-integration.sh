@@ -38,6 +38,7 @@ export BOSH_AZURE_APPLICATION_GATEWAY_NAME=$(echo ${metadata} | jq -e --raw-outp
 export BOSH_AZURE_SSH_PUBLIC_KEY=${SSH_PUBLIC_KEY}
 export BOSH_AZURE_USE_MANAGED_DISKS=${AZURE_USE_MANAGED_DISKS}
 
+cat stemcell-state/stemcell.env
 source stemcell-state/stemcell.env
 source /etc/profile.d/chruby.sh
 chruby ${RUBY_VERSION}
