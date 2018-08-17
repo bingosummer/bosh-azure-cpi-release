@@ -635,7 +635,8 @@ module Bosh::AzureCloud
     def info
       @telemetry_manager.monitor('info') do
         {
-          'stemcell_formats' => %w[azure-vhd azure-light]
+          'stemcell_formats' => %w[azure-vhd azure-light],
+          'api_version' => 1
         }
       end
     end
