@@ -28,9 +28,6 @@ cpi_lambda = lambda do |context|
   Bosh::Clouds::Azure.new(cloud_properties)
 end
 
-# Redefine $stdout because azure libraries use print for info logging
-$stdout = STDERR
-
 cli = Bosh::Cpi::Cli.new(cpi_lambda, cpi_log, STDOUT)
 
 cli.run(ARGF.read)
