@@ -441,8 +441,12 @@ module Bosh::AzureCloud
     def attach_disk(instance_id, disk_id)
       with_thread_name("attach_disk(#{instance_id},#{disk_id})") do
         @telemetry_manager.monitor('attach_disk', id: instance_id) do
+          @logger.info("binxitest: '#{instance_id}'")
           instance_id = InstanceId.parse(instance_id, _azure_config.resource_group_name)
+          @logger.info("binxitest: '#{instance_id}'")
+          @logger.info("binxitest: '#{disk_id}'")
           disk_id = DiskId.parse(disk_id, _azure_config.resource_group_name)
+          @logger.info("binxitest: '#{disk_id}'")
           vm_name = instance_id.vm_name
           disk_name = disk_id.disk_name
 
