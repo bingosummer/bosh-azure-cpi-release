@@ -144,7 +144,7 @@ describe Bosh::AzureCloud::Cloud do
       end
 
       it 'should create/delete the stemcell' do
-        stemcell_properties = YAML::load(image_metadata_path)["cloud_properties"]
+        stemcell_properties = YAML.load_file(image_metadata_path)['cloud_properties']
 
         light_stemcell_id = cpi.create_stemcell(image_path, stemcell_properties)
         expect(light_stemcell_id).not_to be_nil
