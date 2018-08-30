@@ -166,6 +166,10 @@ module Bosh::AzureCloud
     CPI_EVENT_HANDLER_LAST_POST_TIMESTAMP = '/tmp/azure_cpi_events_last_update'
     CPI_TELEMETRY_LOG_FILE                = '/tmp/azure_cpi_telemetry.log'
 
+    # Load Balancer
+    LOAD_BALANCER_SKU_STANDARD = 'Standard'
+    LOAD_BALANCER_SKU_BASIC    = 'Basic'
+
     ##
     # Raises CloudError exception
     #
