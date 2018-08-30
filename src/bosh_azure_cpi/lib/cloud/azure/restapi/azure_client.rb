@@ -275,9 +275,7 @@ module Bosh::AzureCloud
       end
 
       vm = {
-        'name'       => vm_params[:name],
         'location'   => vm_params[:location],
-        'type'       => "#{REST_API_PROVIDER_COMPUTE}/#{REST_API_VIRTUAL_MACHINES}",
         'tags'       => vm_params[:tags],
         'properties' => {
           'hardwareProfile' => {
@@ -680,8 +678,6 @@ module Bosh::AzureCloud
     def create_availability_set(resource_group_name, params)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_AVAILABILITY_SETS, resource_group_name: resource_group_name, name: params[:name])
       availability_set = {
-        'name'       => params[:name],
-        'type'       => "#{REST_API_PROVIDER_COMPUTE}/#{REST_API_AVAILABILITY_SETS}",
         'location'   => params[:location],
         'tags'       => params[:tags],
         'properties' => {
@@ -1173,7 +1169,6 @@ module Bosh::AzureCloud
       url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_PUBLIC_IP_ADDRESSES, resource_group_name: resource_group_name, name: params[:name])
 
       public_ip = {
-        'name'       => params[:name],
         'location'   => params[:location],
         'properties' => {
           'publicIPAllocationMethod' => params[:is_static] ? 'Static' : 'Dynamic',
@@ -1341,7 +1336,6 @@ module Bosh::AzureCloud
       url = rest_api_url(REST_API_PROVIDER_NETWORK, REST_API_NETWORK_INTERFACES, resource_group_name: resource_group_name, name: nic_params[:name])
 
       interface = {
-        'name'       => nic_params[:name],
         'location'   => nic_params[:location],
         'tags'       => nic_params[:tags],
         'properties' => {
