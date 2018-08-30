@@ -53,6 +53,7 @@ module Bosh::AzureCloud
       # When availability_zone is specified, VM won't be in any availability set;
       # Otherwise, VM can be in an availability set specified by availability_set or env['bosh']['group']
       availability_set_name = vm_props.availability_zone.nil? ? _get_availability_set_name(vm_props, env) : nil
+      @logger.info("binxitest: availability_set_name: #{availability_set_name}")
 
       primary_nic_tags = AZURE_TAGS.dup
       # Store the availability set name in the tags of the NIC

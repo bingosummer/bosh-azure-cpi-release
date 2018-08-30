@@ -308,7 +308,7 @@ module Bosh::AzureCloud
           raise "Missing VM cloud properties: #{missing_keys.join(', ')}"
         end
 
-        available_vm_sizes = @azure_client.list_available_virtual_machine_sizes(location)
+        available_vm_sizes = @azure_client.list_available_virtual_machine_sizes_by_location(location)
         instance_type = @instance_type_mapper.map(vm_resources, available_vm_sizes)
         {
           'instance_type' => instance_type,
