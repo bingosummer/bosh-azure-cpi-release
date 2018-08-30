@@ -499,7 +499,7 @@ describe Bosh::AzureCloud::VMManager do
 
               expect do
                 vm_manager.create(bosh_vm_meta, location, vm_props, network_configurator, env)
-              end.to raise_error /create_availability_set - the availability set '#{availability_set_name}' already exists, but in a different location/
+              end.to raise_error /availability set '#{availability_set_name}' already exists, but in a different location/
             end
           end
 
@@ -615,7 +615,7 @@ describe Bosh::AzureCloud::VMManager do
 
                 expect do
                   vm_manager.create(bosh_vm_meta, location, vm_props, network_configurator, env)
-                end.to raise_error /create_availability_set - the availability set '.+' already exists. It's not allowed to update it from managed to unmanaged./
+                end.to raise_error /availability set '.+' already exists. It's not allowed to update it from managed to unmanaged./
               end
             end
           end
