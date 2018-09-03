@@ -159,10 +159,15 @@ module Bosh::AzureCloud
       with_thread_name("create_vm(#{agent_id}, ...)") do
         bosh_vm_meta = Bosh::AzureCloud::BoshVMMeta.new(agent_id, stemcell_id)
         vm_props = @props_factory.parse_vm_props(vm_properties)
-        # TODO: move the validation into the factory's methods
-        cloud_error("missing required cloud property 'instance_type'.") if vm_props.instance_type.nil?
-        cloud_error('Virtual Machines deployed to an Availability Zone must use managed disks') if !@use_managed_disks && !vm_props.availability_zone.nil?
-        extras = { 'instance_type' => vm_props.instance_type.nil? ? 'unknown_instance_type' : vm_props.instance_type }
+        if vm_props.instance_type.nil?
+          if vm_props.instance_types.nil?
+            extras = { 'instance_type' => 'unknown_instance_type', 'instance_types' => 'unknown_instance_types' }
+          else
+            extras = { 'instance_types' => vm_props.instance_types }
+          end
+        else
+          extras = { 'instance_type' => vm_props.instance_type }
+        end
         @telemetry_manager.monitor('create_vm', id: bosh_vm_meta.agent_id, extras: extras) do
           # These resources should be in the same location for a VM: VM, NIC, disk(storage account or managed disk).
           # And NIC must be in the same location with VNET, so CPI will use VNET's location as default location for the resources related to the VM.
@@ -309,9 +314,9 @@ module Bosh::AzureCloud
         end
 
         available_vm_sizes = @azure_client.list_available_virtual_machine_sizes_by_location(location)
-        instance_type = @instance_type_mapper.map(vm_resources, available_vm_sizes)
+        instance_types = @instance_type_mapper.map(vm_resources, available_vm_sizes)
         {
-          'instance_type' => instance_type,
+          'instance_types' => instance_types,
           'ephemeral_disk' => {
             'size' => (vm_resources['ephemeral_disk_size'] / 1024.0).ceil * 1024
           }

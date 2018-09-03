@@ -67,8 +67,8 @@ module Bosh::AzureCloud
         name: availability_set_name,
         location: location,
         tags: AZURE_TAGS,
-        platform_update_domain_count: vm_props.platform_update_domain_count || default_update_domain_count,
-        platform_fault_domain_count: vm_props.platform_fault_domain_count || default_fault_domain_count,
+        platform_update_domain_count: vm_props.platform_update_domain_count,
+        platform_fault_domain_count: vm_props.platform_fault_domain_count,
         managed: @use_managed_disks
       }
       availability_set = nil
