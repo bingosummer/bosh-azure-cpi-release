@@ -21,8 +21,10 @@ module Bosh::AzureCloud
         end
       end
 
-      return nil if availability_set_name.nil? # When creating BOSH director
+      availability_set_name
+    end
 
+    def _regenerate_availability_set_name(availability_set_name, vm_props)
       availability_set_1_name = availability_set_name
       availability_set_2_name = "#{availability_set_name}x"
       resource_group_name = vm_props.resource_group_name

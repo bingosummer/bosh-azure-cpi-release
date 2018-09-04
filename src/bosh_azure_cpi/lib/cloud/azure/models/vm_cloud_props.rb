@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Bosh::AzureCloud
+  # https://bosh.io/docs/azure-cpi/#resource-pools
   class VMCloudProps
     include Helpers
     attr_reader :instance_type, :instance_types

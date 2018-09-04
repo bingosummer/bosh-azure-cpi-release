@@ -27,24 +27,30 @@ module Bosh::AzureCloud
       resource_group_name = vm_props.resource_group_name
       _check_resource_group(resource_group_name, location)
       vm_name = instance_id.vm_name
-      # When availability_zone is specified, VM won't be in any availability set;
-      # Otherwise, VM can be in an availability set specified by availability_set or env['bosh']['group']
-      zone = vm_props.availability_zone
-      availability_set_name = zone.nil? ? _get_availability_set_name(vm_props, env) : nil
-      @logger.info("binxitest: availability_set_name: #{availability_set_name}")
 
-      if vm_props.instance_type.nil?
-        backup_instance_types = vm_props.instance_types.dup
-        @logger.info("The cloud property 'instance_type' is nil. Will select from a list '#{backup_instance_types}'.")
-        availability_set = @azure_client.get_availability_set_by_name(resource_group_name, availability_set_name)
-        unless availability_set.nil?
-          available_vm_sizes = @azure_client.list_available_virtual_machine_sizes_by_availability_set(resource_group_name, availability_set_name)
-          backup_instance_types = backup_instance_types.select do |back_instance_type|
-            available_vm_sizes.include?(back_instance_type)
+      # Determine instance_type, availability_zone and availability_set
+      zone = vm_props.availability_zone
+      if zone.nil?
+        availability_set_name = _get_availability_set_name(vm_props, env)
+        if !vm_props.instance_type.nil?
+          availability_set_name = _regenerate_availability_set_name(availability_set_name, vm_props)
+        else
+          backup_instance_types = vm_props.instance_types.dup
+          @logger.info("The cloud property 'instance_type' is nil. Will select one from '#{backup_instance_types}', which is returned by calculate_vm_cloud_properties.")
+          availability_set = @azure_client.get_availability_set_by_name(resource_group_name, availability_set_name)
+          unless availability_set.nil?
+            available_vm_sizes = @azure_client.list_available_virtual_machine_sizes_by_availability_set(resource_group_name, availability_set_name)
+            backup_instance_types = backup_instance_types.select do |back_instance_type|
+              available_vm_sizes.include?(back_instance_type)
+            end
           end
+          vm_props.instance_type = backup_instance_types[0]
         end
-        vm_props.instance_type = backup_instance_types[0]
+      else
+        availability_set_name = nil
+        vm_props.instance_type = vm_props.instance_types[0] if vm_props.instance_type.nil?
       end
+      @logger.info("binxitest: zone: #{zone}, availability_set_name: #{availability_set_name}, instance_type: #{vm_props.instance_type}")
 
       # tasks to prepare resources for VM
       #   * prepare stemcell
