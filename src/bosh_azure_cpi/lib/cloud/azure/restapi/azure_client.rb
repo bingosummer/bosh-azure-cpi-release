@@ -886,6 +886,28 @@ module Bosh::AzureCloud
       http_put(disk_url, disk)
     end
 
+    # Update sku of a managed disk
+    #
+    # ==== Attributes
+    #
+    # @param [String] resource_group_name  - Name of resource group.
+    # @param [String] name                 - Name of managed disk.
+    # @param [String] sku_name             - Also called storage_account_type
+    #
+    # ==== params
+    #
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/disk.json
+    #
+    def update_sku_of_managed_disk(resource_group_name, name, sku_name)
+      url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_DISKS, resource_group_name: resource_group_name, name: name)
+      disk = get_resource_by_id(url)
+      raise AzureNotFoundError, "update_sku_of_managed_disk - cannot find the disk by name '#{name}' in resource group '#{resource_group_name}'" if disk.nil?
+      if disk['sku']['name'] != sku_name
+        disk['sku']['name'] = sku_name
+        http_put(url, disk)
+      end
+    end
+
     # Delete a managed disk
     # @param [String] resource_group_name  - Name of resource group.
     # @param [String] name                 - Name of managed disk.
@@ -1871,6 +1893,7 @@ module Bosh::AzureCloud
         managed_disk[:location]  = result['location']
         managed_disk[:tags]      = result['tags']
         managed_disk[:sku_name]  = result['sku']['name']
+        managed_disk[:sku_tier]  = result['sku']['tier']
         managed_disk[:zone]      = result['zones'][0] unless result['zones'].nil?
         properties = result['properties']
         managed_disk[:provisioning_state] = properties['provisioningState']
