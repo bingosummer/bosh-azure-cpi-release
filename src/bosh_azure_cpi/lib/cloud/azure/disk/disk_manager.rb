@@ -81,16 +81,11 @@ module Bosh::AzureCloud
       (METADATA_FOR_MIGRATED_BLOB_DISK.to_a - metadata.to_a).empty?
     end
 
-    def get_disk_uri(storage_account_name, disk_name)
-      @logger.info("get_disk_uri(#{storage_account_name}, #{disk_name})")
-      @blob_manager.get_blob_uri(storage_account_name, DISK_CONTAINER, "#{disk_name}.vhd")
-    end
-
     def get_data_disk_uri(disk_id)
       @logger.info("get_data_disk_uri(#{disk_id})")
       storage_account_name = disk_id.storage_account_name
       disk_name = disk_id.disk_name
-      get_disk_uri(storage_account_name, disk_name)
+      _get_disk_uri(storage_account_name, disk_name)
     end
 
     def get_disk_size_in_gb(disk_id)
@@ -110,11 +105,10 @@ module Bosh::AzureCloud
       "#{OS_DISK_PREFIX}-#{vm_name}-#{EPHEMERAL_DISK_POSTFIX}"
     end
 
-    def os_disk(storage_account_name, vm_name, stemcell_info, size, caching, use_root_disk_as_ephemeral)
-      disk_name = generate_os_disk_name(vm_name)
-      disk_uri = get_disk_uri(storage_account_name, disk_name)
+    def os_disk(storage_account_name, vm_name, stemcell_info, size, caching, use_root_disk_as_ephemeral, environment)
       validate_disk_caching(caching)
-
+      disk_name = generate_os_disk_name(vm_name)
+      disk_uri = _get_disk_uri(storage_account_name, disk_name, environment == ENVIRONMENT_AZURESTACK)
       disk_size = get_os_disk_size(size, stemcell_info, use_root_disk_as_ephemeral)
 
       {
@@ -125,7 +119,7 @@ module Bosh::AzureCloud
       }
     end
 
-    def ephemeral_disk(storage_account_name, vm_name, instance_type, size, use_root_disk_as_ephemeral)
+    def ephemeral_disk(storage_account_name, vm_name, instance_type, size, use_root_disk_as_ephemeral, environment)
       return nil if use_root_disk_as_ephemeral
 
       disk_info = DiskInfo.for(instance_type)
@@ -134,10 +128,11 @@ module Bosh::AzureCloud
         validate_disk_size(size)
         disk_size = size / 1024
       end
+      disk_uri = _get_disk_uri(storage_account_name, generate_ephemeral_disk_name(vm_name), environment == ENVIRONMENT_AZURESTACK)
 
       {
         disk_name: EPHEMERAL_DISK_POSTFIX,
-        disk_uri: get_disk_uri(storage_account_name, generate_ephemeral_disk_name(vm_name)),
+        disk_uri: disk_uri,
         disk_size: disk_size,
         disk_caching: 'ReadWrite'
       }
@@ -164,6 +159,12 @@ module Bosh::AzureCloud
       @logger.info("_has_disk?(#{storage_account_name}, #{disk_name})")
       blob_properties = @blob_manager.get_blob_properties(storage_account_name, DISK_CONTAINER, "#{disk_name}.vhd")
       !blob_properties.nil?
+    end
+
+    def _get_disk_uri(storage_account_name, disk_name, auto_generate_container_name = false)
+      @logger.info("_get_disk_uri(#{storage_account_name}, #{disk_name}, #{environment})")
+      disk_container = auto_generate_container_name ? Digest::MD5.hexdigest(disk_name) : DISK_CONTAINER
+      @blob_manager.get_blob_uri(storage_account_name, disk_container, "#{disk_name}.vhd")
     end
 
     # bosh-data-STORAGEACCOUNTNAME-UUID-CACHING--SNAPSHOTTIME
