@@ -7,8 +7,8 @@ module Bosh::AzureCloud
     #   With unmanaged disks: "[STORAGE-ACCOUNT-NAME]-[AGENT-ID]"
     #   With managed disks:   "[AGENT-ID]"
     # V2 format:
-    #   With unmanaged disks: "resource_group_name:[RESOURCE-GROUP-NAME];agent_id:[AGENT-ID];storage_account_name:[STORAGE-ACCOUNT-NAME]"
-    #   With managed disks:   "resource_group_name:[RESOURCE-GROUP-NAME];agent_id:[AGENT-ID]"
+    #   With unmanaged disks: "agent_id:[AGENT-ID];resource_group_name:[RESOURCE-GROUP-NAME];storage_account_name:[STORAGE-ACCOUNT-NAME];vm_name:[VM-NAME]"
+    #   With managed disks:   "agent_id:[AGENT-ID];resource_group_name:[RESOURCE-GROUP-NAME];vm_name:[VM-NAME]"
     # Usage:
     #  Creating id for a new VM
     #   instance_id = InstanceId.create(resource_group_name, agent_id, storage_account_name) # Create V2 instance id with unmanaged disks
@@ -17,19 +17,22 @@ module Bosh::AzureCloud
     #   instance_id = InstanceId.parse(id, resource_group_name)
 
     AGENT_ID_KEY = 'agent_id'
+    VM_NAME_KEY = 'vm_name'
     STORAGE_ACCOUNT_NAME_KEY = 'storage_account_name'
     private_class_method :new
 
     # Params:
     # - resource_group_name: the resource group name which the instance will be in.
     # - agent_id: the agent id.
+    # - vm_name: the VM name.
     # - storage_account_name: the storage account name.
-    def self.create(resource_group_name, agent_id, storage_account_name = nil)
+    def self.create(resource_group_name, agent_id, vm_name = nil, storage_account_name = nil)
       id_hash = {
         RESOURCE_GROUP_NAME_KEY  => resource_group_name,
         AGENT_ID_KEY             => agent_id
       }
-      id_hash[STORAGE_ACCOUNT_NAME_KEY] = storage_account_name unless storage_account_name.nil?
+      id_hash[VM_NAME_KEY] = vm_name if vm_name
+      id_hash[STORAGE_ACCOUNT_NAME_KEY] = storage_account_name if storage_account_name
       new(id_hash)
     end
 
@@ -45,7 +48,7 @@ module Bosh::AzureCloud
 
     def vm_name
       return @plain_id unless @plain_id.nil?
-      @id_hash[AGENT_ID_KEY]
+      @id_hash.key?(VM_NAME_KEY) ? @id_hash[VM_NAME_KEY] : @id_hash[AGENT_ID_KEY]
     end
 
     def storage_account_name
