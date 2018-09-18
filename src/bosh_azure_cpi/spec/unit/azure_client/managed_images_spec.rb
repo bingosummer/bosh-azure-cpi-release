@@ -31,7 +31,7 @@ describe Bosh::AzureCloud::AzureClient do
     allow(azure_client).to receive(:sleep)
   end
 
-  describe '#create_user_image' do
+  describe '#create_managed_custom_image' do
     let(:image_uri) { "https://management.azure.com/subscriptions/#{subscription_id}/resourceGroups/#{resource_group}/providers/Microsoft.Compute/images/#{image_name}?api-version=#{api_version_compute}" }
 
     let(:image_params) do
@@ -88,12 +88,12 @@ describe Bosh::AzureCloud::AzureClient do
       )
 
       expect do
-        azure_client.create_user_image(image_params)
+        azure_client.create_managed_custom_image(image_params)
       end.not_to raise_error
     end
   end
 
-  describe '#get_user_image_by_name' do
+  describe '#get_managed_custom_image_by_name' do
     let(:image_uri) { "https://management.azure.com/subscriptions/#{subscription_id}/resourceGroups/#{resource_group}/providers/Microsoft.Compute/images/#{image_name}?api-version=#{api_version_compute}" }
 
     let(:response_body) do
@@ -137,12 +137,12 @@ describe Bosh::AzureCloud::AzureClient do
       )
 
       expect(
-        azure_client.get_user_image_by_name(image_name)
+        azure_client.get_managed_custom_image_by_name(image_name)
       ).to eq(image)
     end
   end
 
-  describe '#list_user_images' do
+  describe '#list_managed_custom_images' do
     let(:images_uri) { "https://management.azure.com/subscriptions/#{subscription_id}/resourceGroups/#{resource_group}/providers/Microsoft.Compute/images?api-version=#{api_version_compute}" }
 
     let(:response_body) do
@@ -212,12 +212,12 @@ describe Bosh::AzureCloud::AzureClient do
       )
 
       expect(
-        azure_client.list_user_images
+        azure_client.list_managed_custom_images
       ).to eq(images)
     end
   end
 
-  describe '#delete_user_image' do
+  describe '#delete_managed_custom_image' do
     let(:image_uri) { "https://management.azure.com/subscriptions/#{subscription_id}/resourceGroups/#{resource_group}/providers/Microsoft.Compute/images/#{image_name}?api-version=#{api_version_compute}" }
 
     context 'when token is valid, delete operation is accepted and completed' do
@@ -237,7 +237,7 @@ describe Bosh::AzureCloud::AzureClient do
         )
 
         expect do
-          azure_client.delete_user_image(image_name)
+          azure_client.delete_managed_custom_image(image_name)
         end.not_to raise_error
       end
     end

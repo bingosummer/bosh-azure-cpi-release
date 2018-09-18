@@ -19,7 +19,7 @@ describe Bosh::AzureCloud::StemcellManager2 do
   let(:stemcell_name) { "bosh-stemcell-#{stemcell_uuid}" }
 
   describe '#delete_stemcell' do
-    let(:user_images) do
+    let(:managed_custom_images) do
       [
         { name: "#{stemcell_uuid}-postfix" }, # New format
         { name: "#{stemcell_name}-postfix" }, # Old format
@@ -47,8 +47,8 @@ describe Bosh::AzureCloud::StemcellManager2 do
     end
 
     before do
-      allow(azure_client).to receive(:list_user_images)
-        .and_return(user_images)
+      allow(azure_client).to receive(:list_managed_custom_images)
+        .and_return(managed_custom_images)
       allow(azure_client).to receive(:list_storage_accounts)
         .and_return(storage_accounts)
       allow(table_manager).to receive(:has_table?)
@@ -60,10 +60,10 @@ describe Bosh::AzureCloud::StemcellManager2 do
     end
 
     it 'deletes the stemcell in default storage account' do
-      # Delete the user images whose prefix is the stemcell_uuid or stemcell_name
-      expect(azure_client).to receive(:delete_user_image)
+      # Delete the managed custom images whose prefix is the stemcell_uuid or stemcell_name
+      expect(azure_client).to receive(:delete_managed_custom_image)
         .with("#{stemcell_uuid}-postfix").once
-      expect(azure_client).to receive(:delete_user_image)
+      expect(azure_client).to receive(:delete_managed_custom_image)
         .with("#{stemcell_name}-postfix").once
 
       # Delete all stemcells with the given stemcell name in all storage accounts
@@ -100,45 +100,45 @@ describe Bosh::AzureCloud::StemcellManager2 do
     end
   end
 
-  describe '#get_user_image_info' do
+  describe '#get_managed_custom_image_info' do
     let(:storage_account_type) { 'Standard_LRS' }
     let(:location) { 'SoutheastAsia' }
-    let(:user_image_name_deprecated) { "#{stemcell_name}-#{storage_account_type}-#{location}" }
-    let(:user_image_name) { "#{stemcell_uuid}-S-#{location}" }
-    let(:user_image_id) { 'fake-user-image-id' }
+    let(:managed_custom_image_name_deprecated) { "#{stemcell_name}-#{storage_account_type}-#{location}" }
+    let(:managed_custom_image_name) { "#{stemcell_uuid}-S-#{location}" }
+    let(:managed_custom_image_id) { 'fake-user-image-id' }
     let(:tags) do
       {
         'foo' => 'bar'
       }
     end
-    let(:user_image) do
+    let(:managed_custom_image) do
       {
-        id: user_image_id,
+        id: managed_custom_image_id,
         tags: tags
       }
     end
 
-    # CPI will try to delete the user image with the old format name no matter it exists
+    # CPI will try to delete the managed custom image with the old format name no matter it exists
     before do
-      allow(azure_client).to receive(:delete_user_image).with(user_image_name_deprecated)
+      allow(azure_client).to receive(:delete_managed_custom_image).with(managed_custom_image_name_deprecated)
     end
 
-    context 'when the user image already exists' do
+    context 'when the managed custom image already exists' do
       before do
-        allow(azure_client).to receive(:get_user_image_by_name)
-          .with(user_image_name)
-          .and_return(user_image)
+        allow(azure_client).to receive(:get_managed_custom_image_by_name)
+          .with(managed_custom_image_name)
+          .and_return(managed_custom_image)
       end
 
-      it 'should return the user image information' do
+      it 'should return the managed custom image information' do
         expect(storage_account_manager).not_to receive(:default_storage_account)
-        stemcell_info = stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
-        expect(stemcell_info.uri).to eq(user_image_id)
+        stemcell_info = stemcell_manager2.get_managed_custom_image_info(stemcell_name, storage_account_type, location)
+        expect(stemcell_info.uri).to eq(managed_custom_image_id)
         expect(stemcell_info.metadata).to eq(tags)
       end
     end
 
-    context "when the user image doesn't exist" do
+    context "when the managed custom image doesn't exist" do
       context "when the stemcell doesn't exist in the default storage account" do
         let(:default_storage_account) do
           {
@@ -147,8 +147,8 @@ describe Bosh::AzureCloud::StemcellManager2 do
         end
 
         before do
-          allow(azure_client).to receive(:get_user_image_by_name)
-            .with(user_image_name)
+          allow(azure_client).to receive(:get_managed_custom_image_by_name)
+            .with(managed_custom_image_name)
             .and_return(nil)
           allow(storage_account_manager).to receive(:default_storage_account)
             .and_return(default_storage_account)
@@ -158,8 +158,8 @@ describe Bosh::AzureCloud::StemcellManager2 do
 
         it 'should raise an error' do
           expect do
-            stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
-          end.to raise_error /Failed to get user image for the stemcell '#{stemcell_name}'/
+            stemcell_manager2.get_managed_custom_image_info(stemcell_name, storage_account_type, location)
+          end.to raise_error /Failed to get managed custom image for the stemcell '#{stemcell_name}'/
         end
       end
 
@@ -167,18 +167,18 @@ describe Bosh::AzureCloud::StemcellManager2 do
         let(:stemcell_container) { 'stemcell' }
         let(:stemcell_blob_uri) { 'fake-blob-url' }
         let(:stemcell_blob_metadata) { { 'foo' => 'bar' } }
-        let(:user_image) do
+        let(:managed_custom_image) do
           {
-            id: user_image_id,
+            id: managed_custom_image_id,
             tags: tags,
             provisioning_state: 'Succeeded'
           }
         end
 
         before do
-          allow(azure_client).to receive(:get_user_image_by_name)
-            .with(user_image_name)
-            .and_return(nil, user_image) # The first return value nil means the user image doesn't exist, the second one user_image is returned after the image is created.
+          allow(azure_client).to receive(:get_managed_custom_image_by_name)
+            .with(managed_custom_image_name)
+            .and_return(nil, managed_custom_image) # The first return value nil means the managed custom image doesn't exist, the second one managed_custom_image is returned after the image is created.
           allow(blob_manager).to receive(:get_blob_properties)
             .with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME, stemcell_container, "#{stemcell_name}.vhd")
             .and_return('foo' => 'bar') # The stemcell exists in the default storage account
@@ -205,34 +205,34 @@ describe Bosh::AzureCloud::StemcellManager2 do
 
           context 'when the lock is got for the first time' do
             before do
-              allow(azure_client).to receive(:get_user_image_by_name)
-                .with(user_image_name)
-                .and_return(nil, nil, user_image) # The first and the second return value nil means the user image doesn't exist, the third one user_image is returned after the image is created.
+              allow(azure_client).to receive(:get_managed_custom_image_by_name)
+                .with(managed_custom_image_name)
+                .and_return(nil, nil, managed_custom_image) # The first and the second return value nil means the managed custom image doesn't exist, the third one managed_custom_image is returned after the image is created.
             end
 
-            it 'should get the stemcell from the default storage account, create a new user image and return the user image information' do
+            it 'should get the stemcell from the default storage account, create a new managed custom image and return the managed custom image information' do
               expect(azure_client).not_to receive(:list_storage_accounts)
-              expect(stemcell_manager2).to receive(:flock).with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{user_image_name}", File::LOCK_EX).and_call_original
-              expect(azure_client).to receive(:create_user_image)
-              stemcell_info = stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
-              expect(stemcell_info.uri).to eq(user_image_id)
+              expect(stemcell_manager2).to receive(:flock).with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{managed_custom_image_name}", File::LOCK_EX).and_call_original
+              expect(azure_client).to receive(:create_managed_custom_image)
+              stemcell_info = stemcell_manager2.get_managed_custom_image_info(stemcell_name, storage_account_type, location)
+              expect(stemcell_info.uri).to eq(managed_custom_image_id)
               expect(stemcell_info.metadata).to eq(tags)
             end
           end
 
           context 'when the lock is got, but the image is already created by other process' do
             before do
-              allow(azure_client).to receive(:get_user_image_by_name)
-                .with(user_image_name)
-                .and_return(nil, user_image) # The first return value nil means the user image doesn't exist, the second one user_image is returned after the image is created.
+              allow(azure_client).to receive(:get_managed_custom_image_by_name)
+                .with(managed_custom_image_name)
+                .and_return(nil, managed_custom_image) # The first return value nil means the managed custom image doesn't exist, the second one managed_custom_image is returned after the image is created.
             end
 
-            it 'should get the stemcell from the default storage account, get the user image and return image information' do
+            it 'should get the stemcell from the default storage account, get the managed custom image and return image information' do
               expect(azure_client).not_to receive(:list_storage_accounts)
-              expect(stemcell_manager2).to receive(:flock).with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{user_image_name}", File::LOCK_EX).and_call_original
-              expect(azure_client).not_to receive(:create_user_image)
-              stemcell_info = stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
-              expect(stemcell_info.uri).to eq(user_image_id)
+              expect(stemcell_manager2).to receive(:flock).with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{managed_custom_image_name}", File::LOCK_EX).and_call_original
+              expect(azure_client).not_to receive(:create_managed_custom_image)
+              stemcell_info = stemcell_manager2.get_managed_custom_image_info(stemcell_name, storage_account_type, location)
+              expect(stemcell_info.uri).to eq(managed_custom_image_id)
               expect(stemcell_info.metadata).to eq(tags)
             end
           end
@@ -278,12 +278,12 @@ describe Bosh::AzureCloud::StemcellManager2 do
                 allow(blob_manager).to receive(:get_blob_properties)
                   .with(existing_storage_account_name, stemcell_container, "#{stemcell_name}.vhd")
                   .and_return('foo' => 'bar') # The stemcell exists in the existing storage account
-                allow(azure_client).to receive(:get_user_image_by_name)
-                  .with(user_image_name)
-                  .and_return(nil, nil, user_image) # The first and the second return value nil means the user image doesn't exist, the third one user_image is returned after the image is created.
+                allow(azure_client).to receive(:get_managed_custom_image_by_name)
+                  .with(managed_custom_image_name)
+                  .and_return(nil, nil, managed_custom_image) # The first and the second return value nil means the managed custom image doesn't exist, the third one managed_custom_image is returned after the image is created.
               end
 
-              it 'should create a new user image and return the user image information' do
+              it 'should create a new managed custom image and return the managed custom image information' do
                 expect(blob_manager).not_to receive(:get_sas_blob_uri)
                   .with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME, stemcell_container, "#{stemcell_name}.vhd")
                 expect(blob_manager).not_to receive(:copy_blob)
@@ -291,11 +291,11 @@ describe Bosh::AzureCloud::StemcellManager2 do
                   .with("#{CPI_LOCK_COPY_STEMCELL}-#{stemcell_name}-#{existing_storage_account_name}", File::LOCK_EX)
                   .and_call_original
                 expect(stemcell_manager2).to receive(:flock)
-                  .with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{user_image_name}", File::LOCK_EX)
+                  .with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{managed_custom_image_name}", File::LOCK_EX)
                   .and_call_original
-                expect(azure_client).to receive(:create_user_image)
-                stemcell_info = stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
-                expect(stemcell_info.uri).to eq(user_image_id)
+                expect(azure_client).to receive(:create_managed_custom_image)
+                stemcell_info = stemcell_manager2.get_managed_custom_image_info(stemcell_name, storage_account_type, location)
+                expect(stemcell_info.uri).to eq(managed_custom_image_id)
                 expect(stemcell_info.metadata).to eq(tags)
               end
             end
@@ -309,12 +309,12 @@ describe Bosh::AzureCloud::StemcellManager2 do
 
               context 'when copying blob is successful' do
                 before do
-                  allow(azure_client).to receive(:get_user_image_by_name)
-                    .with(user_image_name)
-                    .and_return(nil, nil, user_image) # The first and the second return value nil means the user image doesn't exist, the third one user_image is returned after the image is created.
+                  allow(azure_client).to receive(:get_managed_custom_image_by_name)
+                    .with(managed_custom_image_name)
+                    .and_return(nil, nil, managed_custom_image) # The first and the second return value nil means the managed custom image doesn't exist, the third one managed_custom_image is returned after the image is created.
                 end
 
-                it 'should copy the stemcell from default storage account to an existing storage account, create a new user image and return the user image information' do
+                it 'should copy the stemcell from default storage account to an existing storage account, create a new managed custom image and return the managed custom image information' do
                   expect(blob_manager).to receive(:get_sas_blob_uri)
                     .with(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME, stemcell_container, "#{stemcell_name}.vhd")
                     .and_return(stemcell_blob_uri)
@@ -322,13 +322,13 @@ describe Bosh::AzureCloud::StemcellManager2 do
                     .with("#{CPI_LOCK_COPY_STEMCELL}-#{stemcell_name}-#{existing_storage_account_name}", File::LOCK_EX)
                     .and_call_original
                   expect(stemcell_manager2).to receive(:flock)
-                    .with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{user_image_name}", File::LOCK_EX)
+                    .with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{managed_custom_image_name}", File::LOCK_EX)
                     .and_call_original
                   expect(blob_manager).to receive(:copy_blob)
                     .with(existing_storage_account_name, stemcell_container, "#{stemcell_name}.vhd", stemcell_blob_uri)
-                  expect(azure_client).to receive(:create_user_image)
-                  stemcell_info = stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
-                  expect(stemcell_info.uri).to eq(user_image_id)
+                  expect(azure_client).to receive(:create_managed_custom_image)
+                  stemcell_info = stemcell_manager2.get_managed_custom_image_info(stemcell_name, storage_account_type, location)
+                  expect(stemcell_info.uri).to eq(managed_custom_image_id)
                   expect(stemcell_info.metadata).to eq(tags)
                 end
               end
@@ -348,7 +348,7 @@ describe Bosh::AzureCloud::StemcellManager2 do
                     .with("#{CPI_LOCK_COPY_STEMCELL}-#{stemcell_name}-#{existing_storage_account_name}", File::LOCK_EX)
                     .and_call_original
                   expect do
-                    stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
+                    stemcell_manager2.get_managed_custom_image_info(stemcell_name, storage_account_type, location)
                   end.to raise_error /Error when copying blobs/
                 end
               end
@@ -366,7 +366,7 @@ describe Bosh::AzureCloud::StemcellManager2 do
 
                 it 'raise an error' do
                   expect do
-                    stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
+                    stemcell_manager2.get_managed_custom_image_info(stemcell_name, storage_account_type, location)
                   end.to raise_error /Error when creating storage account/
                 end
               end
@@ -405,12 +405,12 @@ describe Bosh::AzureCloud::StemcellManager2 do
                   .with(new_storage_account_name, stemcell_container, "#{stemcell_name}.vhd", stemcell_blob_uri)
 
                 # check image
-                allow(azure_client).to receive(:get_user_image_by_name)
-                  .with(user_image_name)
-                  .and_return(nil, nil, user_image) # The first and the second return value nil means the user image doesn't exist, the third one user_image is returned after the image is created.
+                allow(azure_client).to receive(:get_managed_custom_image_by_name)
+                  .with(managed_custom_image_name)
+                  .and_return(nil, nil, managed_custom_image) # The first and the second return value nil means the managed custom image doesn't exist, the third one managed_custom_image is returned after the image is created.
               end
 
-              it 'should create a new user image and return the user image information' do
+              it 'should create a new managed custom image and return the managed custom image information' do
                 expect(storage_account_manager).to receive(:get_or_create_storage_account_by_tags)
                   .with(STEMCELL_STORAGE_ACCOUNT_TAGS, storage_account_type, 'Storage', location, ['stemcell'], false)
                   .and_return(storage_account)
@@ -418,19 +418,19 @@ describe Bosh::AzureCloud::StemcellManager2 do
                   .with("#{CPI_LOCK_COPY_STEMCELL}-#{stemcell_name}-#{new_storage_account_name}", File::LOCK_EX)
                   .and_call_original
                 expect(stemcell_manager2).to receive(:flock)
-                  .with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{user_image_name}", File::LOCK_EX)
+                  .with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{managed_custom_image_name}", File::LOCK_EX)
                   .and_call_original
                 expect(blob_manager).to receive(:copy_blob)
-                expect(azure_client).to receive(:create_user_image)
-                stemcell_info = stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
-                expect(stemcell_info.uri).to eq(user_image_id)
+                expect(azure_client).to receive(:create_managed_custom_image)
+                stemcell_info = stemcell_manager2.get_managed_custom_image_info(stemcell_name, storage_account_type, location)
+                expect(stemcell_info.uri).to eq(managed_custom_image_id)
                 expect(stemcell_info.metadata).to eq(tags)
               end
             end
           end
         end
 
-        context 'When CPI is going to create user image' do
+        context 'When CPI is going to create managed custom image' do
           let(:default_storage_account) do
             {
               name: MOCK_DEFAULT_STORAGE_ACCOUNT_NAME,
@@ -451,50 +451,50 @@ describe Bosh::AzureCloud::StemcellManager2 do
               .and_return(stemcell_blob_metadata)
           end
 
-          context 'when the user image is not created successfully' do
+          context 'when the managed custom image is not created successfully' do
             before do
-              allow(azure_client).to receive(:get_user_image_by_name)
-                .with(user_image_name)
-                .and_return(nil, nil, nil) # The first and second return value nil means the user image doesn't exist, the third nil means that the user image can't be found after creation.
+              allow(azure_client).to receive(:get_managed_custom_image_by_name)
+                .with(managed_custom_image_name)
+                .and_return(nil, nil, nil) # The first and second return value nil means the managed custom image doesn't exist, the third nil means that the managed custom image can't be found after creation.
             end
 
             it 'should raise an error' do
               expect(stemcell_manager2).to receive(:flock)
-                .with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{user_image_name}", File::LOCK_EX)
+                .with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{managed_custom_image_name}", File::LOCK_EX)
                 .and_call_original
-              expect(azure_client).to receive(:create_user_image)
+              expect(azure_client).to receive(:create_managed_custom_image)
 
               expect do
-                stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
-              end.to raise_error(/get_user_image: Can not find a user image with the name '#{user_image_name}'/)
+                stemcell_manager2.get_managed_custom_image_info(stemcell_name, storage_account_type, location)
+              end.to raise_error(/get_managed_custom_image: Can not find a managed custom image with the name '#{managed_custom_image_name}'/)
             end
           end
 
-          context 'when the user image is created successfully' do
-            let(:user_image) do
+          context 'when the managed custom image is created successfully' do
+            let(:managed_custom_image) do
               {
-                id: user_image_id,
+                id: managed_custom_image_id,
                 tags: tags,
                 provisioning_state: 'Succeeded'
               }
             end
 
             before do
-              allow(azure_client).to receive(:get_user_image_by_name)
-                .with(user_image_name)
-                .and_return(user_image)
-              allow(azure_client).to receive(:get_user_image_by_name)
-                .with(user_image_name)
-                .and_return(nil, nil, user_image) # The first and second return value nil means the user image doesn't exist, the third nil means that the user image can't be found after creation.
+              allow(azure_client).to receive(:get_managed_custom_image_by_name)
+                .with(managed_custom_image_name)
+                .and_return(managed_custom_image)
+              allow(azure_client).to receive(:get_managed_custom_image_by_name)
+                .with(managed_custom_image_name)
+                .and_return(nil, nil, managed_custom_image) # The first and second return value nil means the managed custom image doesn't exist, the third nil means that the managed custom image can't be found after creation.
             end
 
-            it 'should return the new user image' do
+            it 'should return the new managed custom image' do
               expect(stemcell_manager2).to receive(:flock)
-                .with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{user_image_name}", File::LOCK_EX)
+                .with("#{CPI_LOCK_CREATE_USER_IMAGE}-#{managed_custom_image_name}", File::LOCK_EX)
                 .and_call_original
-              expect(azure_client).to receive(:create_user_image)
-              stemcell_info = stemcell_manager2.get_user_image_info(stemcell_name, storage_account_type, location)
-              expect(stemcell_info.uri).to eq(user_image_id)
+              expect(azure_client).to receive(:create_managed_custom_image)
+              stemcell_info = stemcell_manager2.get_managed_custom_image_info(stemcell_name, storage_account_type, location)
+              expect(stemcell_info.uri).to eq(managed_custom_image_id)
               expect(stemcell_info.metadata).to eq(tags)
             end
           end

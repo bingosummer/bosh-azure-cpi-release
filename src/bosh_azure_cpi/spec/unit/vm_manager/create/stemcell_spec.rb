@@ -98,11 +98,11 @@ describe Bosh::AzureCloud::VMManager do
       context 'when heavy stemcell is used' do
         let(:stemcell_id) { 'bosh-stemcell-xxx' }
 
-        context 'when it gets user image successfully' do
+        context 'when it gets managed custom image successfully' do
           let(:stemcell_info) { double('stemcell-info') }
 
           before do
-            allow(stemcell_manager2).to receive(:get_user_image_info)
+            allow(stemcell_manager2).to receive(:get_managed_custom_image_info)
               .with(stemcell_id, 'Standard_LRS', location)
               .and_return(stemcell_info)
           end
@@ -114,11 +114,11 @@ describe Bosh::AzureCloud::VMManager do
           end
         end
 
-        context 'when it fails to user image successfully' do
+        context 'when it fails to managed custom image successfully' do
           let(:stemcell_info) { double('stemcell-info') }
 
           before do
-            allow(stemcell_manager2).to receive(:get_user_image_info)
+            allow(stemcell_manager2).to receive(:get_managed_custom_image_info)
               .with(stemcell_id, 'Standard_LRS', location)
               .and_raise('fake-error')
           end
@@ -126,7 +126,7 @@ describe Bosh::AzureCloud::VMManager do
           it 'should return the stemcell info' do
             expect do
               vm_manager2.send(:_get_stemcell_info, stemcell_id, vm_props, location)
-            end.to raise_error(/Failed to get the user image information for the stemcell '#{stemcell_id}'/)
+            end.to raise_error(/Failed to get the managed custom image information for the stemcell '#{stemcell_id}'/)
           end
         end
       end

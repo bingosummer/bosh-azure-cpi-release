@@ -940,17 +940,17 @@ module Bosh::AzureCloud
     #
     # ==== Attributes
     #
-    # @param [Hash] params   - Parameters for creating the user image.
+    # @param [Hash] params   - Parameters for creating the managed custom image.
     #
     # ==== params
     #
     # Accepted key/value pairs are:
-    # * +:name+                         - String. Name of the user image.
-    # * +:location+                     - String. The location where the user image will be created.
-    # * +:tags+                         - Hash. Tags of the user image.
+    # * +:name+                         - String. Name of the managed custom image.
+    # * +:location+                     - String. The location where the managed custom image will be created.
+    # * +:tags+                         - Hash. Tags of the managed custom image.
     # * +:os_type+                      - String. OS type. Possible values: linux.
     # * +:source_uri+                   - String. The SAS URI of the source storage blob.
-    # * +:account_type+                 - String. Specifies the account type of the user image.
+    # * +:account_type+                 - String. Specifies the account type of the managed custom image.
     #                                     Possible values: Standard_LRS, StandardSSD_LRS, Premium_LRS.
     #
     # @return [Boolean]
@@ -958,10 +958,10 @@ module Bosh::AzureCloud
     # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
     #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/examples/CreateAnImageFromABlob.json
     #
-    def create_user_image(params)
-      @logger.debug("create_user_image - trying to create a user image '#{params[:name]}'")
+    def create_managed_custom_image(params)
+      @logger.debug("create_managed_custom_image - trying to create a managed custom image '#{params[:name]}'")
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_IMAGES, name: params[:name])
-      user_image = {
+      managed_custom_image = {
         'location'   => params[:location],
         'tags'       => params[:tags],
         'properties' => {
@@ -977,63 +977,63 @@ module Bosh::AzureCloud
         }
       }
 
-      http_put(url, user_image)
+      http_put(url, managed_custom_image)
     end
 
-    # Delete a user image
-    # @param [String] name - Name of user image.
+    # Delete a managed custom image
+    # @param [String] name - Name of managed custom image.
     #
     # @return [Boolean]
     #
     # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
     #
-    def delete_user_image(name)
-      @logger.debug("delete_user_image - trying to delete '#{name}'")
+    def delete_managed_custom_image(name)
+      @logger.debug("delete_managed_custom_image - trying to delete '#{name}'")
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_IMAGES, name: name)
       http_delete(url)
     end
 
-    # Get a user image's information
-    # @param [String] name - Name of user image
+    # Get a managed custom image's information
+    # @param [String] name - Name of managed custom image
     #
     # @return [Hash]
     #
     # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
     #
-    def get_user_image_by_name(name)
+    def get_managed_custom_image_by_name(name)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_IMAGES, name: name)
-      get_user_image(url)
+      get_managed_custom_image(url)
     end
 
-    # Get a user image's information
-    # @param [String] url - URL of user image.
+    # Get a managed custom image's information
+    # @param [String] url - URL of managed custom image.
     #
     # @return [Hash]
     #
     # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
     #
-    def get_user_image(url)
+    def get_managed_custom_image(url)
       result = get_resource_by_id(url)
-      parse_user_image(result)
+      parse_managed_custom_image(result)
     end
 
-    # List user images within the default resource group
+    # List managed custom images within the default resource group
     #
     # @return [Array]
     #
     # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
     #
-    def list_user_images
-      user_images = []
+    def list_managed_custom_images
+      managed_custom_images = []
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_IMAGES)
       result = get_resource_by_id(url)
       unless result.nil?
         result['value'].each do |value|
-          user_image = parse_user_image(value)
-          user_images << user_image
+          managed_custom_image = parse_managed_custom_image(value)
+          managed_custom_images << managed_custom_image
         end
       end
-      user_images
+      managed_custom_images
     end
 
     # Compute/Snapshots
@@ -1890,18 +1890,18 @@ module Bosh::AzureCloud
       managed_disk
     end
 
-    def parse_user_image(result)
-      user_image = nil
+    def parse_managed_custom_image(result)
+      managed_custom_image = nil
       unless result.nil?
-        user_image = {}
-        user_image[:id]       = result['id']
-        user_image[:name]     = result['name']
-        user_image[:location] = result['location']
-        user_image[:tags]     = result['tags']
+        managed_custom_image = {}
+        managed_custom_image[:id]       = result['id']
+        managed_custom_image[:name]     = result['name']
+        managed_custom_image[:location] = result['location']
+        managed_custom_image[:tags]     = result['tags']
         properties = result['properties']
-        user_image[:provisioning_state] = properties['provisioningState']
+        managed_custom_image[:provisioning_state] = properties['provisioningState']
       end
-      user_image
+      managed_custom_image
     end
 
     def parse_platform_image(result)
