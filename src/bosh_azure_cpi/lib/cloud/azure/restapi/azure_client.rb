@@ -83,6 +83,7 @@ module Bosh::AzureCloud
     REST_API_AVAILABILITY_SETS           = 'availabilitySets'
     REST_API_DISKS                       = 'disks'
     REST_API_IMAGES                      = 'images'
+    REST_API_GALLERIES                   = 'galleries'
     REST_API_SNAPSHOTS                   = 'snapshots'
     REST_API_VM_IMAGE                    = 'vmimage'
     REST_API_VM_SIZES                    = 'vmSizes'
@@ -790,8 +791,8 @@ module Bosh::AzureCloud
     # When disk is in a zone
     # * +:zone+                         - String. Zone number in string.
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/disk.json
-    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/examples/CreateAnEmptyManagedDisk.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/disk.json
+    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/examples/CreateAnEmptyManagedDisk.json
     #
     def create_empty_managed_disk(resource_group_name, params)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_DISKS, resource_group_name: resource_group_name, name: params[:name])
@@ -831,8 +832,8 @@ module Bosh::AzureCloud
     # When disk is in a zone
     # * +:zone+                         - String. Zone number in string.
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/disk.json
-    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/examples/CreateAManagedDiskByImportingAnUnmanagedBlobFromTheSameSubscription.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/disk.json
+    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/examples/CreateAManagedDiskByImportingAnUnmanagedBlobFromTheSameSubscription.json
     #
     def create_managed_disk_from_blob(resource_group_name, params)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_DISKS, resource_group_name: resource_group_name, name: params[:name])
@@ -872,8 +873,8 @@ module Bosh::AzureCloud
     # When disk is in a zone
     # * +:zone+                         - String. Zone number in string.
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/disk.json
-    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/examples/CreateAManagedDiskByCopyingASnapshot.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/disk.json
+    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/examples/CreateAManagedDiskByCopyingASnapshot.json
     #
     def create_managed_disk_from_snapshot(resource_group_name, disk_params, snapshot_name)
       disk_url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_DISKS, resource_group_name: resource_group_name, name: disk_params[:name])
@@ -901,7 +902,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/disk.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/disk.json
     #
     def delete_managed_disk(resource_group_name, name)
       @logger.debug("delete_managed_disk - trying to delete #{name} from resource group #{resource_group_name}")
@@ -915,7 +916,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/disk.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/disk.json
     #
     def get_managed_disk_by_name(resource_group_name, name)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_DISKS, resource_group_name: resource_group_name, name: name)
@@ -927,7 +928,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/disk.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/disk.json
     #
     def get_managed_disk(url)
       result = get_resource_by_id(url)
@@ -955,8 +956,8 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
-    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/examples/CreateAnImageFromABlob.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/compute.json
+    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/examples/CreateAnImageFromABlob.json
     #
     def create_managed_custom_image(params)
       @logger.debug("create_managed_custom_image - trying to create a managed custom image '#{params[:name]}'")
@@ -985,7 +986,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/compute.json
     #
     def delete_managed_custom_image(name)
       @logger.debug("delete_managed_custom_image - trying to delete '#{name}'")
@@ -998,7 +999,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/compute.json
     #
     def get_managed_custom_image_by_name(name)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_IMAGES, name: name)
@@ -1010,7 +1011,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/compute.json
     #
     def get_managed_custom_image(url)
       result = get_resource_by_id(url)
@@ -1021,7 +1022,7 @@ module Bosh::AzureCloud
     #
     # @return [Array]
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/compute.json
     #
     def list_managed_custom_images
       managed_custom_images = []
@@ -1034,6 +1035,182 @@ module Bosh::AzureCloud
         end
       end
       managed_custom_images
+    end
+
+
+    # Compute/galleries
+
+    # Create a gallery
+    #
+    # ==== Attributes
+    #
+    # @param [String] resource_group_name - Name of resource group.
+    # @param [Hash]   params              - Parameters for creating the gallery.
+    #
+    # ==== params
+    #
+    # Accepted key/value pairs are:
+    # * +:name+                         - String. Name of the gallery.
+    # * +:location+                     - String. The location where the gallery will be created.
+    # * +:tags+                         - Hash. Tags of the gallery.
+    #
+    # @return [Boolean]
+    #
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/gallery.json
+    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/examples/CreateOrUpdateASimpleGallery.json
+    #
+    def create_gallery(resource_group_name, params)
+      @logger.debug("create_gallery - trying to create a gallery '#{params[:name]}'")
+      url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_GALLERIES, resource_group_name: resource_group_name, name: params[:name])
+      gallery = {
+        'location'   => params[:location],
+        'tags'       => params[:tags]
+      }
+
+      http_put(url, gallery)
+    end
+
+    # Delete a gallery
+    #
+    # @param [String] resource_group_name - Name of resource group.
+    # @param [String] name                - Name of gallery.
+    #
+    # @return [Boolean]
+    #
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/gallery.json
+    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/examples/DeleteAGallery.json
+    #
+    def delete_gallery(resource_group_name, name)
+      @logger.debug("delete_gallery - trying to delete '#{name}'")
+      url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_GALLERIES, resource_group_name: resource_group_name, name: name)
+      http_delete(url)
+    end
+
+    # Create a gallery image
+    #
+    # ==== Attributes
+    #
+    # @param [String] resource_group_name - Name of resource group.
+    # @param [Hash]   params              - Parameters for creating the gallery image.
+    #
+    # ==== params
+    #
+    # Accepted key/value pairs are:
+    # * +:name+                         - String. Name of the gallery image.
+    # * +:gallery_name+                 - String. Name of the gallery.
+    # * +:location+                     - String. The location where the gallery image will be created.
+    # * +:tags+                         - Hash. Tags of the gallery image.
+    #
+    # @return [Boolean]
+    #
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/gallery.json
+    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/examples/CreateOrUpdateASimpleGalleryImage.json
+    #
+    def create_gallery_image(resource_group_name, params)
+      @logger.debug("create_gallery_image - trying to create a gallery image '#{params[:name]}' from the gallery '#{params[:gallery_name]}'")
+      url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_GALLERIES, resource_group_name: resource_group_name, name: params[:gallery_name], others: "#{REST_API_IMAGES}/#{params[:name]}")
+      gallery_image = {
+        'location'   => params[:location],
+        'tags'       => params[:tags],
+        'properties' => {
+          "osType": "Linux",
+          "osState": "Generalized",
+          "identifier": {
+            "publisher": "AzureCPI",
+            "offer": "UbuntuServer",
+            "sku": "14.04-LTS"
+          }
+        }
+      }
+
+      http_put(url, gallery_image)
+    end
+
+    # Delete a gallery image
+    #
+    # @param [String] resource_group_name - Name of resource group.
+    # @param [String] name         - Name of gallery image.
+    # @param [String] gallery_name - Name of gallery.
+    #
+    # @return [Boolean]
+    #
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/gallery.json
+    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/examples/DeleteAGalleryImage.json
+    #
+    def delete_gallery_image(resource_group_name, name, gallery_name)
+      @logger.debug("delete_gallery_image - trying to delete a gallery image '#{name}' from the gallery '#{gallery_name}'")
+      url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_GALLERIES, resource_group_name: resource_group_name, name: gallery_name, others: "#{REST_API_IMAGES}/#{name}")
+      http_delete(url)
+    end
+
+    # Create a gallery image version
+    #
+    # ==== Attributes
+    #
+    # @param [String] resource_group_name - Name of resource group.
+    # @param [Hash] params   - Parameters for creating the gallery image version.
+    #
+    # ==== params
+    #
+    # Accepted key/value pairs are:
+    # * +:name+                         - String. Name of the gallery image version.
+    # * +:gallery_name+                 - String. Name of the gallery.
+    # * +:gallery_image_name+           - String. Name of the gallery image.
+    # * +:managed_image_id+             - String. ID of the managed image.
+    # * +:location+                     - String. The location where the gallery image version will be created.
+    # * +:tags+                         - Hash. Tags of the gallery image version.
+    #
+    # @return [Boolean]
+    #
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/gallery.json
+    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/examples/CreateOrUpdateASimpleGalleryImageVersion.json
+    #
+    def create_gallery_image_version(resource_group_name, params)
+      @logger.debug("create_gallery_image_version - trying to create a gallery image version '#{params[:name]}' for the image '#{params[:gallery_image_name]}' from the gallery '#{params[:gallery_name]}'")
+      url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_GALLERIES, resource_group_name: resource_group_name, name: params[:gallery_name], others: "#{REST_API_IMAGES}/#{params[:gallery_image_name]}/versions/#{params[:name]}")
+      gallery_image_version = {
+        'location'   => params[:location],
+        'tags'       => params[:tags],
+        'properties' => {
+          "publishingProfile": {
+            "targetRegions": [ 
+              {
+                "name": params[:location],
+                "regionalReplicaCount": 3
+              }
+            ],
+            "source": {
+              "managedImage": {
+                "id": params[:managed_image_id]
+              }
+            }
+          }
+        }
+      }
+
+      http_put(url, gallery_image_version)
+    end
+
+    # Delete a gallery image version
+    #
+    # @param [String] resource_group_name - Name of resource group.
+    # @param [String] name         - Name of gallery image version.
+    # @param [String] gallery_image_name - Name of gallery image.
+    # @param [String] gallery_name - Name of gallery.
+    #
+    # @return [Boolean]
+    #
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/gallery.json
+    #      https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/examples/DeleteAGalleryImageVersion.json
+    #
+    def delete_gallery_image_version(resource_group_name, name, gallery_image_name, gallery_name)
+      @logger.debug("delete_gallery_image_version - trying to delete a gallery image version '#{name}' from the image '#{gallery_image_name}' from the gallery '#{gallery_name}'")
+      url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_GALLERIES, resource_group_name: resource_group_name, name: gallery_name, others: "#{REST_API_IMAGES}/#{gallery_image_name}/versions/#{name}")
+      http_delete(url)
+    end
+
+    def get_gallery_image_version_id(resource_group_name, name, gallery_image_name, gallery_name)
+      rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_GALLERIES, resource_group_name: resource_group_name, name: gallery_name, others: "#{REST_API_IMAGES}/#{gallery_image_name}/versions/#{name}")
     end
 
     # Compute/Snapshots
@@ -1053,7 +1230,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/disk.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/disk.json
     #
     def create_managed_snapshot(resource_group_name, params)
       snapshot_name = params[:name]
@@ -1084,7 +1261,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/disk.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/disk.json
     #
     def get_managed_snapshot_by_name(resource_group_name, snapshot_name)
       url = rest_api_url(REST_API_PROVIDER_COMPUTE, REST_API_SNAPSHOTS, resource_group_name: resource_group_name, name: snapshot_name)
@@ -1096,7 +1273,7 @@ module Bosh::AzureCloud
     #
     # @return [Hash]
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/disk.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/disk.json
     #
     #
     def get_managed_snapshot(url)
@@ -1122,7 +1299,7 @@ module Bosh::AzureCloud
     #
     # @return [Boolean]
     #
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/disk.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/disk.json
     #
     #
     def delete_managed_snapshot(resource_group_name, name)
@@ -1140,7 +1317,7 @@ module Bosh::AzureCloud
     # @param [String] sku       - The sku of the publisher's offer.
     #
     # @return [Array]
-    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-04-01/compute.json
+    # @See https://github.com/Azure/azure-rest-api-specs/blob/master/specification/compute/resource-manager/Microsoft.Compute/stable/2018-06-01/compute.json
     #
     def list_platform_image_versions(location, publisher, offer, sku)
       images = []

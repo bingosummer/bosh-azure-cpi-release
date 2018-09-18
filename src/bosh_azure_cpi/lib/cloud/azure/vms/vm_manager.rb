@@ -415,6 +415,38 @@ module Bosh::AzureCloud
             storage_account_type = _get_root_disk_type(vm_props)
             # Treat managed_custom_image_info as stemcell_info
             stemcell_info = @stemcell_manager2.get_managed_custom_image_info(stemcell_cid, storage_account_type, location)
+
+            gallery_name = "stemcells"
+            gallery_image_name = stemcell_cid
+            gallery_image_version_name = "1.0.0"
+
+            gallery_params = {
+              :name => gallery_name,
+              :location => location,
+              :tags => AZURE_TAGS
+            }
+            @azure_client.create_gallery(vm_props.resource_group_name, gallery_params)
+
+            gallery_image_params = {
+              :name => gallery_image_name,
+              :gallery_name => gallery_name,
+              :location => location,
+              :tags => AZURE_TAGS
+            }
+            @azure_client.create_gallery_image(vm_props.resource_group_name, gallery_image_params)
+
+            gallery_image_version_params = {
+              :name => gallery_image_version_name,
+              :gallery_image_name => gallery_image_name,
+              :gallery_name => gallery_name,
+              :managed_image_id => stemcell_info.uri,
+              :location => location,
+              :tags => AZURE_TAGS
+            }
+            @azure_client.create_gallery_image_version(vm_props.resource_group_name, gallery_image_version_params)
+
+            stemcell_info.uri = @azure_client.get_gallery_image_version_id(vm_props.resource_group_name, gallery_image_version_name, gallery_image_name, gallery_name)
+
           rescue StandardError => e
             raise Bosh::Clouds::VMCreationFailed.new(false), "Failed to get the managed custom image information for the stemcell '#{stemcell_cid}': #{e.inspect}\n#{e.backtrace.join("\n")}"
           end

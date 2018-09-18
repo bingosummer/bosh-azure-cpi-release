@@ -19,7 +19,7 @@ module Bosh::AzureCloud
         'resourceManagerEndpointUrl' => 'https://management.azure.com/',
         'activeDirectoryEndpointUrl' => 'https://login.microsoftonline.com',
         'apiVersion' => {
-          AZURE_RESOURCE_PROVIDER_COMPUTE          => '2018-04-01',
+          AZURE_RESOURCE_PROVIDER_COMPUTE          => '2018-06-01',
           AZURE_RESOURCE_PROVIDER_NETWORK          => '2017-09-01',
           AZURE_RESOURCE_PROVIDER_STORAGE          => '2017-10-01',
           AZURE_RESOURCE_PROVIDER_GROUP            => '2016-06-01',
@@ -489,6 +489,7 @@ module Bosh::AzureCloud
     # *   +version+      - String. The version of the sku.
     class StemcellInfo
       attr_reader :uri, :metadata, :os_type, :name, :version, :image_size, :image
+      attr_writer :uri
 
       def initialize(uri, metadata)
         @uri = uri
