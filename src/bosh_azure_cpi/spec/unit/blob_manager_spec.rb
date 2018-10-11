@@ -502,13 +502,11 @@ describe Bosh::AzureCloud::BlobManager do
   describe '#list_blobs' do
     context 'when the container does not exist' do
       before do
-        allow(blob_service).to receive(:list_blobs).and_return('The container does not exist')
+        allow(blob_service).to receive(:list_blobs).and_raise('ContainerNotFound')
       end
 
-      it 'should return empty' do
-        expect do
-          blob_manager.list_blobs(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME, container_name)
-        end.to raise_error /The container does not exist/
+      it 'should return empty list' do
+        expect(blob_manager.list_blobs(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME, container_name)).to be_empty
       end
     end
 
@@ -519,7 +517,7 @@ describe Bosh::AzureCloud::BlobManager do
         allow(blob_service).to receive(:list_blobs).and_return(tmp_blobs)
       end
 
-      it 'should return empty' do
+      it 'should return empty list' do
         expect(blob_manager.list_blobs(MOCK_DEFAULT_STORAGE_ACCOUNT_NAME, container_name)).to be_empty
       end
     end

@@ -239,7 +239,11 @@ module Bosh::AzureCloud
         loop do
           options = merge_storage_common_options(options)
           @logger.info("list_blobs: Calling list_blobs(#{container_name}, #{options})")
-          temp = @blob_service_client.list_blobs(container_name, options)
+          begin
+            temp = @blob_service_client.list_blobs(container_name, options)
+          rescue StandardError => e
+            return [] if e.inspect.include?('ContainerNotFound')
+          end
           # Workaround for the issue https://github.com/Azure/azure-storage-ruby/issues/37
           raise temp unless temp.instance_of?(Azure::Service::EnumerationResults)
 
