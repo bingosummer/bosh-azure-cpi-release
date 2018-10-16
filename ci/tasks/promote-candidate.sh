@@ -28,6 +28,8 @@ blobstore:
     secret_access_key: ${S3_SECRET_ACCESS_KEY}
 EOF
 
+  cat config/private.yml
+
   echo "finalizing CPI release..."
   bosh2 finalize-release ${dev_release} --version ${semver_version}
 
