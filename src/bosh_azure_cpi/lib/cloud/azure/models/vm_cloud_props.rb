@@ -14,6 +14,7 @@ module Bosh::AzureCloud
     attr_reader :load_balancer
     attr_reader :application_security_groups
     attr_reader :security_group
+    attr_reader :user_assigned_identity
 
     attr_writer :availability_zone
     attr_writer :availability_set
@@ -57,6 +58,8 @@ module Bosh::AzureCloud
         ephemeral_disk_hash['size'],
         ephemeral_disk_hash['type']
       )
+
+      @user_assigned_identity = vm_properties.fetch('user_assigned_identity', global_azure_config.msi.default_user_assigned_identity)
     end
 
     private

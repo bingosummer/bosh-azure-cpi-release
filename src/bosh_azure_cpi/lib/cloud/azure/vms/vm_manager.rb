@@ -95,6 +95,12 @@ module Bosh::AzureCloud
         managed: @use_managed_disks
       }
 
+      if @azure_config.credentials_source == 'managed_service_identity'
+        vm_params[:identity] = {
+          type: @azure_config.msi.type,
+          identity_name: vm_props.user_assigned_identity
+        }
+      end
       vm_params[:zone] = zone.to_s unless zone.nil?
       vm_params[:os_disk], vm_params[:ephemeral_disk] = _build_disks(instance_id, stemcell_info, vm_props)
       vm_params[:os_type] = stemcell_info.os_type

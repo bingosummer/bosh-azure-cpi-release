@@ -158,6 +158,8 @@ module Bosh::AzureCloud
 
     MSI_ENDPOINT = 'http://169.254.169.254/metadata/identity/oauth2/token'
     MSI_ENDPOINT_API_VERSION = '2018-02-01'
+    MSI_TYPE_SYSTEM_ASSIGNED = 'SystemAssigned'
+    MSI_TYPE_USER_ASSIGNED   = 'UserAssigned'
 
     # Availability Zones
     AVAILABILITY_ZONES = %w[1 2 3].freeze
