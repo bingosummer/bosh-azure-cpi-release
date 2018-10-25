@@ -95,10 +95,10 @@ module Bosh::AzureCloud
         managed: @use_managed_disks
       }
 
-      if @azure_config.credentials_source == 'managed_service_identity'
+      if @azure_config.is_managed_identity_enabled?
         vm_params[:identity] = {
-          type: @azure_config.msi.type,
-          identity_name: vm_props.user_assigned_identity
+          type: vm_props.managed_identity.type,
+          identity_name: vm_props.managed_identity.user_assigned_identity_name
         }
       end
       vm_params[:zone] = zone.to_s unless zone.nil?

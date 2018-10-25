@@ -287,7 +287,7 @@ module Bosh::AzureCloud
         }
       }
 
-      if @azure_config.credentials_source == 'managed_service_identity'
+      if @azure_config.is_managed_identity_enabled?
         identity_type = vm_params[:identity][:type]
         if identity_type == MSI_TYPE_USER_ASSIGNED
           identity_id = rest_api_url(REST_API_PROVIDER_MANAGED_IDENTITY, REST_API_USER_ASSIGNED_IDENTITIES, resource_group_name: resource_group_name, name: vm_params[:identity][:identity_name])
@@ -2111,10 +2111,10 @@ module Bosh::AzureCloud
     def get_token(force_refresh = false)
       if @token.nil? || (Time.at(@token['expires_on'].to_i) - Time.new) <= 0 || force_refresh
         @logger.info('get_token - trying to get/refresh Azure authentication token')
-        use_msi = @azure_config.credentials_source == 'managed_service_identity'
-        use_ssl = !use_msi
-        request, uri = use_msi ? request_from_managed_service_identity_endpoint : request_from_azure_active_directory_endpoint
-        retryable_error_codes = use_msi ? AZURE_MSI_TOKEN_RETRYABLE_ERROR_CODES : AZURE_AD_TOKEN_RETRYABLE_ERROR_CODES
+        use_managed_identity = @azure_config.is_managed_identity_enabled?
+        use_ssl = !use_managed_identity
+        request, uri = use_managed_identity ? request_from_managed_identity_endpoint : request_from_azure_active_directory_endpoint
+        retryable_error_codes = use_managed_identity ? AZURE_MSI_TOKEN_RETRYABLE_ERROR_CODES : AZURE_AD_TOKEN_RETRYABLE_ERROR_CODES
         retry_count = 0
         max_retry_count = 5
         delay = 0
@@ -2189,8 +2189,8 @@ module Bosh::AzureCloud
       [request, uri]
     end
 
-    # https://docs.microsoft.com/en-us/azure/active-directory/managed-service-identity/how-to-use-vm-token#get-a-token-using-http
-    def request_from_managed_service_identity_endpoint
+    # https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-to-use-vm-token#get-a-token-using-http
+    def request_from_managed_identity_endpoint
       @logger.debug('Getting token from Azure VM Managed Service Identity')
       endpoint, api_version = get_msi_endpoint_and_version
       uri = URI(endpoint)

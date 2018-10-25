@@ -21,7 +21,7 @@ properties:
   azure.subscription_id:
     description: Azure Subscription ID
   azure.credentials_source:
-    description: Where to get Azure credentials for the azure cpi. This can be set to `static` to use `tenant_id`, `client_id` and `client_secret`/`certificate` or `managed_service_identity` to get the credentials from Azure managed service identity.
+    description: Where to get Azure credentials for the azure cpi. This can be set to `static` to use `tenant_id`, `client_id` and `client_secret`/`certificate` or `managed_identity` to get the credentials from Azure managed service identity.
     default: static
   azure.tenant_id:
     description: The tenant ID for the azure cpi (Required when azure.credentials_source is set to `static`)
@@ -38,11 +38,11 @@ properties:
       -----BEGIN CERTIFICATE-----
       MII...
       -----END CERTIFICATE-----
-  azure.managed_service_identity.type:
-    description: The type of identity used for the VM. The type `SystemAssigned` includes an implicitly created identity and the type `UserAssigned` includes a set of user assigned identities. For the type specified here to be used, azure.credentials_source has to be set to `managed_service_identity`.
+  azure.default_managed_identity.type:
+    description: The type of managed identity used for the VM. The type `SystemAssigned` includes an implicitly created identity and the type `UserAssigned` includes a set of user assigned identities. For the type specified here to be used, azure.credentials_source has to be set to `managed_identity`.
     default: SystemAssigned
-  azure.managed_service_identity.default_user_assigned_identity:
-    description: The user-assigned identity name associated with the VM. For the user-assigned identity specified here to be used, azure.credentials_source has to be set to `managed_service_identity`.
+  azure.default_managed_identity.user_assigned_identity_name:
+    description: The user-assigned identity name associated with the VM. For the user-assigned identity specified here to be used, azure.credentials_source has to be set to `managed_identity`.
     default: null
   azure.ssh_user:
     description: Default ssh user for new vms

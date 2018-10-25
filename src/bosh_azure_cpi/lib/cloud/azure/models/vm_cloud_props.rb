@@ -14,7 +14,7 @@ module Bosh::AzureCloud
     attr_reader :load_balancer
     attr_reader :application_security_groups
     attr_reader :security_group
-    attr_reader :user_assigned_identity
+    attr_reader :managed_identity
 
     attr_writer :availability_zone
     attr_writer :availability_set
@@ -51,15 +51,23 @@ module Bosh::AzureCloud
       @security_group = Bosh::AzureCloud::SecurityGroup.parse_security_group(vm_properties['security_group'])
 
       root_disk_hash = vm_properties.fetch('root_disk', {})
-      ephemeral_disk_hash = vm_properties.fetch('ephemeral_disk', {})
       @root_disk = Bosh::AzureCloud::RootDisk.new(root_disk_hash['size'], root_disk_hash['type'])
+
+      ephemeral_disk_hash = vm_properties.fetch('ephemeral_disk', {})
       @ephemeral_disk = Bosh::AzureCloud::EphemeralDisk.new(
         ephemeral_disk_hash['use_root_disk'].nil? ? false : ephemeral_disk_hash['use_root_disk'],
         ephemeral_disk_hash['size'],
         ephemeral_disk_hash['type']
       )
 
-      @user_assigned_identity = vm_properties.fetch('user_assigned_identity', global_azure_config.msi.default_user_assigned_identity)
+      @managed_identity = global_azure_config.default_managed_identity
+      managed_identity_hash = vm_properties.fetch('managed_identity', nil)
+      unless managed_identity_hash.nil?
+        if managed_identity_hash['type'] == MANAGED_IDENTITY_USER_ASSIGNED && managed_identity_hash['user_assigned_identity_name'].nil?
+          cloud_error("'user_assign_identity_name' is required when 'type' is 'UserAssigned'")
+        end
+        @managed_identity = ManagedIdentity.new(managed_identity_hash)
+      end
     end
 
     private

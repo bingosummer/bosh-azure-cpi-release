@@ -47,16 +47,16 @@
       certificate = p('azure.certificate', '')
       raise 'both "client_secret" and "certificate" are not provided. Please specify at least one of them.' if certificate.empty?
     end
-    params['cloud']['properties']['azure']['managed_service_identity'] = nil
-  elsif p('azure.credentials_source') == "managed_service_identity"
-    identity_type = p('azure.managed_service_identity.type')
-    raise 'The value of "azure.managed_service_identity.type" is invalid. Possible values: "SystemAssigned" and "UserAssigned".' if identity_type != 'SystemAssigned' && identity_type != 'UserAssigned'
-    params['cloud']['properties']['azure']['managed_service_identity'] = {
+    params['cloud']['properties']['azure']['default_managed_identity'] = nil
+  elsif p('azure.credentials_source') == "managed_identity"
+    identity_type = p('azure.default_managed_identity.type')
+    raise 'The value of "azure.default_managed_identity.type" is invalid. Possible values: "SystemAssigned" and "UserAssigned".' if identity_type != 'SystemAssigned' && identity_type != 'UserAssigned'
+    params['cloud']['properties']['azure']['default_managed_identity'] = {
       "type" => identity_type,
-      "default_user_assigned_identity" => p('azure.managed_service_identity.default_user_assigned_identity')
+      "user_assigned_identity_name" => p('azure.default_managed_identity.user_assigned_identity_name')
     }
   else
-    raise 'The value of "credentials_source" is invalid. Possible values: "static" and "managed_service_identity".'
+    raise 'The value of "credentials_source" is invalid. Possible values: "static" and "managed_identity".'
   end
 
   if_p('azure.storage_account_name') do |storage_account_name|
