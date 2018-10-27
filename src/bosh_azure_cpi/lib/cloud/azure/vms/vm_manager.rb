@@ -95,7 +95,7 @@ module Bosh::AzureCloud
         managed: @use_managed_disks
       }
 
-      if @azure_config.is_managed_identity_enabled?
+      unless vm_props.managed_identity.nil?
         vm_params[:identity] = {
           type: vm_props.managed_identity.type,
           identity_name: vm_props.managed_identity.user_assigned_identity_name
