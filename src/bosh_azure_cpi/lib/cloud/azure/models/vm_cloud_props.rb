@@ -63,7 +63,7 @@ module Bosh::AzureCloud
       @managed_identity = global_azure_config.default_managed_identity
       managed_identity_hash = vm_properties.fetch('managed_identity', nil)
       unless managed_identity_hash.nil?
-        if managed_identity_hash['type'] == MANAGED_IDENTITY_USER_ASSIGNED && managed_identity_hash['user_assigned_identity_name'].nil?
+        if managed_identity_hash['type'] == MANAGED_IDENTITY_TYPE_USER_ASSIGNED && managed_identity_hash['user_assigned_identity_name'].nil?
           cloud_error("'user_assign_identity_name' is required when 'type' is 'UserAssigned'")
         end
         @managed_identity = ManagedIdentity.new(managed_identity_hash)
