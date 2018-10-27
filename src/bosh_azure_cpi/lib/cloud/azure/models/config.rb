@@ -71,7 +71,7 @@ module Bosh::AzureCloud
       # Identity
       @credentials_source = azure_config_hash['credentials_source']
       if is_managed_identity_enabled?
-        @default_managed_identity = ManagedIdentity.new(azure_config_hash['default_managed_identity'])
+        @default_managed_identity = Bosh::AzureCloud::ManagedIdentity.new(azure_config_hash['default_managed_identity'])
       else
         @tenant_id = azure_config_hash['tenant_id']
         @client_id = azure_config_hash['client_id']

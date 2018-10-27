@@ -66,7 +66,7 @@ module Bosh::AzureCloud
         if managed_identity_hash['type'] == MANAGED_IDENTITY_TYPE_USER_ASSIGNED && managed_identity_hash['user_assigned_identity_name'].nil?
           cloud_error("'user_assign_identity_name' is required when 'type' is 'UserAssigned'")
         end
-        @managed_identity = ManagedIdentity.new(managed_identity_hash)
+        @managed_identity = Bosh::AzureCloud::ManagedIdentity.new(managed_identity_hash)
       end
     end
 
