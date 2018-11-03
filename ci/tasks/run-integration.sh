@@ -32,7 +32,6 @@ export BOSH_AZURE_DEFAULT_SECURITY_GROUP=$(echo ${metadata} | jq -e --raw-output
 export BOSH_AZURE_PRIMARY_PUBLIC_IP=$(echo ${metadata} | jq -e --raw-output ".public_ip_in_default_rg")
 export BOSH_AZURE_SECONDARY_PUBLIC_IP=$(echo ${metadata} | jq -e --raw-output ".public_ip_in_additional_rg")
 export BOSH_AZURE_APPLICATION_SECURITY_GROUP=$(echo ${metadata} | jq -e --raw-output ".asg_name")
-export BOSH_AZURE_APPLICATION_GATEWAY_NAME=$(echo ${metadata} | jq -e --raw-output ".application_gateway_name")
 export BOSH_AZURE_DEFAULT_USER_ASSIGNED_IDENTITY_NAME=$(echo ${metadata} | jq -e --raw-output ".default_user_assigned_identity_name")
 export BOSH_AZURE_USER_ASSIGNED_IDENTITY_NAME=$(echo ${metadata} | jq -e --raw-output ".user_assigned_identity_name")
 export BOSH_AZURE_SSH_PUBLIC_KEY=${SSH_PUBLIC_KEY}
@@ -53,7 +52,7 @@ pushd bosh-cpi-src/src/bosh_azure_cpi > /dev/null
   else
     tags+=" --tag ~availability_zone"
   fi
-  bundle exec rspec spec/integration/ ${tags} --format documentation
+  bundle exec rspec spec/integration/lifecycle_spec.rb ${tags} --format documentation
 
   # migration: unmanged disk -> managed disk
   # Only run migration test when AZURE_USE_MANAGED_DISKS is set to false initially
